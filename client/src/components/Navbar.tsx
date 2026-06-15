@@ -97,7 +97,7 @@ export default function Navbar() {
         </Link>
 
         {/* center: primary nav — pinned to the exact center of the bar */}
-        <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
+        <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:-ml-20 md:flex">
           {LINKS.map((l) => (
             <NavLink
               key={l.to}
