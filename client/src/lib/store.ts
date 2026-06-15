@@ -3,6 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import { SERVER_URL } from "./config";
 import type {
   AuthUser,
+  BattleReport,
   BuildingType,
   GameSnapshot,
   ResourceKind,
@@ -23,6 +24,9 @@ interface GameStore {
   snapshot: GameSnapshot | null;
   connected: boolean;
   toasts: Toast[];
+  // a freshly-resolved battle to auto-spectate (animated replay), or null
+  pendingBattle: BattleReport | null;
+  clearPendingBattle: () => void;
 
   setAuth: (token: string, user: AuthUser) => void;
   logout: () => void;
@@ -65,6 +69,8 @@ export const useGame = create<GameStore>((set, get) => ({
   snapshot: null,
   connected: false,
   toasts: [],
+  pendingBattle: null,
+  clearPendingBattle: () => set({ pendingBattle: null }),
 
   setAuth: (token, user) => {
     localStorage.setItem(LS_TOKEN, token);
@@ -110,15 +116,18 @@ export const useGame = create<GameStore>((set, get) => ({
           if (b > a) get().pushToast({ kind: "success", text: `${SKILLS[s].icon} ${SKILLS[s].name} level ${b}!` });
         }
       }
-      // notify on a freshly resolved battle (so the player can watch the replay)
+      // a freshly resolved battle: pop the animated spectate view so the player
+      // actually watches the fight, and still log a toast for the record.
       const newBat = snap?.empire?.battles?.[0];
       if (prev && newBat && newBat.id !== prev.empire?.battles?.[0]?.id) {
         const youWon = newBat.role === "attacker" ? newBat.attackerWon : !newBat.attackerWon;
         const foe = newBat.role === "attacker" ? newBat.defenderName : newBat.attackerName;
         get().pushToast({
           kind: youWon ? "success" : "warn",
-          text: `⚔ ${youWon ? "Victory" : "Battle"} vs ${foe} — watch the replay in the Chronicle`,
+          text: `⚔ ${youWon ? "Victory" : "Battle"} vs ${foe} — replays live now (also in the Chronicle)`,
         });
+        // only auto-open if nothing else is already on screen
+        if (!get().pendingBattle) set({ pendingBattle: newBat });
       }
       set({ snapshot: snap });
     });

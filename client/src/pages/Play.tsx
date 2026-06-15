@@ -10,6 +10,7 @@ import MilitaryView from "../game/MilitaryView";
 import QuestsView from "../game/QuestsView";
 import LogView from "../game/LogView";
 import OperationsPanel from "../game/OperationsPanel";
+import BattleReplay from "../game/BattleReplay";
 import TutorialOverlay from "../components/TutorialOverlay";
 import { armyTotal } from "../game/derive";
 
@@ -31,6 +32,8 @@ export default function Play() {
   const token = useGame((s) => s.token);
   const connect = useGame((s) => s.connect);
   const logout = useGame((s) => s.logout);
+  const pendingBattle = useGame((s) => s.pendingBattle);
+  const clearPendingBattle = useGame((s) => s.clearPendingBattle);
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("live");
   const [stuck, setStuck] = useState(false);
@@ -112,7 +115,7 @@ export default function Play() {
     <div>
       <ResourceBar empire={empire} />
 
-      <div className={`container-x ${tab === "live" ? "pt-4 pb-3" : "py-5"}`}>
+      <div className="container-x pt-4 pb-3">
         {/* tab nav */}
         <div className="flex flex-wrap items-center gap-2">
           {TABS.map((t) => (
@@ -161,29 +164,47 @@ export default function Play() {
         </div>
       </div>
 
-      {/* The Adventure world is full-bleed & immersive; other tabs use the grid. */}
-      {tab === "live" ? (
-        <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} />
-      ) : (
-        <div className="container-x pb-6">
-          <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-            <div className="min-w-0">
+      {/* The Adventure world stays mounted & running underneath everything, so
+          opening Hero / Empire / Military etc. never leaves the live game. */}
+      <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} />
+
+      {/* Dashboard views slide over the live world as a panel you can dismiss. */}
+      {tab !== "live" && (
+        <div
+          className="fixed inset-0 top-16 z-40 flex justify-end bg-black/50 backdrop-blur-sm"
+          onClick={() => setTab("live")}
+        >
+          <section
+            className="h-full w-full max-w-2xl overflow-y-auto border-l border-gold/20 bg-ink/95 shadow-2xl animate-slideIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-parchment-300/10 bg-ink/95 px-5 py-3 backdrop-blur">
+              <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+                <span>{TABS.find((t) => t.id === tab)?.icon}</span>
+                {TABS.find((t) => t.id === tab)?.label}
+              </h2>
+              <button
+                className="rounded-lg border border-parchment-300/10 bg-white/5 px-3 py-1.5 text-sm text-parchment-100/80 hover:border-gold/40 hover:text-gold-light"
+                onClick={() => setTab("live")}
+              >
+                ✕ Close
+              </button>
+            </header>
+            <div className="space-y-5 p-5">
               {tab === "hero" && <HeroView empire={empire} />}
               {tab === "empire" && <EmpireView empire={empire} />}
               {tab === "world" && <WorldView snapshot={snapshot} />}
               {tab === "military" && <MilitaryView empire={empire} />}
               {tab === "quests" && <QuestsView empire={empire} />}
               {tab === "log" && <LogView empire={empire} />}
+              <OperationsPanel snapshot={snapshot} />
             </div>
-
-            <aside className="hidden xl:block">
-              <div className="sticky top-32">
-                <OperationsPanel snapshot={snapshot} />
-              </div>
-            </aside>
-          </div>
+          </section>
         </div>
       )}
+
+      {/* Live battle spectate — auto-opens when one of your battles resolves. */}
+      {pendingBattle && <BattleReplay report={pendingBattle} onClose={clearPendingBattle} />}
 
       {showTut && (
         <TutorialOverlay

@@ -294,6 +294,9 @@ export default function LiveWorld({
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      // ignore movement keys while typing in a panel input / textarea
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       const k = e.key.toLowerCase();
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) {
         keys.current.add(k);

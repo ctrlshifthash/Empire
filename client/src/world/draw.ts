@@ -5,8 +5,29 @@
 import { BUILDINGS } from "@shared/gamedata";
 import { LOCAL_WORLD } from "@shared/types";
 import { TILE_H, TILE_W, screenToWorld, worldToScreen } from "./iso";
-import type { BuildingView, Enemy, ResNode, Unit, World } from "./engine";
-import { TILES, WINDMILL_FRAMES, drawTile, drawTileFrame, isReady } from "./tiles";
+import type { BuildingView, Compound, Enemy, ResNode, Unit, World } from "./engine";
+import {
+  CANNON_COLS,
+  CANNON_ROWS,
+  FLAG_FRAMES,
+  TILES,
+  WINDMILL_FRAMES,
+  drawSheetCell,
+  drawTile,
+  drawTileFrame,
+  isReady,
+  pathTileForMask,
+} from "./tiles";
+
+// Every wall tile except the two straight runs (indices 0 = wall_1, 7 = wall_8)
+// is a tower variant. They're handed out round-robin across all the map's tower
+// positions so the whole 16-piece set is guaranteed to appear.
+const TOWER_TILES = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15];
+
+// Gate cannons by gate side, for the two camera-facing sides (rows of the
+// 8-direction cannon sheet): [left-flank row, right-flank row]. South fires
+// SW/SE, East fires SE/E — so the barrels always point toward the viewer.
+const GATE_CANNON: Record<string, [number, number]> = { S: [6, 7], E: [7, 3] };
 
 const NODE_GLYPH: Record<ResNode["kind"], string> = {
   tree: "🌲",
@@ -420,9 +441,14 @@ export function renderWorld(
         tileDiamond(ctx, s.x, s.y);
         ctx.fill();
       }
-      // cobblestone road on path tiles
-      if (town && town.paths.has(`${tx},${ty}`) && isReady(TILES.grass[7])) {
-        drawTile(ctx, TILES.grass[7], s.x, s.y);
+      // cobblestone road — autotiled so the path connects in every direction
+      if (town && town.paths.has(`${tx},${ty}`)) {
+        const mask =
+          (town.paths.has(`${tx},${ty - 1}`) ? 1 : 0) | // N (-y)
+          (town.paths.has(`${tx + 1},${ty}`) ? 2 : 0) | // E (+x)
+          (town.paths.has(`${tx},${ty + 1}`) ? 4 : 0) | // S (+y)
+          (town.paths.has(`${tx - 1},${ty}`) ? 8 : 0); //  W (-x)
+        drawTile(ctx, TILES.grass[pathTileForMask(mask)], s.x, s.y);
       }
     }
   }
@@ -457,17 +483,86 @@ export function renderWorld(
   }
   const objs: Drawable[] = [];
 
-  // town walls (real stone tiles), depth-sorted with everything else
-  if (town && TILES.ready) {
-    const WALL_TILE: Record<string, number> = { corner: 1, h: 7, v: 0 }; // wall_2 tower, wall_8, wall_1
-    for (const [key, kind] of town.walls) {
+  // Draw a walled compound (capital, outpost, or ruin): correctly-oriented
+  // straight walls, animated corner flag-towers, interval towers, and — for the
+  // capital's south gate — firing cannons. All depth-sorted with the world.
+  // round-robin tower-variant dispenser, shared across capital + all outposts
+  let towerOrd = 0;
+  const nextTower = () => TOWER_TILES[towerOrd++ % TOWER_TILES.length];
+
+  const drawCompound = (c: Pick<Compound, "cx" | "cy" | "R" | "walls" | "gates">, isCapital: boolean) => {
+    const { cx, cy, R } = c;
+    const flagFrame = Math.floor(now / 130);
+    const cannonFrame = Math.floor(now / 70) % CANNON_COLS;
+    for (const [key, kind] of c.walls) {
       const [wx, wy] = key.split(",").map(Number);
       const s = toScreen(wx, wy);
-      // draw straight walls a touch larger so the narrow pieces overlap seamlessly
-      const sc = kind === "corner" ? 1.12 : 1.22;
-      objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[WALL_TILE[kind]], s.x, s.y, sc) });
+      const onSideRun = wx === cx - R || wx === cx + R; // left/right runs vary in y
+      // towers punctuate larger perimeters every 4th tile along a straight run
+      const interval = R >= 4 && (onSideRun ? (wy - cy) % 4 === 0 : (wx - cx) % 4 === 0);
+
+      // gate-flanking cannon emplacement (capital only, camera-facing gates)
+      let cannonRow = -1;
+      if (isCapital) {
+        for (const g of c.gates) {
+          const side = g.y === cy - R ? "N" : g.y === cy + R ? "S" : g.x === cx + R ? "E" : "W";
+          const spec = GATE_CANNON[side];
+          if (!spec) continue;
+          if ((side === "N" || side === "S") && wy === g.y && Math.abs(wx - g.x) === 1) {
+            cannonRow = spec[wx < g.x ? 0 : 1];
+            break;
+          }
+          if ((side === "E" || side === "W") && wx === g.x && Math.abs(wy - g.y) === 1) {
+            cannonRow = spec[wy < g.y ? 0 : 1];
+            break;
+          }
+        }
+      }
+
+      if (cannonRow >= 0) {
+        // stone tower flanking the gate, with a firing cannon mounted on top
+        const tt = nextTower();
+        objs.push({
+          key: wx + wy + 0.02,
+          draw: () => {
+            drawTile(ctx, TILES.wall[tt], s.x, s.y, 1.16);
+            drawSheetCell(ctx, TILES.cannon, cannonFrame, cannonRow, CANNON_COLS, CANNON_ROWS, s.x, s.y - 50, 0.8);
+          },
+        });
+      } else if (kind === "corner") {
+        // capital corners fly animated flags; outpost/ruin corners use varied towers
+        if (isCapital) {
+          objs.push({ key: wx + wy, draw: () => drawTileFrame(ctx, TILES.flag, flagFrame, FLAG_FRAMES, s.x, s.y, 1.12) });
+        } else {
+          const tt = nextTower();
+          objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[tt], s.x, s.y, 1.16) });
+        }
+      } else if (interval) {
+        // a tower punctuating the wall run — varied across the whole 16-piece set
+        const tt = nextTower();
+        objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[tt], s.x, s.y, 1.16) });
+      } else {
+        // straight wall run, correctly oriented:
+        //   top/bottom runs (varying x) connect E–W  → wall_1 (index 0)
+        //   side runs       (varying y) connect N–S  → wall_8 (index 7)
+        const tile = onSideRun ? TILES.wall[7] : TILES.wall[0];
+        objs.push({ key: wx + wy, draw: () => drawTile(ctx, tile, s.x, s.y, 1.24) });
+      }
     }
-    // fenced building plots laid out inside the walls
+  };
+
+  if (town && TILES.ready) {
+    drawCompound(town, true);
+    for (const o of town.outposts) drawCompound(o, false);
+
+    // lone watchtowers out on the diagonals (animated flag towers)
+    const flagFrame = Math.floor(now / 130);
+    for (const t of town.towers) {
+      const s = toScreen(t.x, t.y);
+      objs.push({ key: t.x + t.y, draw: () => drawTileFrame(ctx, TILES.flag, flagFrame, FLAG_FRAMES, s.x, s.y, 1.0) });
+    }
+
+    // fenced building plots laid out inside the capital walls (varied fence tiles)
     for (const p of town.decorPlots) {
       const s = toScreen(p.x, p.y);
       objs.push({ key: p.x + p.y - 0.01, draw: () => drawTile(ctx, TILES.plot[p.tile], s.x, s.y) });

@@ -72,11 +72,16 @@ export default {
           "0%,100%": { opacity: "0.6" },
           "50%": { opacity: "1" },
         },
+        slideIn: {
+          "0%": { transform: "translateX(24px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
       },
       animation: {
         floaty: "floaty 6s ease-in-out infinite",
         shimmer: "shimmer 3s linear infinite",
         pulseGlow: "pulseGlow 2.5s ease-in-out infinite",
+        slideIn: "slideIn 0.22s ease-out",
       },
     },
   },

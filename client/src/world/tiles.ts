@@ -29,12 +29,13 @@ function loadList(prefix: string, n: number): HTMLImageElement[] {
 export const TILES = {
   ready: false,
   grassBase: [load("/tiles/grass_base_1.png"), load("/tiles/grass_base_2.png"), load("/tiles/grass_base_3.png")], // plain grass (made from the pack)
-  grass: loadList("/tiles/grass/grass_path_", 16), // grass + cobblestone paths
-  wall: loadList("/tiles/wall/wall_", 16), // stone walls & towers
+  grass: loadList("/tiles/grass/grass_path_", 16), // grass + cobblestone paths (16-piece autotile)
+  wall: loadList("/tiles/wall/wall_", 16), // stone walls & towers (16-piece autotile)
   plot: loadList("/tiles/plot/weat_", 16), // wooden fenced building plots
   castle: load("/tiles/castle.png"), // 600x600 keep
   windmill: load("/tiles/windmill.png"), // 896x200 sheet (7 frames of 128)
-  flag: load("/tiles/flag.png"), // 1792x200 sheet (14 frames of 128)
+  flag: load("/tiles/flag.png"), // 1792x200 sheet (14 frames of 128) — tower with a waving flag
+  cannon: load("/tiles/cannon.png"), // 3456x1600 sheet (8 dirs × 27 frames of 128x200) — firing cannon
 };
 
 // mark ready once the core tiles have loaded
@@ -47,6 +48,7 @@ const all: HTMLImageElement[] = [
   TILES.castle,
   TILES.windmill,
   TILES.flag,
+  TILES.cannon,
 ];
 pending = all.length;
 for (const img of all) {
@@ -68,6 +70,21 @@ export function isReady(img: HTMLImageElement): boolean {
 // windmill / flag animation frame count (128px wide frames)
 export const WINDMILL_FRAMES = 7;
 export const FLAG_FRAMES = 14;
+// cannon sheet: 8 facing directions (rows) × 27 firing frames (cols)
+export const CANNON_COLS = 27;
+export const CANNON_ROWS = 8;
+
+// ── Path autotile ────────────────────────────────────────────────────────────
+// The grass_path set is a 4-bit autotile. Decoded edge connectivity (which way
+// the cobblestone runs) → tile index. Bits: N(-y)=1, E(+x)=2, S(+y)=4, W(-x)=8.
+// Values are 1-based file numbers (grass_path_N); subtract 1 to index TILES.grass.
+const PATH_MASK_TO_FILE: Record<number, number> = {
+  0: 2, 1: 6, 2: 4, 3: 11, 4: 7, 5: 8, 6: 12, 7: 14,
+  8: 3, 9: 10, 10: 1, 11: 15, 12: 9, 13: 16, 14: 13, 15: 5,
+};
+export function pathTileForMask(mask: number): number {
+  return (PATH_MASK_TO_FILE[mask & 15] ?? 6) - 1; // 0-based index into TILES.grass
+}
 
 // Draw a full 128x200 tile image anchored so its diamond footprint centre sits
 // at the tile's screen position (sx, sy). `scale` lets big sprites (castle) span
@@ -84,6 +101,30 @@ export function drawTile(
   const w = TILE_IMG_W * scale;
   const h = TILE_IMG_H * scale;
   ctx.drawImage(img, sx - w / 2, sy - DIAMOND_CY * scale + yOffset, w, h);
+  return true;
+}
+
+// Draw one cell (col,row) from a grid sprite sheet (e.g. the 8×27 cannon),
+// anchored like a tile so its diamond footprint sits at (sx, sy).
+export function drawSheetCell(
+  ctx: CanvasRenderingContext2D,
+  sheet: HTMLImageElement,
+  col: number,
+  row: number,
+  cols: number,
+  rows: number,
+  sx: number,
+  sy: number,
+  scale = 1,
+) {
+  if (!isReady(sheet)) return false;
+  const fw = sheet.naturalWidth / cols;
+  const fh = sheet.naturalHeight / rows;
+  const c = ((col % cols) + cols) % cols;
+  const r = ((row % rows) + rows) % rows;
+  const w = (fw / fh) * TILE_IMG_H * scale;
+  const h = TILE_IMG_H * scale;
+  ctx.drawImage(sheet, c * fw, r * fh, fw, fh, sx - w / 2, sy - DIAMOND_CY * scale, w, h);
   return true;
 }
 

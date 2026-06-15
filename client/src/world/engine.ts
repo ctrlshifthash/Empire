@@ -116,6 +116,17 @@ const UNIT_COMBAT: Record<UnitType, { atk: number; hp: number; speed: number }> 
   knight: { atk: 26, hp: 120, speed: 3.6 },
 };
 
+export type WallKind = "corner" | "h" | "v";
+// A walled structure on the map — the main town, a satellite outpost, or a ruin.
+export interface Compound {
+  cx: number;
+  cy: number;
+  R: number;
+  walls: Map<string, WallKind>;
+  gates: Array<{ x: number; y: number }>;
+  kind: "town" | "outpost" | "ruin";
+}
+
 export class World {
   W = LOCAL_WORLD.width;
   H = LOCAL_WORLD.height;
@@ -126,7 +137,7 @@ export class World {
   buildings: BuildingView[] = [];
   floats: FloatText[] = [];
   cam = { x: 0, y: 0 };
-  zoom = 0.62; // tiles are 128px; start zoomed out so you can see the town
+  zoom = 0.5; // tiles are 128px; start zoomed out so you can see the town + roads leading out
   camFree = false; // true when the player has panned the camera away from the hero
   selected: Set<number> = new Set(); // selected unit ids
   // the player's walled town layout (built once, deterministic)
@@ -134,11 +145,14 @@ export class World {
     cx: number;
     cy: number;
     R: number;
-    walls: Map<string, "corner" | "h" | "v">;
+    walls: Map<string, WallKind>;
     paths: Set<string>;
     gate: { x: number; y: number };
+    gates: Array<{ x: number; y: number }>;
     decorPlots: Array<{ x: number; y: number; tile: number }>;
     windmill: { x: number; y: number };
+    outposts: Compound[];
+    towers: Array<{ x: number; y: number }>;
   };
   private focus: { x: number; y: number } | null = null;
   private focusTime = 0;
@@ -186,28 +200,91 @@ export class World {
     return this.nextId++;
   }
 
-  // A walled compound around the town centre: stone perimeter with corner
-  // towers, a gate on the south edge, and a road network inside.
-  private generateTown() {
-    const cx = LOCAL_WORLD.centerX;
-    const cy = LOCAL_WORLD.centerY;
-    const R = 8;
-    const walls = new Map<string, "corner" | "h" | "v">();
-    const gate = { x: cx, y: cy + R };
+  // Build a square stone ring. `ruin` randomly omits cells for a broken look.
+  private buildRing(
+    cx: number,
+    cy: number,
+    R: number,
+    gates: Array<{ x: number; y: number }>,
+    ruin = false,
+  ): Map<string, WallKind> {
+    const walls = new Map<string, WallKind>();
+    const isGate = (x: number, y: number) => gates.some((g) => g.x === x && g.y === y);
     for (let x = cx - R; x <= cx + R; x++) {
       for (let y = cy - R; y <= cy + R; y++) {
         const edge = x === cx - R || x === cx + R || y === cy - R || y === cy + R;
         if (!edge) continue;
-        if (x === gate.x && y === gate.y) continue; // leave the gate open
+        if (isGate(x, y)) continue;
         const corner = (x === cx - R || x === cx + R) && (y === cy - R || y === cy + R);
+        // a ruin keeps its corner towers but drops ~40% of the straight wall
+        if (ruin && !corner && this.rng() < 0.4) continue;
         if (corner) walls.set(`${x},${y}`, "corner");
         else if (y === cy - R || y === cy + R) walls.set(`${x},${y}`, "h");
         else walls.set(`${x},${y}`, "v");
       }
     }
+    return walls;
+  }
+
+  // Lay a straight cobblestone run between two points along a shared axis.
+  private addRoad(paths: Set<string>, ax: number, ay: number, bx: number, by: number) {
+    if (ax === bx) for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) paths.add(`${ax},${y}`);
+    else if (ay === by) for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) paths.add(`${x},${ay}`);
+  }
+
+  // A walled capital with four gates, roads radiating out to satellite outposts
+  // and ruins, plus lone watchtowers — a whole crossroads kingdom on the map.
+  private generateTown() {
+    const cx = LOCAL_WORLD.centerX;
+    const cy = LOCAL_WORLD.centerY;
+    const R = 10;
+    // gates at the midpoint of each side
+    const gates = [
+      { x: cx, y: cy - R }, // N
+      { x: cx, y: cy + R }, // S
+      { x: cx + R, y: cy }, // E
+      { x: cx - R, y: cy }, // W
+    ];
+    const gate = gates[1]; // the south gate is the "front" (kept for the cannons)
+    const walls = this.buildRing(cx, cy, R, gates);
+
     const paths = new Set<string>();
-    for (let y = cy; y <= cy + R; y++) paths.add(`${cx},${y}`); // gate -> centre
-    for (let x = cx - R + 1; x <= cx + R - 1; x++) paths.add(`${x},${cy}`); // cross road
+    // internal cross roads connect all four gates through the centre
+    for (let y = cy - R; y <= cy + R; y++) paths.add(`${cx},${y}`);
+    for (let x = cx - R; x <= cx + R; x++) paths.add(`${x},${cy}`);
+
+    // four satellite structures, one out each gate, connected by a straight road
+    const outposts: Compound[] = [];
+    const D = 20; // distance from centre to each outpost centre
+    const oR = 2; // outpost radius
+    const specs: Array<{ dx: number; dy: number; kind: "outpost" | "ruin" }> = [
+      { dx: 0, dy: -D, kind: "outpost" }, // N
+      { dx: 0, dy: D, kind: "ruin" }, //     S
+      { dx: D, dy: 0, kind: "outpost" }, //  E
+      { dx: -D, dy: 0, kind: "ruin" }, //    W
+    ];
+    for (const sp of specs) {
+      const ox = cx + sp.dx;
+      const oy = cy + sp.dy;
+      // the outpost's gate faces back toward the capital
+      const ogate = { x: ox - Math.sign(sp.dx) * oR, y: oy - Math.sign(sp.dy) * oR };
+      const oWalls = this.buildRing(ox, oy, oR, [ogate], sp.kind === "ruin");
+      outposts.push({ cx: ox, cy: oy, R: oR, walls: oWalls, gates: [ogate], kind: sp.kind });
+      // road from the capital's gate out to the outpost's gate
+      const capGate = { x: cx + Math.sign(sp.dx) * R, y: cy + Math.sign(sp.dy) * R };
+      this.addRoad(paths, capGate.x, capGate.y, ogate.x, ogate.y);
+    }
+
+    // lone watchtowers out on the diagonals (flag towers, not walled)
+    const towers = [
+      { x: cx - 16, y: cy - 16 },
+      { x: cx + 16, y: cy - 16 },
+      { x: cx - 16, y: cy + 16 },
+      { x: cx + 16, y: cy + 16 },
+      { x: cx + 28, y: cy + 28 }, // far frontier lookouts in the expanded map
+      { x: cx + 30, y: cy },
+      { x: cx, y: cy + 30 },
+    ].filter((t) => t.x > 2 && t.y > 2 && t.x < this.W - 2 && t.y < this.H - 2);
 
     // fenced building plots laid out inside the walls (avoiding the roads)
     const decorPlots: Array<{ x: number; y: number; tile: number }> = [];
@@ -218,17 +295,17 @@ export class World {
       [-4, 4], [-2, 4], [2, 4], [4, 4],
       [-3, -3], [3, -3], [-3, 3], [3, 3],
     ];
+    let pi = 0;
     for (const [dx, dy] of candidates) {
       const x = cx + dx;
       const y = cy + dy;
       if (paths.has(`${x},${y}`)) continue;
-      // plot tiles 1,2,3,4,6,7,8,9 are full-ish fenced lots; vary them
-      const tiles = [0, 1, 2, 3, 5, 6, 7, 8];
-      const t = tiles[(Math.abs(dx * 7 + dy * 13)) % tiles.length];
-      decorPlots.push({ x, y, tile: t });
+      // cycle through all 16 fenced-plot variants so the whole set is used
+      decorPlots.push({ x, y, tile: pi % 16 });
+      pi++;
     }
     const windmill = { x: cx - 3, y: cy - 3 };
-    this.town = { cx, cy, R, walls, paths, gate, decorPlots, windmill };
+    this.town = { cx, cy, R, walls, paths, gate, gates, decorPlots, windmill, outposts, towers };
   }
 
   private generate() {
@@ -247,6 +324,14 @@ export class World {
       { kind: "tree", count: 6, spread: 2.4 },
       { kind: "rock", count: 4, spread: 1.8 },
       { kind: "bush", count: 5, spread: 2.4 },
+      // extra clusters to keep the larger 64×64 world full of things to gather
+      { kind: "tree", count: 8, spread: 2.6 },
+      { kind: "tree", count: 7, spread: 2.4 },
+      { kind: "rock", count: 5, spread: 2.0 },
+      { kind: "gold", count: 3, spread: 1.6 },
+      { kind: "gold", count: 2, spread: 1.4 },
+      { kind: "bush", count: 6, spread: 2.6 },
+      { kind: "rock", count: 5, spread: 2.2 },
     ];
     for (const c of clusters) {
       // cluster center somewhere away from the town clearing
@@ -268,23 +353,25 @@ export class World {
       }
     }
 
-    // a bandit camp
-    let bx = cx;
-    let by = cy;
-    for (let tries = 0; tries < 40; tries++) {
-      const ang = rng() * Math.PI * 2;
-      const rad = 11 + rng() * 5;
-      bx = cx + Math.cos(ang) * rad;
-      by = cy + Math.sin(ang) * rad;
-      if (bx > 4 && by > 4 && bx < this.W - 4 && by < this.H - 4) break;
+    // bandit camps scattered around the larger world
+    for (let camp = 0; camp < 3; camp++) {
+      let bx = cx;
+      let by = cy;
+      for (let tries = 0; tries < 40; tries++) {
+        const ang = rng() * Math.PI * 2;
+        const rad = 12 + rng() * 16; // spread further out across the bigger map
+        bx = cx + Math.cos(ang) * rad;
+        by = cy + Math.sin(ang) * rad;
+        if (bx > 4 && by > 4 && bx < this.W - 4 && by < this.H - 4) break;
+      }
+      for (let i = 0; i < 4; i++) {
+        this.spawnEnemy(bx + (rng() - 0.5) * 2.5, by + (rng() - 0.5) * 2.5);
+      }
     }
-    for (let i = 0; i < 4; i++) {
-      this.spawnEnemy(bx + (rng() - 0.5) * 2.5, by + (rng() - 0.5) * 2.5);
-    }
-    // a couple of lone wolves roaming
-    for (let i = 0; i < 3; i++) {
+    // lone wolves roaming
+    for (let i = 0; i < 6; i++) {
       const ang = rng() * Math.PI * 2;
-      const rad = 7 + rng() * 6;
+      const rad = 8 + rng() * 18;
       this.spawnEnemy(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, "wolf");
     }
 
