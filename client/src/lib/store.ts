@@ -116,18 +116,15 @@ export const useGame = create<GameStore>((set, get) => ({
           if (b > a) get().pushToast({ kind: "success", text: `${SKILLS[s].icon} ${SKILLS[s].name} level ${b}!` });
         }
       }
-      // a freshly resolved battle: pop the animated spectate view so the player
-      // actually watches the fight, and still log a toast for the record.
+      // notify on a freshly resolved battle (watch it back in the Chronicle)
       const newBat = snap?.empire?.battles?.[0];
       if (prev && newBat && newBat.id !== prev.empire?.battles?.[0]?.id) {
         const youWon = newBat.role === "attacker" ? newBat.attackerWon : !newBat.attackerWon;
         const foe = newBat.role === "attacker" ? newBat.defenderName : newBat.attackerName;
         get().pushToast({
           kind: youWon ? "success" : "warn",
-          text: `⚔ ${youWon ? "Victory" : "Battle"} vs ${foe} — replays live now (also in the Chronicle)`,
+          text: `⚔ ${youWon ? "Victory" : "Battle"} vs ${foe} — watch it back in the Chronicle`,
         });
-        // only auto-open if nothing else is already on screen
-        if (!get().pendingBattle) set({ pendingBattle: newBat });
       }
       set({ snapshot: snap });
     });

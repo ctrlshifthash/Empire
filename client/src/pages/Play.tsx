@@ -168,38 +168,42 @@ export default function Play() {
           opening Hero / Empire / Military etc. never leaves the live game. */}
       <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} />
 
-      {/* Dashboard views slide over the live world as a panel you can dismiss. */}
+      {/* Dashboard views overlay the live world (which keeps running behind) at
+          full dashboard width, so nothing is cramped and you never leave the game. */}
       {tab !== "live" && (
         <div
-          className="fixed inset-0 top-16 z-40 flex justify-end bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 top-16 z-40 overflow-y-auto bg-black/60 backdrop-blur-sm"
           onClick={() => setTab("live")}
         >
-          <section
-            className="h-full w-full max-w-2xl overflow-y-auto border-l border-gold/20 bg-ink/95 shadow-2xl animate-slideIn"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-parchment-300/10 bg-ink/95 px-5 py-3 backdrop-blur">
-              <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <div className="container-x py-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
                 <span>{TABS.find((t) => t.id === tab)?.icon}</span>
                 {TABS.find((t) => t.id === tab)?.label}
               </h2>
               <button
-                className="rounded-lg border border-parchment-300/10 bg-white/5 px-3 py-1.5 text-sm text-parchment-100/80 hover:border-gold/40 hover:text-gold-light"
+                className="rounded-lg border border-parchment-300/10 bg-white/5 px-4 py-2 text-sm font-medium text-parchment-100/80 hover:border-gold/40 hover:text-gold-light"
                 onClick={() => setTab("live")}
               >
                 ✕ Close
               </button>
-            </header>
-            <div className="space-y-5 p-5">
-              {tab === "hero" && <HeroView empire={empire} />}
-              {tab === "empire" && <EmpireView empire={empire} />}
-              {tab === "world" && <WorldView snapshot={snapshot} />}
-              {tab === "military" && <MilitaryView empire={empire} />}
-              {tab === "quests" && <QuestsView empire={empire} />}
-              {tab === "log" && <LogView empire={empire} />}
-              <OperationsPanel snapshot={snapshot} />
             </div>
-          </section>
+            <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+              <div className="min-w-0">
+                {tab === "hero" && <HeroView empire={empire} />}
+                {tab === "empire" && <EmpireView empire={empire} />}
+                {tab === "world" && <WorldView snapshot={snapshot} />}
+                {tab === "military" && <MilitaryView empire={empire} />}
+                {tab === "quests" && <QuestsView empire={empire} />}
+                {tab === "log" && <LogView empire={empire} />}
+              </div>
+              <aside className="hidden xl:block">
+                <div className="sticky top-4">
+                  <OperationsPanel snapshot={snapshot} />
+                </div>
+              </aside>
+            </div>
+          </div>
         </div>
       )}
 
