@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# build output
+client/dist/
+
+# persistent game world (regenerated on first run)
+server/data/
+
+# logs & local files
+*.log
+screenshots/
+.DS_Store
+
+# editor
+.vscode/
+.idea/
