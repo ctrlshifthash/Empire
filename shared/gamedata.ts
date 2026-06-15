@@ -174,13 +174,35 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
   wall: {
     type: "wall",
     name: "Stone Wall",
-    description: "Fortifications that grant your defenders a powerful edge.",
+    description: "Fortifications that grant your defenders a powerful edge. Place them in a line to barricade your territory.",
     icon: "🧱",
-    baseCost: { stone: 120 },
-    buildSeconds: 30,
-    requiresAge: "feudal",
+    baseCost: { stone: 60 },
+    buildSeconds: 12,
+    requiresAge: "dark",
     maxLevel: 8,
-    defenseBonus: 0.12, // +12% defense per level
+    defenseBonus: 0.06, // +6% defense per level
+  },
+  tower: {
+    type: "tower",
+    name: "Watch Tower",
+    description: "A tall stone tower bristling with defenders — the backbone of a strong fortification.",
+    icon: "🗼",
+    baseCost: { stone: 110, wood: 40 },
+    buildSeconds: 25,
+    requiresAge: "dark",
+    maxLevel: 5,
+    defenseBonus: 0.16, // +16% defense per level
+  },
+  gate: {
+    type: "gate",
+    name: "Gatehouse",
+    description: "A fortified gate guarding the way in — cannons watch the approach.",
+    icon: "🚪",
+    baseCost: { stone: 90, wood: 60 },
+    buildSeconds: 22,
+    requiresAge: "dark",
+    maxLevel: 5,
+    defenseBonus: 0.1, // +10% defense per level
   },
   market: {
     type: "market",

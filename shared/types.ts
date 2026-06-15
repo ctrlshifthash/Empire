@@ -19,6 +19,8 @@ export type BuildingType =
   | "archery_range"
   | "stable"
   | "wall"
+  | "tower"
+  | "gate"
   | "market";
 
 export type UnitType = "villager" | "spearman" | "archer" | "knight";

@@ -21,6 +21,8 @@ const BUILDING_COLOR: Record<BuildingType, string> = {
   archery_range: "#9c5a2a",
   stable: "#7c4a2a",
   wall: "#6f6a5f",
+  tower: "#5f5a52",
+  gate: "#7a6a4a",
   market: "#3f6bb0",
 };
 

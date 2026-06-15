@@ -121,7 +121,7 @@ export function usedPopulation(e: Empire): number {
 function wallMultiplier(e: Empire): number {
   let bonus = 0;
   for (const b of e.buildings) {
-    if (isActive(b) && b.type === "wall") bonus += (BUILDINGS.wall.defenseBonus ?? 0) * b.level;
+    if (isActive(b)) bonus += (BUILDINGS[b.type].defenseBonus ?? 0) * b.level;
   }
   return 1 + bonus;
 }

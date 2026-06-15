@@ -47,6 +47,8 @@ const BUILDING_COLOR: Record<string, string> = {
   archery_range: "#9c5a2a",
   stable: "#7c4a2a",
   wall: "#6f6a5f",
+  tower: "#5f5a52",
+  gate: "#7a6a4a",
   market: "#3f6bb0",
 };
 
@@ -601,8 +603,57 @@ export function renderWorld(
     });
   }
 
+  // player-built fortifications render with the real pack tiles; walls autotile
+  // to their neighbours so a placed line reads as one continuous stone wall.
+  const FORT_TYPES = new Set(["wall", "tower", "gate"]);
+  const fortAt = new Set(
+    world.buildings.filter((b) => FORT_TYPES.has(b.type)).map((b) => `${b.x},${b.y}`),
+  );
+
   for (const b of world.buildings) {
     const s = toScreen(b.x, b.y);
+
+    if (FORT_TYPES.has(b.type)) {
+      const a = b.constructing ? 0.55 : 1; // ghostly while under construction
+      if (b.type === "tower") {
+        const fr = Math.floor(now / 130);
+        objs.push({
+          key: b.x + b.y,
+          draw: () => {
+            ctx.globalAlpha = a;
+            drawTileFrame(ctx, TILES.flag, fr, FLAG_FRAMES, s.x, s.y, 1.12);
+            ctx.globalAlpha = 1;
+          },
+        });
+      } else if (b.type === "gate") {
+        const cf = Math.floor(now / 70) % CANNON_COLS;
+        objs.push({
+          key: b.x + b.y + 0.02,
+          draw: () => {
+            ctx.globalAlpha = a;
+            drawTile(ctx, TILES.wall[1], s.x, s.y, 1.16); // tower base
+            drawSheetCell(ctx, TILES.cannon, cf, 6, CANNON_COLS, CANNON_ROWS, s.x, s.y - 50, 0.8);
+            ctx.globalAlpha = 1;
+          },
+        });
+      } else {
+        // wall: straight along its run, a tower at corners/junctions
+        const ax = fortAt.has(`${b.x + 1},${b.y}`) || fortAt.has(`${b.x - 1},${b.y}`);
+        const ay = fortAt.has(`${b.x},${b.y + 1}`) || fortAt.has(`${b.x},${b.y - 1}`);
+        const tile = ax && ay ? TILES.wall[1] : ay ? TILES.wall[7] : TILES.wall[0];
+        const sc = ax && ay ? 1.16 : 1.24;
+        objs.push({
+          key: b.x + b.y,
+          draw: () => {
+            ctx.globalAlpha = a;
+            drawTile(ctx, tile, s.x, s.y, sc);
+            ctx.globalAlpha = 1;
+          },
+        });
+      }
+      continue;
+    }
+
     objs.push({
       key: b.x + b.y,
       draw: () => {
@@ -747,6 +798,8 @@ const B_STYLE: Record<string, BStyle> = {
   archery_range: { wall: "#a07a4a", roof: "#6b4a2a", kind: "thatch", w: 30, h: 20 },
   stable: { wall: "#8a6a44", roof: "#6b3a2a", kind: "peak", w: 32, h: 20 },
   wall: { wall: "#928c7f", roof: "#6b6357", kind: "battlement", w: 30, h: 14 },
+  tower: { wall: "#8a847a", roof: "#6b6357", kind: "battlement", w: 22, h: 26 },
+  gate: { wall: "#9a8a6a", roof: "#6b5a3a", kind: "battlement", w: 30, h: 18, banner: "#9c2b21" },
   market: { wall: "#b08a4a", roof: "#3f6bb0", kind: "awning", w: 30, h: 18, banner: "#3f6bb0" },
 };
 

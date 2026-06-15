@@ -46,7 +46,7 @@ export function armyTotal(e: Empire): number {
 export function wallDefensePct(e: Empire): number {
   let bonus = 0;
   for (const b of e.buildings) {
-    if (isActive(b) && b.type === "wall") bonus += (BUILDINGS.wall.defenseBonus ?? 0) * b.level;
+    if (isActive(b)) bonus += (BUILDINGS[b.type].defenseBonus ?? 0) * b.level;
   }
   return Math.round(bonus * 100);
 }
