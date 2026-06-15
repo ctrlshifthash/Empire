@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="md:col-span-2">
           <div className="flex items-center gap-2.5">
             <Logo size={30} />
-            <span className="font-display text-lg font-bold text-gold-gradient">Empires Eternal</span>
+            <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
           </div>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-parchment-300/70">
             A persistent, always-on strategy world. Found your empire, master four ages, raise armies
@@ -44,7 +44,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-parchment-300/10">
         <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-parchment-300/50 sm:flex-row">
-          <span>© {new Date().getFullYear()} Empires Eternal. Built for strategists.</span>
+          <span>© {new Date().getFullYear()} Realm Rumble. Built for strategists.</span>
           <span>Crafted with ⚔ — a living world that never sleeps.</span>
         </div>
       </div>

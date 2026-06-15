@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — server entry point.
+// Realm Rumble — server entry point.
 // Express REST for auth + public stats, Socket.IO for the live game, and two
 // timers that drive the persistent 24/7 world (engine tick + bot AI).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,6 +19,7 @@ import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.t
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
+import { rankForPower } from "../../shared/gamedata.ts";
 import {
   actAdvanceAge,
   actAttack,
@@ -147,6 +148,44 @@ app.get("/api/leaderboard", (_req, res) => {
     .sort((a, b) => b.power - a.power)
     .slice(0, 25);
   res.json({ ok: true, rows });
+});
+
+// ── Empires browser (public) ────────────────────────────────────────────────
+// A summary of every empire on the map so anyone can scout players & bots.
+app.get("/api/empires", (_req, res) => {
+  const rows = Object.values(state.empires)
+    .map((e) => ({
+      id: e.id,
+      name: e.name,
+      banner: e.banner,
+      isBot: e.isBot,
+      age: e.age,
+      power: e.power,
+      rank: rankForPower(e.power).name,
+      tier: e.tier,
+      raidsWon: e.raidsWon,
+      raidsLost: e.raidsLost,
+      armySize: e.army.villager + e.army.spearman + e.army.archer + e.army.knight,
+      buildings: e.buildings.length,
+      tileX: e.tileX,
+      tileY: e.tileY,
+      online: e.isBot ? false : onlineEmpires.has(e.id),
+    }))
+    .sort((a, b) => b.power - a.power);
+  res.json({ ok: true, rows });
+});
+
+// Full public detail of one empire (incl. base layout) so others can spectate
+// its world. Empire state holds no secrets (passwords live on the user record).
+app.get("/api/empires/:id", (req, res) => {
+  const e = state.empires[req.params.id];
+  if (!e) return res.status(404).json({ ok: false, error: "Empire not found." });
+  res.json({
+    ok: true,
+    empire: e,
+    rank: rankForPower(e.power).name,
+    online: e.isBot ? false : onlineEmpires.has(e.id),
+  });
 });
 
 // ── Token-holder rewards (Solana) ───────────────────────────────────────────
@@ -304,6 +343,6 @@ process.on("uncaughtException", (err) => console.error("[uncaught]", err));
 process.on("unhandledRejection", (err) => console.error("[unhandledRejection]", err));
 
 httpServer.listen(PORT, () => {
-  console.log(`\n  ⚔  Empires Eternal server running on http://localhost:${PORT}`);
+  console.log(`\n  ⚔  Realm Rumble server running on http://localhost:${PORT}`);
   console.log(`     Tick: ${TICK_MS}ms · AI: ${AI_MS}ms · Bots: ${TARGET_BOTS}\n`);
 });

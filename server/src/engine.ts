@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — Core simulation engine
+// Realm Rumble — Core simulation engine
 // Pure-ish functions that mutate the shared `state`. The realtime/api layers
 // call these in response to player actions; tick() advances the whole world.
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — Deterministic battle resolution (shared)
+// Realm Rumble — Deterministic battle resolution (shared)
 // A Travian-inspired power-ratio model: the stronger side wins and the loser
 // takes heavy proportional casualties while the winner loses a share scaled by
 // how close the fight was. Defenders gain a home / wall advantage.

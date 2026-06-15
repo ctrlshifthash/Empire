@@ -48,7 +48,7 @@ export function Features() {
             Everything a <span className="text-gold-gradient">strategist</span> could want
           </h2>
           <p className="mt-4 text-parchment-300/70">
-            Empires Eternal blends the depth of a classic real-time strategy game with the
+            Realm Rumble blends the depth of a classic real-time strategy game with the
             persistence of a living online world.
           </p>
         </Reveal>

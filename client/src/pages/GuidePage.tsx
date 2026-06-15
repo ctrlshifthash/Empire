@@ -27,7 +27,7 @@ export default function GuidePage() {
         <div className="text-center">
           <span className="kicker">📖 The strategist’s handbook</span>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
-            How to Play <span className="text-gold-gradient">Empires Eternal</span>
+            How to Play <span className="text-gold-gradient">Realm Rumble</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
             Everything you need to rise from a lone settlement to a world-spanning empire.
@@ -36,7 +36,7 @@ export default function GuidePage() {
 
         <Section title="The world & the project" icon="🌍">
           <p>
-            Empires Eternal is a persistent online strategy game inspired by the classic{" "}
+            Realm Rumble is a persistent online strategy game inspired by the classic{" "}
             <em>Age of Empires</em>. Every player rules an empire placed on one shared world map.
             Unlike a match that ends, this world is <strong>always running</strong> — your buildings
             keep producing resources and your armies keep marching 24/7, whether you are online or

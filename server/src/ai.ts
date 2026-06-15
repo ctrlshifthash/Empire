@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — Bot AI. Bots grow their economy, advance ages, raise armies
+// Realm Rumble — Bot AI. Bots grow their economy, advance ages, raise armies
 // and occasionally raid rivals so the persistent world always feels alive.
 // ─────────────────────────────────────────────────────────────────────────────
 import { BUILDINGS, RAID_PROTECTION_POWER, ageAtLeast, botTier } from "../../shared/gamedata.ts";

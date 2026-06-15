@@ -1,5 +1,23 @@
 import { API_BASE } from "./config";
-import type { AuthUser } from "@shared/types";
+import type { AuthUser, Empire } from "@shared/types";
+
+export interface EmpireRow {
+  id: string;
+  name: string;
+  banner: string;
+  isBot: boolean;
+  age: string;
+  power: number;
+  rank: string;
+  tier?: number;
+  raidsWon: number;
+  raidsLost: number;
+  armySize: number;
+  buildings: number;
+  tileX: number;
+  tileY: number;
+  online: boolean;
+}
 
 export interface AuthResponse {
   ok: boolean;
@@ -33,6 +51,9 @@ export const api = {
     post<AuthResponse>("/api/auth/privy", { identity, label }),
   demoAuth: (label?: string) => post<AuthResponse>("/api/auth/demo", { label }),
   me: (token: string) => get<{ ok: boolean; user?: AuthUser }>("/api/me", token),
+  empires: () => get<{ ok: boolean; rows: EmpireRow[] }>("/api/empires"),
+  empire: (id: string) =>
+    get<{ ok: boolean; empire?: Empire; rank?: string; online?: boolean; error?: string }>(`/api/empires/${id}`),
   stats: () =>
     get<{
       ok: boolean;

@@ -39,6 +39,7 @@ export default function Play() {
   const pendingBattle = useGame((s) => s.pendingBattle);
   const clearPendingBattle = useGame((s) => s.clearPendingBattle);
   const locate = useGame((s) => s.locate);
+  const invadeTarget = useGame((s) => s.invadeTarget);
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("live");
   const [stuck, setStuck] = useState(false);
@@ -55,6 +56,11 @@ export default function Play() {
     if (token && !snapshot) connect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // opening an invasion from the Empires page jumps straight to the Attack tab
+  useEffect(() => {
+    if (invadeTarget) setTab("world");
+  }, [invadeTarget]);
 
   // if the world never loads (dead token, server down), offer a way out
   useEffect(() => {

@@ -31,6 +31,11 @@ interface GameStore {
   // request to fly the Adventure camera + hero to the nearest source of a resource
   locateRequest: { kind: ResourceKind; n: number } | null;
   locate: (kind: ResourceKind) => void;
+  // an empire the player asked to invade from the Empires page; the Attack tab
+  // opens with this target preselected, then clears it.
+  invadeTarget: string | null;
+  requestInvade: (empireId: string) => void;
+  clearInvade: () => void;
 
   setAuth: (token: string, user: AuthUser) => void;
   logout: () => void;
@@ -80,6 +85,9 @@ export const useGame = create<GameStore>((set, get) => ({
   watchBattle: (report) => set({ pendingBattle: report }),
   locateRequest: null,
   locate: (kind) => set((s) => ({ locateRequest: { kind, n: (s.locateRequest?.n ?? 0) + 1 } })),
+  invadeTarget: null,
+  requestInvade: (empireId) => set({ invadeTarget: empireId }),
+  clearInvade: () => set({ invadeTarget: null }),
 
   setAuth: (token, user) => {
     localStorage.setItem(LS_TOKEN, token);

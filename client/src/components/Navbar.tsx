@@ -6,6 +6,7 @@ import { useGame } from "../lib/store";
 const LINKS = [
   { to: "/", label: "Home", end: true },
   { to: "/play", label: "Play" },
+  { to: "/empires", label: "Empires" },
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/guide", label: "Guide" },
   { to: "/docs", label: "Docs" },
@@ -86,10 +87,10 @@ export default function Navbar() {
     >
       <nav className="relative flex h-16 w-full items-center justify-between gap-4 px-5 sm:px-8">
         {/* left: brand */}
-        <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
+        <Link to="/" className="group flex items-center gap-2.5 md:ml-6" onClick={() => setOpen(false)}>
           <Logo />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-lg font-bold text-gold-gradient">Empires Eternal</span>
+            <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
             <span className="hidden text-[10px] uppercase tracking-[0.25em] text-parchment-300/60 sm:block">
               Forge · Conquer · Endure
             </span>

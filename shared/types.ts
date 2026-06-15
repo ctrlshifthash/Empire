@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — Shared type contracts (used by both client and server)
+// Realm Rumble — Shared type contracts (used by both client and server)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ResourceKind = "wood" | "food" | "gold" | "stone";

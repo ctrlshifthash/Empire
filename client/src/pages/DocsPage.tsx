@@ -17,7 +17,7 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 }
 
 const TOC = [
-  ["overview", "What is Empires Eternal"],
+  ["overview", "What is Realm Rumble"],
   ["getin", "Getting in: wallet, email or demo"],
   ["loop", "The core game loop"],
   ["defend", "Defending your realm"],
@@ -39,7 +39,7 @@ export default function DocsPage() {
         <div className="text-center">
           <span className="kicker">📚 Documentation</span>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
-            The <span className="text-gold-gradient">Empires Eternal</span> docs
+            The <span className="text-gold-gradient">Realm Rumble</span> docs
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
             Everything about the project — how the game works, how the economy and combat play out, and exactly how the
@@ -59,9 +59,9 @@ export default function DocsPage() {
           </div>
         </div>
 
-        <Section id="overview" title="What is Empires Eternal" icon="🌍">
+        <Section id="overview" title="What is Realm Rumble" icon="🌍">
           <p>
-            Empires Eternal is a persistent, browser-based strategy game inspired by <em>Age of Empires</em>. You rule
+            Realm Rumble is a persistent, browser-based strategy game inspired by <em>Age of Empires</em>. You rule
             one empire on a single shared world map. Unlike a match that ends, this world is <strong>always running</strong>{" "}
             — your buildings produce resources and your armies march around the clock, whether you are online or not.
           </p>

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Empires Eternal — Static game definitions & balance (shared client + server)
+// Realm Rumble — Static game definitions & balance (shared client + server)
 // ─────────────────────────────────────────────────────────────────────────────
 import type {
   AgeDef,

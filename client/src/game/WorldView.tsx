@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GameSnapshot, UnitType } from "@shared/types";
 import { UNITS, UNIT_TYPES } from "@shared/gamedata";
 import { AGE_META, fmt, fmtTime } from "../lib/format";
@@ -17,7 +17,19 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
   const { empire, world, others, outgoingMarches, incomingMarches } = snapshot;
   const attack = useGame((s) => s.attack);
   const pushToast = useGame((s) => s.pushToast);
+  const invadeTarget = useGame((s) => s.invadeTarget);
+  const clearInvade = useGame((s) => s.clearInvade);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // preselect a target requested from the Empires page (then consume it)
+  useEffect(() => {
+    if (invadeTarget && others.some((o) => o.id === invadeTarget)) {
+      setSelectedId(invadeTarget);
+      clearInvade();
+    } else if (invadeTarget) {
+      clearInvade();
+    }
+  }, [invadeTarget, others, clearInvade]);
 
   const markers: WorldMarker[] = useMemo(() => {
     const self: WorldMarker = {
