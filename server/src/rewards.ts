@@ -19,13 +19,44 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import bs58 from "bs58";
-import { state } from "./store.ts";
+import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
 const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "1");
 const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
+
+// First claim is allowed anytime; afterwards a wallet may claim every 6 hours
+// (4× per day). Accrual keeps running continuously between claims.
+const CLAIM_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+const DAY_MS = 86_400_000;
+
+// Human-readable Solana network derived from the RPC URL (mainnet unless the
+// endpoint clearly points at devnet/testnet).
+export const NETWORK = /devnet/i.test(RPC) ? "devnet" : /testnet/i.test(RPC) ? "testnet" : "mainnet-beta";
+
+function fmtWait(ms: number): string {
+  const mins = Math.ceil(ms / 60000);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Get (and, for a real holder, persist) a wallet's reward record. Persisting on
+// first sight makes accrual start from when we first see them holding — not from
+// their first claim.
+function ensureRecord(address: string, holding: boolean): RewardRecord {
+  let rec = state.rewards[address];
+  if (!rec) {
+    rec = { totalClaimed: 0, lastClaimAt: now(), firstSeenAt: now(), claimCount: 0 };
+    if (holding && rewardsConfigured()) {
+      state.rewards[address] = rec;
+      scheduleSave(0);
+    }
+  }
+  return rec;
+}
 
 export const rewardsConfigured = (): boolean => MINT.length > 0;
 export const payoutsLive = (): boolean => MINT.length > 0 && TREASURY_SECRET.length > 0;
@@ -65,30 +96,43 @@ export function multiplier(sharePct: number): number {
 export interface RewardStatus {
   configured: boolean;
   payouts: boolean;
+  network: string;
   pool: number;
   holdings: Holdings;
   multiplier: number;
   dailySol: number; // estimated SOL/day for this wallet
   claimableSol: number; // accrued since the last claim
   totalClaimedSol: number;
+  claimCount: number; // successful claims so far
+  cooldownMs: number; // ms until the next claim is allowed (0 = claim now)
+  nextClaimAt: number; // timestamp the next claim unlocks (0 = now)
+  memberSince: number; // first time we saw this wallet holding (0 = never)
 }
 
 export async function rewardStatus(address: string): Promise<RewardStatus> {
   const holdings = await getHoldings(address);
   const m = multiplier(holdings.sharePct);
   const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
-  const rec = state.rewards[address] ?? { totalClaimed: 0, lastClaimAt: now() };
+  const rec = ensureRecord(address, holdings.balance > 0);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  const claimableSol = dailySol * (elapsed / 86_400_000);
+  const claimableSol = dailySol * (elapsed / DAY_MS);
+  const claimCount = rec.claimCount || 0;
+  // first claim unlocked immediately; subsequent ones gated to every 6h
+  const nextClaimAt = claimCount > 0 ? rec.lastClaimAt + CLAIM_COOLDOWN_MS : 0;
   return {
     configured: rewardsConfigured(),
     payouts: payoutsLive(),
+    network: NETWORK,
     pool: DAILY_SOL_POOL,
     holdings,
     multiplier: m,
     dailySol,
     claimableSol,
     totalClaimedSol: (rec.totalClaimed || 0) / LAMPORTS_PER_SOL,
+    claimCount,
+    cooldownMs: Math.max(0, nextClaimAt - now()),
+    nextClaimAt,
+    memberSince: rec.firstSeenAt || 0,
   };
 }
 
@@ -118,9 +162,21 @@ export interface ClaimResult {
 // its accrual. No-op (preview) until the treasury is configured.
 export async function claim(address: string): Promise<ClaimResult> {
   if (!rewardsConfigured()) return { ok: false, error: "Rewards are not configured yet." };
-  const status = await rewardStatus(address);
-  if (status.holdings.balance <= 0) return { ok: false, error: "You don't hold any tokens." };
-  const claimSol = status.claimableSol;
+  const holdings = await getHoldings(address);
+  if (holdings.balance <= 0) return { ok: false, error: "You don't hold any tokens." };
+
+  const rec = ensureRecord(address, true);
+  const claimCount = rec.claimCount || 0;
+  // first claim is free anytime; after that, one claim every 6 hours
+  if (claimCount > 0) {
+    const wait = rec.lastClaimAt + CLAIM_COOLDOWN_MS - now();
+    if (wait > 0) return { ok: false, error: `Next claim available in ${fmtWait(wait)}.` };
+  }
+
+  const m = multiplier(holdings.sharePct);
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
+  const elapsed = Math.max(0, now() - rec.lastClaimAt);
+  const claimSol = dailySol * (elapsed / DAY_MS);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 
@@ -132,10 +188,12 @@ export async function claim(address: string): Promise<ClaimResult> {
       SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(address), lamports }),
     );
     const signature = await sendAndConfirmTransaction(rpc(), tx, [kp]);
-    const rec = state.rewards[address] ?? { totalClaimed: 0, lastClaimAt: now() };
     rec.totalClaimed = (rec.totalClaimed || 0) + lamports;
     rec.lastClaimAt = now();
+    rec.claimCount = claimCount + 1;
+    rec.firstSeenAt = rec.firstSeenAt || now();
     state.rewards[address] = rec;
+    scheduleSave(0);
     return { ok: true, signature, claimedSol: claimSol };
   } catch (err) {
     console.error("[rewards] payout failed:", err);

@@ -12,12 +12,17 @@ export const privyConfigured = PRIVY_APP_ID.length > 0;
 export interface RewardStatus {
   configured: boolean;
   payouts: boolean;
+  network: string;
   pool: number;
   holdings: { balance: number; supply: number; sharePct: number };
   multiplier: number;
   dailySol: number;
   claimableSol: number;
   totalClaimedSol: number;
+  claimCount: number;
+  cooldownMs: number;
+  nextClaimAt: number;
+  memberSince: number;
 }
 
 interface WalletStore {

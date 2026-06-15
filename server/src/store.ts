@@ -10,6 +10,8 @@ const STATE_FILE = join(DATA_DIR, "state.json");
 export interface RewardRecord {
   totalClaimed: number; // lamports paid out to this wallet, lifetime
   lastClaimAt: number; // ms timestamp accrual was last reset (claim or first seen)
+  firstSeenAt?: number; // ms timestamp this wallet was first seen (accrual start)
+  claimCount?: number; // number of successful claims (gates the 6h cooldown)
 }
 
 export interface GameState {
