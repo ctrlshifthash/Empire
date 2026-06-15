@@ -59,7 +59,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:mr-10 md:flex">
+        <div className="hidden items-center gap-3 md:mr-24 md:flex">
           {token && user ? (
             <>
               <NavLink
