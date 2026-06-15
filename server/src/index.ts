@@ -17,7 +17,7 @@ import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.ts";
 import { spawnBot } from "./world.ts";
-import { authUser, login, register, userByToken } from "./auth.ts";
+import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
 import {
   actAdvanceAge,
@@ -89,6 +89,21 @@ app.post("/api/register", (req, res) => {
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body ?? {};
   const result = login(username, password);
+  res.status(result.ok ? 200 : 400).json(result);
+});
+
+// Privy login (Solana wallet or email). Identity is the verified wallet address
+// or email from Privy; the same identity always maps to the same empire.
+app.post("/api/auth/privy", (req, res) => {
+  const { identity, label } = req.body ?? {};
+  const result = privyLogin(identity, label);
+  res.status(result.ok ? 200 : 400).json(result);
+});
+
+// Demo mode — a throwaway empire with worthless in-game coins, no wallet needed.
+app.post("/api/auth/demo", (req, res) => {
+  const { label } = req.body ?? {};
+  const result = demoLogin(label);
   res.status(result.ok ? 200 : 400).json(result);
 });
 

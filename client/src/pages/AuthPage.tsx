@@ -1,9 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { usePrivy } from "@privy-io/react-auth";
 import { api } from "../lib/api";
 import { useGame } from "../lib/store";
+import { privyConfigured } from "../lib/web3";
+import { privyIdentity } from "../lib/PrivyBridge";
 import Logo from "../components/Logo";
+
+// Sign in (or auto-create an empire) with a Solana wallet or email via Privy.
+// Only rendered when Privy is configured, so it's always inside PrivyProvider.
+function PrivySignIn({
+  busy,
+  setBusy,
+  setError,
+}: {
+  busy: boolean;
+  setBusy: (b: boolean) => void;
+  setError: (e: string | null) => void;
+}) {
+  const { login, authenticated, user, ready } = usePrivy();
+  const navigate = useNavigate();
+  const setAuth = useGame((s) => s.setAuth);
+  const pushToast = useGame((s) => s.pushToast);
+  const [armed, setArmed] = useState(false);
+
+  // once Privy reports an authenticated identity (after the modal, or already
+  // connected), bridge it into a game session.
+  useEffect(() => {
+    if (!armed || !authenticated || !user) return;
+    const id = privyIdentity(user);
+    if (!id) return;
+    setArmed(false);
+    (async () => {
+      setBusy(true);
+      try {
+        const res = await api.privyAuth(id.identity, id.label);
+        if (res.ok && res.token && res.user) {
+          setAuth(res.token, res.user);
+          pushToast({ kind: "success", text: `Welcome, ${res.user.username}.` });
+          navigate("/play");
+        } else {
+          setError(res.error ?? "Sign-in failed.");
+        }
+      } catch {
+        setError("Could not reach the server. Is it running?");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }, [armed, authenticated, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <button
+      type="button"
+      className="btn-gold w-full py-3 text-base"
+      disabled={busy || !ready}
+      onClick={() => {
+        setError(null);
+        setArmed(true);
+        if (!authenticated) login();
+      }}
+    >
+      🔗 Sign in with wallet or email
+    </button>
+  );
+}
 
 export default function AuthPage({ mode }: { mode: "login" | "register" }) {
   const navigate = useNavigate();
@@ -15,6 +77,7 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
   const [empireName, setEmpireName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showClassic, setShowClassic] = useState(false);
 
   const isRegister = mode === "register";
 
@@ -43,6 +106,25 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
     }
   }
 
+  async function playDemo() {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await api.demoAuth();
+      if (res.ok && res.token && res.user) {
+        setAuth(res.token, res.user);
+        pushToast({ kind: "success", text: "Demo empire founded — explore freely!" });
+        navigate("/play");
+      } else {
+        setError(res.error ?? "Could not start demo mode.");
+        setBusy(false);
+      }
+    } catch {
+      setError("Could not reach the server. Is it running?");
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-5 py-16">
       <div className="absolute inset-0 bg-hero-radial" />
@@ -57,66 +139,80 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
         <div className="panel p-8">
           <div className="flex flex-col items-center text-center">
             <Logo size={48} />
-            <h1 className="mt-4 text-2xl font-bold">
-              {isRegister ? "Found Your Empire" : "Return to Your Realm"}
-            </h1>
+            <h1 className="mt-4 text-2xl font-bold">{isRegister ? "Found Your Empire" : "Enter the World"}</h1>
             <p className="mt-2 text-sm text-parchment-300/70">
-              {isRegister
-                ? "Choose your name and your empire’s banner shall rise."
-                : "Log in to command your forces once more."}
+              Sign in with your Solana wallet or email — or jump straight into demo mode.
             </p>
           </div>
 
-          <form onSubmit={submit} className="mt-7 space-y-4">
-            <Field
-              label="Username"
-              value={username}
-              onChange={setUsername}
-              placeholder="e.g. Saladin"
-              autoFocus
-            />
-            {isRegister && (
-              <Field
-                label="Empire name"
-                value={empireName}
-                onChange={setEmpireName}
-                placeholder="e.g. The Golden Caliphate (optional)"
-              />
-            )}
-            <Field
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              placeholder="At least 4 characters"
-              type="password"
-            />
+          <div className="mt-7 space-y-3">
+            {privyConfigured && <PrivySignIn busy={busy} setBusy={setBusy} setError={setError} />}
+
+            <button type="button" className="btn-ghost w-full py-3 text-base" disabled={busy} onClick={playDemo}>
+              🎮 Play demo mode
+            </button>
+            <p className="text-center text-[11px] text-parchment-300/45">
+              Demo empires use worthless in-game coins — no wallet, no real rewards.
+            </p>
 
             {error && (
               <div className="rounded-lg border border-blood-light/40 bg-blood/20 px-3 py-2 text-sm text-parchment-50">
                 {error}
               </div>
             )}
+          </div>
 
-            <button type="submit" className="btn-gold w-full py-3 text-base" disabled={busy}>
-              {busy ? "Please wait…" : isRegister ? "⚔ Found Empire" : "Enter the World"}
+          {/* Classic username + password, kept as a fallback for existing realms */}
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setShowClassic((s) => !s)}
+              className="flex w-full items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-parchment-300/55 hover:text-parchment-100"
+            >
+              <span className="h-px flex-1 bg-parchment-300/15" />
+              {showClassic ? "Hide username login" : "Use a username & password"}
+              <span className="h-px flex-1 bg-parchment-300/15" />
             </button>
-          </form>
 
-          <div className="mt-6 text-center text-sm text-parchment-300/70">
-            {isRegister ? (
-              <>
-                Already have a realm?{" "}
-                <Link to="/login" className="font-semibold text-gold-light hover:underline">
-                  Log in
-                </Link>
-              </>
-            ) : (
-              <>
-                New to the world?{" "}
-                <Link to="/register" className="font-semibold text-gold-light hover:underline">
-                  Found an empire
-                </Link>
-              </>
+            {showClassic && (
+              <form onSubmit={submit} className="mt-4 space-y-4">
+                <Field label="Username" value={username} onChange={setUsername} placeholder="e.g. Saladin" autoFocus />
+                {isRegister && (
+                  <Field
+                    label="Empire name"
+                    value={empireName}
+                    onChange={setEmpireName}
+                    placeholder="e.g. The Golden Caliphate (optional)"
+                  />
+                )}
+                <Field
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  placeholder="At least 4 characters"
+                  type="password"
+                />
+                <button type="submit" className="btn-gold w-full py-3 text-base" disabled={busy}>
+                  {busy ? "Please wait…" : isRegister ? "⚔ Found Empire" : "Enter the World"}
+                </button>
+                <div className="text-center text-sm text-parchment-300/70">
+                  {isRegister ? (
+                    <>
+                      Already have a realm?{" "}
+                      <Link to="/login" className="font-semibold text-gold-light hover:underline">
+                        Log in
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      New to the world?{" "}
+                      <Link to="/register" className="font-semibold text-gold-light hover:underline">
+                        Found an empire
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </form>
             )}
           </div>
         </div>

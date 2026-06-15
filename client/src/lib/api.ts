@@ -29,6 +29,9 @@ export const api = {
     post<AuthResponse>("/api/register", { username, password, empireName }),
   login: (username: string, password: string) =>
     post<AuthResponse>("/api/login", { username, password }),
+  privyAuth: (identity: string, label?: string) =>
+    post<AuthResponse>("/api/auth/privy", { identity, label }),
+  demoAuth: (label?: string) => post<AuthResponse>("/api/auth/demo", { label }),
   me: (token: string) => get<{ ok: boolean; user?: AuthUser }>("/api/me", token),
   stats: () =>
     get<{

@@ -188,9 +188,14 @@ export interface User {
   passHash?: string;
   empireId: string;
   createdAt: number;
+  // stable external identity (Solana wallet address or email) for Privy logins;
+  // these accounts have no password and are matched on this instead
+  externalId?: string;
+  // true for throwaway demo/guest accounts (worthless in-game coins only)
+  demo?: boolean;
 }
 
-export type AuthUser = Pick<User, "id" | "username" | "empireId">;
+export type AuthUser = Pick<User, "id" | "username" | "empireId"> & { demo?: boolean };
 
 // ── Definition tables (static, shared) ──────────────────────────────────────
 
