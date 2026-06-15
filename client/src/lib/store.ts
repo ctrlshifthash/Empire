@@ -24,9 +24,10 @@ interface GameStore {
   snapshot: GameSnapshot | null;
   connected: boolean;
   toasts: Toast[];
-  // a freshly-resolved battle to auto-spectate (animated replay), or null
+  // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
+  watchBattle: (report: BattleReport) => void;
 
   setAuth: (token: string, user: AuthUser) => void;
   logout: () => void;
@@ -71,6 +72,7 @@ export const useGame = create<GameStore>((set, get) => ({
   toasts: [],
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
+  watchBattle: (report) => set({ pendingBattle: report }),
 
   setAuth: (token, user) => {
     localStorage.setItem(LS_TOKEN, token);
@@ -125,6 +127,8 @@ export const useGame = create<GameStore>((set, get) => ({
           kind: youWon ? "success" : "warn",
           text: `⚔ ${youWon ? "Victory" : "Battle"} vs ${foe} — watch it back in the Chronicle`,
         });
+        // auto-spectate YOUR OWN invasions in-world; defences just toast
+        if (newBat.role === "attacker" && !get().pendingBattle) set({ pendingBattle: newBat });
       }
       set({ snapshot: snap });
     });

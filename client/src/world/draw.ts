@@ -683,8 +683,8 @@ export function renderWorld(
       key: u.x + u.y,
       draw: () => {
         drawCharacter(ctx, s.x, s.y, {
-          color: UNIT_COLOR[u.type] ?? "#aaa",
-          facing: tx >= u.x ? 1 : -1,
+          color: u.color ?? UNIT_COLOR[u.type] ?? "#aaa",
+          facing: u.face != null ? u.face : tx >= u.x ? 1 : -1,
           scale: 1.5,
           weapon: gear.weapon,
           hat: gear.hat,
@@ -692,7 +692,7 @@ export function renderWorld(
           skin: gear.skin,
           moving: !!u.order || u.attackId != null,
           attacking: u.swing > 0.25,
-          ring: sel ? "#5fd16a" : undefined,
+          ring: u.ring ?? (sel ? "#5fd16a" : undefined),
           phase: now * 0.012 + u.id,
         });
         hpBar(ctx, s.x, s.y - 48, u.hp / u.maxHp, 32);

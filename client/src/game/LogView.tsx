@@ -1,7 +1,6 @@
-import { useState } from "react";
-import type { BattleReport, Empire, LogEntry } from "@shared/types";
+import type { Empire, LogEntry } from "@shared/types";
 import { useNow } from "../lib/hooks";
-import BattleReplay from "./BattleReplay";
+import { useGame } from "../lib/store";
 
 const KIND_ICON: Record<LogEntry["kind"], string> = {
   battle: "⚔️",
@@ -35,7 +34,7 @@ export default function LogView({ empire, compact = false }: { empire: Empire; c
   const now = useNow(5000);
   const entries = empire.log;
   const battles = empire.battles ?? [];
-  const [replay, setReplay] = useState<BattleReport | null>(null);
+  const watchBattle = useGame((s) => s.watchBattle);
 
   return (
     <div className={compact ? "" : "max-w-2xl"}>
@@ -64,7 +63,7 @@ export default function LogView({ empire, compact = false }: { empire: Empire; c
                       {b.razed ? ` · razed ${b.razed}` : ""} · {ago(b.at, now)}
                     </div>
                   </div>
-                  <button className="btn-gold btn-sm" onClick={() => setReplay(b)}>
+                  <button className="btn-gold btn-sm" onClick={() => watchBattle(b)}>
                     ▶ Watch
                   </button>
                 </div>
@@ -94,7 +93,6 @@ export default function LogView({ empire, compact = false }: { empire: Empire; c
         </div>
       )}
 
-      {replay && <BattleReplay report={replay} onClose={() => setReplay(null)} />}
     </div>
   );
 }

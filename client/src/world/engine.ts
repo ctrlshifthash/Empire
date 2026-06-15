@@ -58,6 +58,10 @@ export interface Unit {
   downUntil: number; // knocked out until ms
   ox: number; // formation offset
   oy: number;
+  // optional overrides used by the battle spectate (two opposing armies)
+  color?: string;
+  ring?: string;
+  face?: number;
 }
 
 export interface Enemy {

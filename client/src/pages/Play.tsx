@@ -10,7 +10,7 @@ import MilitaryView from "../game/MilitaryView";
 import QuestsView from "../game/QuestsView";
 import LogView from "../game/LogView";
 import OperationsPanel from "../game/OperationsPanel";
-import BattleReplay from "../game/BattleReplay";
+import BattleSpectate from "../game/BattleSpectate";
 import TutorialOverlay from "../components/TutorialOverlay";
 import { armyTotal } from "../game/derive";
 
@@ -207,8 +207,8 @@ export default function Play() {
         </div>
       )}
 
-      {/* Live battle spectate — auto-opens when one of your battles resolves. */}
-      {pendingBattle && <BattleReplay report={pendingBattle} onClose={clearPendingBattle} />}
+      {/* In-world battle spectate — auto-opens for your own invasions, or via the Chronicle. */}
+      {pendingBattle && <BattleSpectate report={pendingBattle} onClose={clearPendingBattle} />}
 
       {showTut && (
         <TutorialOverlay
