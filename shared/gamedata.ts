@@ -14,6 +14,14 @@ import type {
 
 export const RESOURCE_KINDS = ["wood", "food", "gold", "stone"] as const;
 
+// Empires below this power are under "new-ruler protection" — they can't be
+// raided, so a fresh or freshly-plundered empire gets room to rebuild.
+export const RAID_PROTECTION_POWER = 200;
+
+// The town centre always yields a small trickle of every resource per level, so
+// an empire can never be fully soft-locked out of rebuilding its economy.
+export const TC_TRICKLE_PER_LEVEL: Resources = { wood: 18, food: 18, gold: 8, stone: 8 };
+
 export const EMPTY_RESOURCES = (): Resources => ({ wood: 0, food: 0, gold: 0, stone: 0 });
 
 export const STARTING_RESOURCES = (): Resources => ({

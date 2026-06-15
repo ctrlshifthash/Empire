@@ -2,7 +2,7 @@
 // Empires Eternal — Bot AI. Bots grow their economy, advance ages, raise armies
 // and occasionally raid rivals so the persistent world always feels alive.
 // ─────────────────────────────────────────────────────────────────────────────
-import { BUILDINGS, ageAtLeast } from "../../shared/gamedata.ts";
+import { BUILDINGS, RAID_PROTECTION_POWER, ageAtLeast } from "../../shared/gamedata.ts";
 import { armySize, type Army } from "../../shared/combat.ts";
 import type { BuildingType, Empire, UnitType } from "../../shared/types.ts";
 import { state } from "./store.ts";
@@ -82,6 +82,7 @@ function maybeAttack(bot: Empire): void {
   // candidates: any empire within range and not vastly stronger
   const candidates = Object.values(state.empires).filter((t) => {
     if (t.id === bot.id) return false;
+    if (t.power < RAID_PROTECTION_POWER) return false; // don't farm new/weak rulers
     const d = distance(bot.tileX, bot.tileY, t.tileX, t.tileY);
     if (d > 18) return false;
     return t.power <= bot.power * 1.1;

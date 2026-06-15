@@ -1,6 +1,14 @@
 // Client-side mirrors of the server's derived values (display only).
 // Formulas here MUST match server/src/engine.ts to avoid confusing the player.
-import { AGES, BUILDINGS, UNITS, populationProvided, productionPerMinute } from "@shared/gamedata";
+import {
+  AGES,
+  BUILDINGS,
+  RESOURCE_KINDS,
+  TC_TRICKLE_PER_LEVEL,
+  UNITS,
+  populationProvided,
+  productionPerMinute,
+} from "@shared/gamedata";
 import type { Building, Empire, ResourceKind } from "@shared/types";
 
 export const isActive = (b: Building) => b.completesAt == null && b.level >= 1;
@@ -36,6 +44,9 @@ export function productionPerMin(e: Empire): Record<ResourceKind, number> {
     const def = BUILDINGS[b.type];
     if (def.produces) out[def.produces.kind] += productionPerMinute(b.type, b.level);
   }
+  // town-centre trickle (must match server produce())
+  const tc = e.buildings.find((b) => b.type === "town_center" && isActive(b));
+  if (tc) for (const k of RESOURCE_KINDS) out[k] += TC_TRICKLE_PER_LEVEL[k] * tc.level;
   return out;
 }
 

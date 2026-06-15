@@ -6,6 +6,9 @@
 import {
   AGES,
   BUILDINGS,
+  RAID_PROTECTION_POWER,
+  RESOURCE_KINDS,
+  TC_TRICKLE_PER_LEVEL,
   UNITS,
   UNIT_TYPES,
   QUESTS,
@@ -161,6 +164,11 @@ export function produce(e: Empire, at = now()): void {
     if (!def.produces) continue;
     const amt = productionPerMinute(b.type, b.level) * minutes;
     gain[def.produces.kind] = (gain[def.produces.kind] ?? 0) + amt;
+  }
+  // the town centre always trickles a little of everything (anti soft-lock)
+  const tc = e.buildings.find((b) => b.type === "town_center" && isActive(b));
+  if (tc) {
+    for (const k of RESOURCE_KINDS) gain[k] = (gain[k] ?? 0) + TC_TRICKLE_PER_LEVEL[k] * tc.level * minutes;
   }
   grant(e.resources, gain, cap);
   // Resources are kept as floats so that sub-1/tick production still
@@ -434,6 +442,8 @@ export function actAttack(
   const target = state.empires[targetId];
   if (!target) return { ok: false, error: "Target empire not found." };
   if (target.id === attacker.id) return { ok: false, error: "You cannot attack yourself." };
+  if (target.power < RAID_PROTECTION_POWER)
+    return { ok: false, error: `${target.name} is under new-ruler protection.` };
 
   // Sanitise the payload: only known unit types, integer counts, never more
   // than the attacker actually has. Unknown keys are ignored (not trusted).
@@ -535,6 +545,13 @@ function resolveAttack(march: March, at: number): void {
 
   if (!defender) {
     // target gone — send the army straight home
+    queueReturn(march, march.units, { wood: 0, food: 0, gold: 0, stone: 0 }, at, attacker);
+    return;
+  }
+
+  // new-ruler protection: a weak/young empire can't be plundered — the raiding
+  // army simply marches home empty-handed (covers raids already in flight).
+  if (defender.power < RAID_PROTECTION_POWER) {
     queueReturn(march, march.units, { wood: 0, food: 0, gold: 0, stone: 0 }, at, attacker);
     return;
   }
