@@ -36,7 +36,7 @@ import { stepBots } from "./ai.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 4000;
-const TARGET_BOTS = 10;
+const TARGET_BOTS = 16;
 
 // ── world bootstrap ─────────────────────────────────────────────────────────
 

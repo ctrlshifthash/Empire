@@ -140,6 +140,8 @@ export interface Empire {
   raidsWon: number;
   raidsLost: number;
   createdAt: number;
+  // bot difficulty tier (1 = rookie … 5 = conqueror); undefined for human players
+  tier?: number;
 }
 
 // Public, trimmed view of an empire shown on the world map / to opponents.
@@ -154,6 +156,9 @@ export interface EmpirePublic {
   power: number;
   armySize: number;
   online: boolean;
+  // difficulty tier + its label, for bots (so players can pick fair targets)
+  tier?: number;
+  rank?: string;
 }
 
 export interface WorldMeta {

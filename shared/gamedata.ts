@@ -22,6 +22,37 @@ export const RAID_PROTECTION_POWER = 200;
 // an empire can never be fully soft-locked out of rebuilding its economy.
 export const TC_TRICKLE_PER_LEVEL: Resources = { wood: 18, food: 18, gold: 8, stone: 8 };
 
+// Bot difficulty tiers. Each caps how powerful that rival grows, so the world
+// always holds a spread of farmable rookies up to fearsome conquerors. `weight`
+// skews the spawn mix toward weaker rivals so new rulers have targets to farm.
+export interface BotTier {
+  tier: number;
+  rank: string;
+  powerCap: number;
+  weight: number;
+  startSpears: number; // head-start army so the tier reaches its band sooner
+}
+export const BOT_TIERS: BotTier[] = [
+  { tier: 1, rank: "Rookie", powerCap: 320, weight: 34, startSpears: 1 },
+  { tier: 2, rank: "Squire", powerCap: 750, weight: 24, startSpears: 4 },
+  { tier: 3, rank: "Knight", powerCap: 1700, weight: 20, startSpears: 8 },
+  { tier: 4, rank: "Warlord", powerCap: 3800, weight: 14, startSpears: 16 },
+  { tier: 5, rank: "Conqueror", powerCap: 99999, weight: 8, startSpears: 28 },
+];
+export function botTier(tier: number | undefined): BotTier {
+  return BOT_TIERS.find((t) => t.tier === tier) ?? BOT_TIERS[BOT_TIERS.length - 1];
+}
+// Pick a tier by weight, given a 0..1 random roll.
+export function rollBotTier(roll: number): BotTier {
+  const total = BOT_TIERS.reduce((s, t) => s + t.weight, 0);
+  let acc = roll * total;
+  for (const t of BOT_TIERS) {
+    acc -= t.weight;
+    if (acc <= 0) return t;
+  }
+  return BOT_TIERS[0];
+}
+
 export const EMPTY_RESOURCES = (): Resources => ({ wood: 0, food: 0, gold: 0, stone: 0 });
 
 export const STARTING_RESOURCES = (): Resources => ({

@@ -442,7 +442,7 @@ export function actAttack(
   const target = state.empires[targetId];
   if (!target) return { ok: false, error: "Target empire not found." };
   if (target.id === attacker.id) return { ok: false, error: "You cannot attack yourself." };
-  if (target.power < RAID_PROTECTION_POWER)
+  if (!target.isBot && target.power < RAID_PROTECTION_POWER)
     return { ok: false, error: `${target.name} is under new-ruler protection.` };
 
   // Sanitise the payload: only known unit types, integer counts, never more
@@ -549,9 +549,9 @@ function resolveAttack(march: March, at: number): void {
     return;
   }
 
-  // new-ruler protection: a weak/young empire can't be plundered — the raiding
+  // new-ruler protection: a weak human ruler can't be plundered — the raiding
   // army simply marches home empty-handed (covers raids already in flight).
-  if (defender.power < RAID_PROTECTION_POWER) {
+  if (!defender.isBot && defender.power < RAID_PROTECTION_POWER) {
     queueReturn(march, march.units, { wood: 0, food: 0, gold: 0, stone: 0 }, at, attacker);
     return;
   }

@@ -2,6 +2,8 @@ import {
   COLORS_BANNER,
   QUESTS,
   STARTING_RESOURCES,
+  botTier,
+  rollBotTier,
 } from "../../shared/gamedata.ts";
 import { newHeroState } from "../../shared/progression.ts";
 import {
@@ -193,8 +195,11 @@ export function spawnBot(): Empire {
 
   const botUserId = uid("botuser_");
   const empire = createEmpire({ userId: botUserId, name, isBot: true });
-  // give bots a small head start so the world feels alive
-  empire.army.spearman = randInt(rng, 1, 4);
+  // assign a difficulty tier (weighted toward weaker rivals) and a head-start
+  // army so each rival climbs to its tier's power band
+  const tier = rollBotTier(rng());
+  empire.tier = tier.tier;
+  empire.army.spearman = tier.startSpears + randInt(rng, 0, 2);
   state.empires[empire.id] = empire;
   return empire;
 }
@@ -211,6 +216,8 @@ export function publicView(e: Empire, online: boolean): EmpirePublic {
     power: e.power,
     armySize: armySize(e.army),
     online: e.isBot ? true : online,
+    tier: e.tier,
+    rank: e.isBot ? botTier(e.tier).rank : undefined,
   };
 }
 

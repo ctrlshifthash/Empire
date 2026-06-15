@@ -162,7 +162,7 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
                       {r.name} {r.online && !r.isBot && <span className="text-emerald-400">●</span>}
                     </div>
                     <div className="text-xs text-parchment-300/55">
-                      {AGE_META[r.age].short} · {r.isBot ? "AI" : "Ruler"} · {r.d} tiles
+                      {AGE_META[r.age].short} · {r.isBot ? (r.rank ?? "AI") : "Ruler"} · {r.d} tiles
                     </div>
                   </div>
                   <div className="text-right">

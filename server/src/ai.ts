@@ -2,7 +2,7 @@
 // Empires Eternal — Bot AI. Bots grow their economy, advance ages, raise armies
 // and occasionally raid rivals so the persistent world always feels alive.
 // ─────────────────────────────────────────────────────────────────────────────
-import { BUILDINGS, RAID_PROTECTION_POWER, ageAtLeast } from "../../shared/gamedata.ts";
+import { BUILDINGS, RAID_PROTECTION_POWER, ageAtLeast, botTier } from "../../shared/gamedata.ts";
 import { armySize, type Army } from "../../shared/combat.ts";
 import type { BuildingType, Empire, UnitType } from "../../shared/types.ts";
 import { state } from "./store.ts";
@@ -82,7 +82,7 @@ function maybeAttack(bot: Empire): void {
   // candidates: any empire within range and not vastly stronger
   const candidates = Object.values(state.empires).filter((t) => {
     if (t.id === bot.id) return false;
-    if (t.power < RAID_PROTECTION_POWER) return false; // don't farm new/weak rulers
+    if (!t.isBot && t.power < RAID_PROTECTION_POWER) return false; // protect new human rulers
     const d = distance(bot.tileX, bot.tileY, t.tileX, t.tileY);
     if (d > 18) return false;
     return t.power <= bot.power * 1.1;
@@ -106,37 +106,43 @@ function maybeAttack(bot: Empire): void {
 export function stepBot(bot: Empire): void {
   refreshEmpire(bot, now());
 
-  // 1) advance age opportunistically
-  if (bot.ageUpCompletesAt == null && Math.random() < 0.5) {
-    actAdvanceAge(bot); // silently fails if unaffordable
-  }
+  // a bot that's reached its difficulty tier's power cap stops growing, so it
+  // stays a farmable target in its band instead of snowballing forever
+  const capped = bot.tier != null && bot.power >= botTier(bot.tier).powerCap;
 
-  // 2) construct the next wanted building
-  const toBuild = chooseBuild(bot);
-  if (toBuild) actBuild(bot, toBuild);
+  if (!capped) {
+    // 1) advance age opportunistically
+    if (bot.ageUpCompletesAt == null && Math.random() < 0.5) {
+      actAdvanceAge(bot); // silently fails if unaffordable
+    }
 
-  // 3) occasionally upgrade a producer or the town center
-  if (Math.random() < 0.3) {
-    const upgradable = bot.buildings.filter(
-      (b) =>
-        b.completesAt == null &&
-        b.level >= 1 &&
-        b.level < BUILDINGS[b.type].maxLevel &&
-        (BUILDINGS[b.type].produces || b.type === "town_center"),
-    );
-    if (upgradable.length) {
-      const pick = upgradable[Math.floor(Math.random() * upgradable.length)];
-      actUpgrade(bot, pick.id);
+    // 2) construct the next wanted building
+    const toBuild = chooseBuild(bot);
+    if (toBuild) actBuild(bot, toBuild);
+
+    // 3) occasionally upgrade a producer or the town center
+    if (Math.random() < 0.3) {
+      const upgradable = bot.buildings.filter(
+        (b) =>
+          b.completesAt == null &&
+          b.level >= 1 &&
+          b.level < BUILDINGS[b.type].maxLevel &&
+          (BUILDINGS[b.type].produces || b.type === "town_center"),
+      );
+      if (upgradable.length) {
+        const pick = upgradable[Math.floor(Math.random() * upgradable.length)];
+        actUpgrade(bot, pick.id);
+      }
+    }
+
+    // 4) train troops if there's population headroom
+    if (populationCap(bot) - usedPopulation(bot) >= 2) {
+      const t = chooseTrain(bot);
+      if (t) actTrain(bot, t.building, t.unit, 1 + Math.floor(Math.random() * 3));
     }
   }
 
-  // 4) train troops if there's population headroom
-  if (populationCap(bot) - usedPopulation(bot) >= 2) {
-    const t = chooseTrain(bot);
-    if (t) actTrain(bot, t.building, t.unit, 1 + Math.floor(Math.random() * 3));
-  }
-
-  // 5) maybe raid a neighbour
+  // 5) maybe raid a neighbour (capped bots still skirmish to keep the world alive)
   maybeAttack(bot);
 }
 
