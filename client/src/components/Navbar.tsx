@@ -83,9 +83,8 @@ export default function Navbar() {
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <nav className="container-x flex h-16 items-center gap-4">
+      <nav className="relative flex h-16 w-full items-center justify-between gap-4 px-5 sm:px-8">
         {/* left: brand */}
-        <div className="flex flex-1 items-center">
         <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <Logo />
           <span className="flex flex-col leading-none">
@@ -95,10 +94,9 @@ export default function Navbar() {
             </span>
           </span>
         </Link>
-        </div>
 
-        {/* center: primary nav — always centered */}
-        <div className="hidden items-center gap-1 md:flex">
+        {/* center: primary nav — pinned to the exact center of the bar */}
+        <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <NavLink
               key={l.to}
@@ -114,7 +112,7 @@ export default function Navbar() {
         </div>
 
         {/* right: account + social links */}
-        <div className="flex flex-1 items-center justify-end gap-4 md:-mr-4">
+        <div className="flex items-center gap-4">
           <div className="hidden items-center gap-3 md:flex">
             {token && user ? (
               <>
