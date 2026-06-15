@@ -69,7 +69,7 @@ export default function Navbar() {
                 }
                 title="Your dashboard — empire stats & SOL token rewards"
               >
-                📊 Dashboard
+                Dashboard
               </NavLink>
               <Link to="/play" className="chip hover:border-gold/40">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulseGlow" />
@@ -122,7 +122,7 @@ export default function Navbar() {
                 onClick={() => setOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? "nav-link-active" : ""}`}
               >
-                📊 Dashboard
+                Dashboard
               </NavLink>
             )}
             <div className="mt-3 flex gap-2">
