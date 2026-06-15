@@ -28,7 +28,7 @@ export function worldFreeTile(empire: Empire): { wx: number; wy: number } {
   );
   const cx = LOCAL_WORLD.centerX;
   const cy = LOCAL_WORLD.centerY;
-  for (let r = 2; r < 16; r++) {
+  for (let r = 2; r < 8; r++) {
     for (let dx = -r; dx <= r; dx++) {
       for (let dy = -r; dy <= r; dy++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; // ring only

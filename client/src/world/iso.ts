@@ -1,7 +1,8 @@
 // Isometric projection helpers. World coordinates are in continuous tile units
 // (x to the right-down, y to the left-down on screen).
-export const TILE_W = 64; // diamond width in px
-export const TILE_H = 32; // diamond height in px
+// Sized to the real tileset: a 128px-wide diamond footprint at 2:1.
+export const TILE_W = 128; // diamond width in px
+export const TILE_H = 64; // diamond height in px
 
 export function worldToScreen(wx: number, wy: number): { sx: number; sy: number } {
   return { sx: (wx - wy) * (TILE_W / 2), sy: (wx + wy) * (TILE_H / 2) };

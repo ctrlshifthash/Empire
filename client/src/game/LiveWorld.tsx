@@ -290,7 +290,7 @@ export default function LiveWorld({
       e.preventDefault();
       const wd = worldRef.current!;
       const f = e.deltaY < 0 ? 1.12 : 0.89;
-      wd.zoom = Math.max(0.55, Math.min(2.4, wd.zoom * f));
+      wd.zoom = Math.max(0.35, Math.min(2.2, wd.zoom * f));
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -509,7 +509,7 @@ export default function LiveWorld({
           className="flex h-8 w-8 items-center justify-center rounded-md border border-parchment-300/15 bg-ink-800/85 text-lg text-parchment-100 backdrop-blur hover:border-gold/40"
           onClick={() => {
             const wd = worldRef.current;
-            if (wd) wd.zoom = Math.max(0.55, wd.zoom * 0.8);
+            if (wd) wd.zoom = Math.max(0.35, wd.zoom * 0.8);
           }}
         >
           −

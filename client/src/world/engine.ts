@@ -126,9 +126,18 @@ export class World {
   buildings: BuildingView[] = [];
   floats: FloatText[] = [];
   cam = { x: 0, y: 0 };
-  zoom = 1;
+  zoom = 0.62; // tiles are 128px; start zoomed out so you can see the town
   camFree = false; // true when the player has panned the camera away from the hero
   selected: Set<number> = new Set(); // selected unit ids
+  // the player's walled town layout (built once, deterministic)
+  town!: {
+    cx: number;
+    cy: number;
+    R: number;
+    walls: Map<string, "corner" | "h" | "v">;
+    paths: Set<string>;
+    gate: { x: number; y: number };
+  };
   private focus: { x: number; y: number } | null = null;
   private focusTime = 0;
 
@@ -168,10 +177,36 @@ export class World {
       deadUntil: 0,
     };
     this.generate();
+    this.generateTown();
   }
 
   private id() {
     return this.nextId++;
+  }
+
+  // A walled compound around the town centre: stone perimeter with corner
+  // towers, a gate on the south edge, and a road network inside.
+  private generateTown() {
+    const cx = LOCAL_WORLD.centerX;
+    const cy = LOCAL_WORLD.centerY;
+    const R = 8;
+    const walls = new Map<string, "corner" | "h" | "v">();
+    const gate = { x: cx, y: cy + R };
+    for (let x = cx - R; x <= cx + R; x++) {
+      for (let y = cy - R; y <= cy + R; y++) {
+        const edge = x === cx - R || x === cx + R || y === cy - R || y === cy + R;
+        if (!edge) continue;
+        if (x === gate.x && y === gate.y) continue; // leave the gate open
+        const corner = (x === cx - R || x === cx + R) && (y === cy - R || y === cy + R);
+        if (corner) walls.set(`${x},${y}`, "corner");
+        else if (y === cy - R || y === cy + R) walls.set(`${x},${y}`, "h");
+        else walls.set(`${x},${y}`, "v");
+      }
+    }
+    const paths = new Set<string>();
+    for (let y = cy; y <= cy + R; y++) paths.add(`${cx},${y}`); // gate -> centre
+    for (let x = cx - R + 1; x <= cx + R - 1; x++) paths.add(`${x},${cy}`); // cross road
+    this.town = { cx, cy, R, walls, paths, gate };
   }
 
   private generate() {

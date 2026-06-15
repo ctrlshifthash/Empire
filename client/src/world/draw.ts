@@ -6,6 +6,7 @@ import { BUILDINGS } from "@shared/gamedata";
 import { LOCAL_WORLD } from "@shared/types";
 import { TILE_H, TILE_W, screenToWorld, worldToScreen } from "./iso";
 import type { BuildingView, Enemy, ResNode, Unit, World } from "./engine";
+import { TILES, WINDMILL_FRAMES, drawTile, drawTileFrame, isReady } from "./tiles";
 
 const NODE_GLYPH: Record<ResNode["kind"], string> = {
   tree: "🌲",
@@ -403,32 +404,32 @@ export function renderWorld(
   const y0 = Math.max(0, Math.floor(minY) - 1);
   const y1 = Math.min(world.H - 1, Math.ceil(maxY) + 1);
 
-  const cx = LOCAL_WORLD.centerX;
-  const cy = LOCAL_WORLD.centerY;
+  const town = world.town;
 
-  // ground tiles
+  // ground: procedural grass (matched to the tileset's green), real cobble paths
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       const s = toScreen(tx, ty);
       const n = hash(tx, ty, 11);
-      const inTown = Math.hypot(tx - cx, ty - cy) < 4.2;
       let col: string;
-      if (inTown) col = n < 0.5 ? "#6b5535" : "#735c3a"; // packed earth clearing
-      else if (n < 0.10) col = "#33502f";
-      else if (n < 0.45) col = "#3c6238";
-      else if (n < 0.8) col = "#477142";
-      else col = "#52804a";
+      if (n < 0.12) col = "#3f6230";
+      else if (n < 0.5) col = "#46692f";
+      else if (n < 0.82) col = "#4d7536";
+      else col = "#56813c";
       ctx.fillStyle = col;
       tileDiamond(ctx, s.x, s.y);
       ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.10)";
+      ctx.strokeStyle = "rgba(0,0,0,0.07)";
       ctx.lineWidth = 1;
       ctx.stroke();
-      // grass tufts
-      if (!inTown && n > 0.86) {
-        ctx.fillStyle = "rgba(120,170,90,0.5)";
-        ctx.fillRect(s.x - 2, s.y - 2, 2, 3);
-        ctx.fillRect(s.x + 3, s.y, 2, 3);
+      if (n > 0.9) {
+        ctx.fillStyle = "rgba(120,170,90,0.45)";
+        ctx.fillRect(s.x - 3, s.y - 3, 3, 4);
+        ctx.fillRect(s.x + 4, s.y, 3, 4);
+      }
+      // real cobblestone road on path tiles
+      if (town && town.paths.has(`${tx},${ty}`) && isReady(TILES.grass[7])) {
+        drawTile(ctx, TILES.grass[7], s.x, s.y);
       }
     }
   }
@@ -463,6 +464,16 @@ export function renderWorld(
   }
   const objs: Drawable[] = [];
 
+  // town walls (real stone tiles), depth-sorted with everything else
+  if (town && TILES.ready) {
+    const WALL_TILE: Record<string, number> = { corner: 1, h: 7, v: 0 }; // wall_2 tower, wall_8, wall_1
+    for (const [key, kind] of town.walls) {
+      const [wx, wy] = key.split(",").map(Number);
+      const s = toScreen(wx, wy);
+      objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[WALL_TILE[kind]], s.x, s.y) });
+    }
+  }
+
   for (const n of world.nodes) {
     const s = toScreen(n.x, n.y);
     objs.push({
@@ -477,18 +488,32 @@ export function renderWorld(
           ctx.fill();
           return;
         }
-        shadow(ctx, s.x, s.y, 12);
-        ctx.font = `${Math.floor(TILE_H * 1.15)}px serif`;
+        shadow(ctx, s.x, s.y, 18);
+        ctx.font = "42px serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
-        ctx.fillText(NODE_GLYPH[n.kind], s.x, s.y - 2);
+        ctx.fillText(NODE_GLYPH[n.kind], s.x, s.y);
       },
     });
   }
 
   for (const b of world.buildings) {
     const s = toScreen(b.x, b.y);
-    objs.push({ key: b.x + b.y, draw: () => drawBuilding(ctx, s.x, s.y, b, now) });
+    objs.push({
+      key: b.x + b.y,
+      draw: () => {
+        // fenced plot under every building
+        if (isReady(TILES.plot[1])) drawTile(ctx, TILES.plot[1], s.x, s.y);
+        if (b.type === "town_center" && isReady(TILES.castle)) {
+          const size = 210;
+          ctx.drawImage(TILES.castle, s.x - size / 2, s.y + TILE_H / 2 - size + 14, size, size);
+        } else if (b.type === "farm" && isReady(TILES.windmill)) {
+          drawTileFrame(ctx, TILES.windmill, Math.floor(now / 110), WINDMILL_FRAMES, s.x, s.y);
+        } else {
+          drawBuilding(ctx, s.x, s.y, b, now);
+        }
+      },
+    });
   }
 
   for (const u of world.units) {
@@ -505,7 +530,7 @@ export function renderWorld(
         drawCharacter(ctx, s.x, s.y, {
           color: UNIT_COLOR[u.type] ?? "#aaa",
           facing: tx >= u.x ? 1 : -1,
-          scale: 0.82,
+          scale: 1.5,
           weapon: gear.weapon,
           hat: gear.hat,
           cape: gear.cape,
@@ -515,7 +540,7 @@ export function renderWorld(
           ring: sel ? "#5fd16a" : undefined,
           phase: now * 0.012 + u.id,
         });
-        hpBar(ctx, s.x, s.y - 26, u.hp / u.maxHp, 20);
+        hpBar(ctx, s.x, s.y - 48, u.hp / u.maxHp, 32);
       },
     });
   }
@@ -528,12 +553,12 @@ export function renderWorld(
       key: e.x + e.y,
       draw: () => {
         if (e.kind === "wolf") {
-          drawWolf(ctx, s.x, s.y, f, 0.85, now * 0.014 + e.id, e.swing > 0.2);
+          drawWolf(ctx, s.x, s.y, f, 1.5, now * 0.014 + e.id, e.swing > 0.2);
         } else {
           drawCharacter(ctx, s.x, s.y, {
             color: e.kind === "brigand" ? "#7a2b3a" : "#8a3a2a",
             facing: f,
-            scale: 0.85,
+            scale: 1.5,
             weapon: e.kind === "brigand" ? "sword" : "dagger",
             hat: "hood",
             skin: "#c79a72",
@@ -543,7 +568,7 @@ export function renderWorld(
             phase: now * 0.012 + e.id,
           });
         }
-        hpBar(ctx, s.x, s.y - 26, e.hp / e.maxHp, 24);
+        hpBar(ctx, s.x, s.y - 48, e.hp / e.maxHp, 34);
       },
     });
   }
@@ -559,7 +584,7 @@ export function renderWorld(
         drawCharacter(ctx, hsx.x, hsx.y, {
           color: "#d8a52a",
           facing: world.hero.facing,
-          scale: 1.08,
+          scale: 1.95,
           weapon: "sword",
           hat: "crown",
           cape: true,
@@ -568,12 +593,12 @@ export function renderWorld(
           ring: "rgba(244,221,143,0.7)",
           phase: now * 0.012,
         });
-        hpBar(ctx, hsx.x, hsx.y - 34, world.hero.hp / world.hero.maxHp, 30);
+        hpBar(ctx, hsx.x, hsx.y - 64, world.hero.hp / world.hero.maxHp, 44);
         if (world.hero.state === "harvest") {
           ctx.strokeStyle = "#7CFC8A";
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.arc(hsx.x, hsx.y - 16, 16, -Math.PI / 2, -Math.PI / 2 + (world.hero.harvestT / 1.6) * Math.PI * 2);
+          ctx.arc(hsx.x, hsx.y - 28, 26, -Math.PI / 2, -Math.PI / 2 + (world.hero.harvestT / 1.6) * Math.PI * 2);
           ctx.stroke();
         }
       },
