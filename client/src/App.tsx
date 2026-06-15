@@ -6,6 +6,7 @@ import Toaster from "./components/Toaster";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import Play from "./pages/Play";
+import DashboardPage from "./pages/DashboardPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import GuidePage from "./pages/GuidePage";
 import { useGame } from "./lib/store";
@@ -44,6 +45,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Play />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
               </ProtectedRoute>
             }
           />

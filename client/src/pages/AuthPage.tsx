@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { usePrivy } from "@privy-io/react-auth";
 import { api } from "../lib/api";
@@ -67,44 +67,13 @@ function PrivySignIn({
   );
 }
 
-export default function AuthPage({ mode }: { mode: "login" | "register" }) {
+export default function AuthPage(_props: { mode: "login" | "register" }) {
   const navigate = useNavigate();
   const setAuth = useGame((s) => s.setAuth);
   const pushToast = useGame((s) => s.pushToast);
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [empireName, setEmpireName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showClassic, setShowClassic] = useState(false);
-
-  const isRegister = mode === "register";
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setBusy(true);
-    try {
-      const res = isRegister
-        ? await api.register(username.trim(), password, empireName.trim() || username.trim())
-        : await api.login(username.trim(), password);
-      if (!res.ok || !res.token || !res.user) {
-        setError(res.error ?? "Something went wrong.");
-        setBusy(false);
-        return;
-      }
-      setAuth(res.token, res.user);
-      pushToast({
-        kind: "success",
-        text: isRegister ? "Your empire is founded!" : `Welcome back, ${res.user.username}.`,
-      });
-      navigate("/play");
-    } catch {
-      setError("Could not reach the server. Is it running?");
-      setBusy(false);
-    }
-  }
 
   async function playDemo() {
     setError(null);
@@ -139,14 +108,27 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
         <div className="panel p-8">
           <div className="flex flex-col items-center text-center">
             <Logo size={48} />
-            <h1 className="mt-4 text-2xl font-bold">{isRegister ? "Found Your Empire" : "Enter the World"}</h1>
+            <h1 className="mt-4 text-2xl font-bold">Enter the World</h1>
             <p className="mt-2 text-sm text-parchment-300/70">
-              Sign in with your Solana wallet or email — or jump straight into demo mode.
+              Sign in with your Solana wallet or email — your empire is created automatically. Hold the token to earn
+              real SOL.
             </p>
           </div>
 
           <div className="mt-7 space-y-3">
-            {privyConfigured && <PrivySignIn busy={busy} setBusy={setBusy} setError={setError} />}
+            {privyConfigured ? (
+              <PrivySignIn busy={busy} setBusy={setBusy} setError={setError} />
+            ) : (
+              <div className="rounded-lg border border-gold/20 bg-gold/5 px-3 py-2 text-center text-xs text-parchment-300/70">
+                Wallet sign-in activates once Privy is configured. Try demo mode below.
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 py-1 text-[11px] uppercase tracking-wider text-parchment-300/40">
+              <span className="h-px flex-1 bg-parchment-300/15" />
+              or
+              <span className="h-px flex-1 bg-parchment-300/15" />
+            </div>
 
             <button type="button" className="btn-ghost w-full py-3 text-base" disabled={busy} onClick={playDemo}>
               🎮 Play demo mode
@@ -161,60 +143,6 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
               </div>
             )}
           </div>
-
-          {/* Classic username + password, kept as a fallback for existing realms */}
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => setShowClassic((s) => !s)}
-              className="flex w-full items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-parchment-300/55 hover:text-parchment-100"
-            >
-              <span className="h-px flex-1 bg-parchment-300/15" />
-              {showClassic ? "Hide username login" : "Use a username & password"}
-              <span className="h-px flex-1 bg-parchment-300/15" />
-            </button>
-
-            {showClassic && (
-              <form onSubmit={submit} className="mt-4 space-y-4">
-                <Field label="Username" value={username} onChange={setUsername} placeholder="e.g. Saladin" autoFocus />
-                {isRegister && (
-                  <Field
-                    label="Empire name"
-                    value={empireName}
-                    onChange={setEmpireName}
-                    placeholder="e.g. The Golden Caliphate (optional)"
-                  />
-                )}
-                <Field
-                  label="Password"
-                  value={password}
-                  onChange={setPassword}
-                  placeholder="At least 4 characters"
-                  type="password"
-                />
-                <button type="submit" className="btn-gold w-full py-3 text-base" disabled={busy}>
-                  {busy ? "Please wait…" : isRegister ? "⚔ Found Empire" : "Enter the World"}
-                </button>
-                <div className="text-center text-sm text-parchment-300/70">
-                  {isRegister ? (
-                    <>
-                      Already have a realm?{" "}
-                      <Link to="/login" className="font-semibold text-gold-light hover:underline">
-                        Log in
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      New to the world?{" "}
-                      <Link to="/register" className="font-semibold text-gold-light hover:underline">
-                        Found an empire
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </form>
-            )}
-          </div>
         </div>
 
         <p className="mt-5 text-center text-xs text-parchment-300/45">
@@ -222,37 +150,5 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
         </p>
       </motion.div>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  autoFocus,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  autoFocus?: boolean;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-parchment-300/70">
-        {label}
-      </span>
-      <input
-        type={type}
-        value={value}
-        autoFocus={autoFocus}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-parchment-300/15 bg-black/40 px-3.5 py-2.5 text-sm text-parchment-50 placeholder:text-parchment-300/35 focus:border-gold/50 focus:outline-none focus:ring-2 focus:ring-gold/30"
-      />
-    </label>
   );
 }
