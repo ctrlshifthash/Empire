@@ -1,0 +1,144 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Token-holder rewards. Reads on-chain holdings of a configured SPL token and
+// pays out a daily SOL pool pro-rata to holders (bigger holders get a bigger
+// multiplier). All secrets/config come from environment variables — never code:
+//   TOKEN_MINT          the SPL token mint address
+//   SOLANA_RPC          RPC endpoint (defaults to mainnet-beta)
+//   DAILY_SOL_POOL      total SOL distributed per day across all holders
+//   TREASURY_SECRET_KEY the payer wallet's secret key (JSON array of 64 numbers)
+// Until TOKEN_MINT + TREASURY_SECRET_KEY are set the system runs in preview mode
+// (shows estimates, performs no real transfers).
+// ─────────────────────────────────────────────────────────────────────────────
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
+import bs58 from "bs58";
+import { state } from "./store.ts";
+import { now } from "./util.ts";
+
+const MINT = (process.env.TOKEN_MINT || "").trim();
+const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
+const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "1");
+const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
+
+export const rewardsConfigured = (): boolean => MINT.length > 0;
+export const payoutsLive = (): boolean => MINT.length > 0 && TREASURY_SECRET.length > 0;
+
+let conn: Connection | null = null;
+function rpc(): Connection {
+  if (!conn) conn = new Connection(RPC, "confirmed");
+  return conn;
+}
+
+export interface Holdings {
+  balance: number;
+  supply: number;
+  sharePct: number; // 0..1
+}
+
+// Read a wallet's balance of the configured token + circulating supply.
+export async function getHoldings(address: string): Promise<Holdings> {
+  if (!rewardsConfigured()) return { balance: 0, supply: 0, sharePct: 0 };
+  const mint = new PublicKey(MINT);
+  const owner = new PublicKey(address);
+  const accts = await rpc().getParsedTokenAccountsByOwner(owner, { mint });
+  let balance = 0;
+  for (const a of accts.value) {
+    balance += a.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+  }
+  const supplyInfo = await rpc().getTokenSupply(mint);
+  const supply = supplyInfo.value.uiAmount || 0;
+  return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
+}
+
+// Bigger holders earn a bigger multiplier on their pro-rata share (up to 3×).
+export function multiplier(sharePct: number): number {
+  return 1 + Math.min(2, sharePct * 8);
+}
+
+export interface RewardStatus {
+  configured: boolean;
+  payouts: boolean;
+  pool: number;
+  holdings: Holdings;
+  multiplier: number;
+  dailySol: number; // estimated SOL/day for this wallet
+  claimableSol: number; // accrued since the last claim
+  totalClaimedSol: number;
+}
+
+export async function rewardStatus(address: string): Promise<RewardStatus> {
+  const holdings = await getHoldings(address);
+  const m = multiplier(holdings.sharePct);
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
+  const rec = state.rewards[address] ?? { totalClaimed: 0, lastClaimAt: now() };
+  const elapsed = Math.max(0, now() - rec.lastClaimAt);
+  const claimableSol = dailySol * (elapsed / 86_400_000);
+  return {
+    configured: rewardsConfigured(),
+    payouts: payoutsLive(),
+    pool: DAILY_SOL_POOL,
+    holdings,
+    multiplier: m,
+    dailySol,
+    claimableSol,
+    totalClaimedSol: (rec.totalClaimed || 0) / LAMPORTS_PER_SOL,
+  };
+}
+
+function treasuryKeypair(): Keypair | null {
+  if (!TREASURY_SECRET) return null;
+  try {
+    // accept either a JSON array of 64 numbers (solana-keygen) or a base58
+    // secret key (Phantom export)
+    if (TREASURY_SECRET.startsWith("[")) {
+      return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(TREASURY_SECRET) as number[]));
+    }
+    return Keypair.fromSecretKey(bs58.decode(TREASURY_SECRET));
+  } catch (err) {
+    console.error("[rewards] invalid TREASURY_SECRET_KEY:", err);
+    return null;
+  }
+}
+
+export interface ClaimResult {
+  ok: boolean;
+  error?: string;
+  signature?: string;
+  claimedSol?: number;
+}
+
+// Pay the wallet its accrued share of the pool from the treasury, then reset
+// its accrual. No-op (preview) until the treasury is configured.
+export async function claim(address: string): Promise<ClaimResult> {
+  if (!rewardsConfigured()) return { ok: false, error: "Rewards are not configured yet." };
+  const status = await rewardStatus(address);
+  if (status.holdings.balance <= 0) return { ok: false, error: "You don't hold any tokens." };
+  const claimSol = status.claimableSol;
+  if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
+  if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
+
+  const kp = treasuryKeypair();
+  if (!kp) return { ok: false, error: "Treasury wallet is misconfigured." };
+  const lamports = Math.floor(claimSol * LAMPORTS_PER_SOL);
+  try {
+    const tx = new Transaction().add(
+      SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(address), lamports }),
+    );
+    const signature = await sendAndConfirmTransaction(rpc(), tx, [kp]);
+    const rec = state.rewards[address] ?? { totalClaimed: 0, lastClaimAt: now() };
+    rec.totalClaimed = (rec.totalClaimed || 0) + lamports;
+    rec.lastClaimAt = now();
+    state.rewards[address] = rec;
+    return { ok: true, signature, claimedSol: claimSol };
+  } catch (err) {
+    console.error("[rewards] payout failed:", err);
+    return { ok: false, error: "Payout transaction failed." };
+  }
+}

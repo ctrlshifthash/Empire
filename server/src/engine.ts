@@ -6,17 +6,24 @@
 import {
   AGES,
   BUILDINGS,
+  MAX_GEAR,
+  MAX_HERO_GEAR,
   RAID_PROTECTION_POWER,
   RESOURCE_KINDS,
   TC_TRICKLE_PER_LEVEL,
+  TRAITS,
   UNITS,
   UNIT_TYPES,
   QUESTS,
+  traitBonuses,
   buildSecondsFor,
+  gearCost,
+  heroGearCost,
   nextAge,
   nextLevelCost,
   populationProvided,
   productionPerMinute,
+  rankForPower,
   rushCost,
   ageAtLeast,
 } from "../../shared/gamedata.ts";
@@ -147,7 +154,7 @@ function freeBaseCell(e: Empire): { x: number; y: number } | null {
 
 function travelSeconds(a: Empire, b: Empire): number {
   const d = distance(a.tileX, a.tileY, b.tileX, b.tileY);
-  return clamp(12 + d * 6, 15, 600);
+  return clamp(6 + d * 2, 6, 40); // short marches so the battle lands soon after you invade
 }
 
 // ── passive production ──────────────────────────────────────────────────────
@@ -241,6 +248,12 @@ function questMetricValue(e: Empire, metric: (typeof QUESTS)[number]["metric"]):
 }
 
 export function updateQuests(e: Empire): void {
+  // backfill quests added since this empire was created
+  for (const q of QUESTS) {
+    if (!e.quests.some((qp) => qp.questId === q.id)) {
+      e.quests.push({ questId: q.id, progress: 0, goal: q.goal, completed: false, claimed: false });
+    }
+  }
   for (const qp of e.quests) {
     const def = QUESTS.find((q) => q.id === qp.questId);
     if (!def) continue;
@@ -259,6 +272,11 @@ export function recomputePower(e: Empire): void {
   for (const b of e.buildings) if (b.level >= 1) p += b.level * 8;
   for (const u of Object.keys(e.army) as UnitType[]) {
     p += e.army[u] * (UNITS[u].attack + UNITS[u].defense);
+  }
+  if (e.armoury) {
+    let g = (e.armoury.helmet + e.armoury.heroArmour) * 4;
+    for (const u of UNIT_TYPES) g += ((e.armoury.weapon[u] ?? 0) + (e.armoury.armour[u] ?? 0)) * 8;
+    p += g;
   }
   e.power = Math.round(p);
 }
@@ -335,7 +353,9 @@ export function actGather(e: Empire, resource: ResourceKind): ActionResult {
   const tool = resourceTool(resource);
   const level = levelForXp(e.hero.skills[skill] ?? 0);
   const tier = e.hero.tools[tool] ?? 1;
-  const amt = gatherYield(level, tier);
+  // higher ranks + gather traits harvest more
+  const mult = rankForPower(e.power).gatherMult * (1 + traitBonuses(e.traits).gatherPct);
+  const amt = Math.round(gatherYield(level, tier) * mult);
   const cap = warehouseCapacity(e);
   e.resources[resource] = clamp(e.resources[resource] + amt, 0, cap);
   awardXp(e, skill, gatherXp(resource, tier));
@@ -359,6 +379,59 @@ export function actUpgradeTool(e: Empire, tool: ToolId): ActionResult {
 
 export function actSlay(e: Empire, kind: string): ActionResult {
   awardXp(e, "combat", slayXp(String(kind || "")));
+  return { ok: true };
+}
+
+function ensureArmoury(e: Empire): NonNullable<Empire["armoury"]> {
+  if (!e.armoury) e.armoury = { weapon: {}, armour: {}, helmet: 0, heroArmour: 0 };
+  return e.armoury;
+}
+
+// Buy army equipment (weapon = attack, armour = defense, per unit type) or hero
+// gear (helmet / armour = extra HP) with coins.
+export function actBuyArmoury(
+  e: Empire,
+  kind: "weapon" | "armour" | "helmet" | "heroArmour",
+  unit?: UnitType,
+): ActionResult {
+  const a = ensureArmoury(e);
+  // hero gear (no unit): helmet / armour
+  if (kind === "helmet" || kind === "heroArmour") {
+    const lvl = kind === "helmet" ? a.helmet : a.heroArmour;
+    if (lvl >= MAX_HERO_GEAR) return { ok: false, error: "Already the finest hero gear." };
+    const cost = heroGearCost(lvl);
+    if (e.coins < cost) return { ok: false, error: `Need ${cost} coins.` };
+    e.coins -= cost;
+    if (kind === "helmet") a.helmet += 1;
+    else a.heroArmour += 1;
+    log(e, "system", `Forged finer hero ${kind === "helmet" ? "helmet" : "armour"} (level ${lvl + 1}).`);
+    recomputePower(e);
+    return { ok: true };
+  }
+  // army gear (per unit type): weapon / armour
+  if (!unit || !UNIT_TYPES.includes(unit)) return { ok: false, error: "Unknown unit type." };
+  const track = kind === "weapon" ? a.weapon : a.armour;
+  const lvl = track[unit] ?? 0;
+  if (lvl >= MAX_GEAR) return { ok: false, error: "Already the finest gear." };
+  const cost = gearCost(lvl);
+  if (e.coins < cost) return { ok: false, error: `Need ${cost} coins.` };
+  e.coins -= cost;
+  track[unit] = lvl + 1;
+  log(e, "system", `Equipped ${UNITS[unit].name}s with better ${kind} (level ${lvl + 1}).`);
+  recomputePower(e);
+  return { ok: true };
+}
+
+// Learn a hero trait/perk. Free traits cost 0; others cost coins. One-time.
+export function actBuyTrait(e: Empire, traitId: string): ActionResult {
+  const t = TRAITS.find((x) => x.id === traitId);
+  if (!t) return { ok: false, error: "Unknown trait." };
+  if (!e.traits) e.traits = [];
+  if (e.traits.includes(traitId)) return { ok: false, error: "Already learned." };
+  if (e.coins < t.cost) return { ok: false, error: `Need ${t.cost} coins.` };
+  e.coins -= t.cost;
+  e.traits.push(traitId);
+  log(e, "system", `Learned the ${t.name} trait — ${t.desc}.`);
   return { ok: true };
 }
 
@@ -560,13 +633,18 @@ function resolveAttack(march: March, at: number): void {
 
   const defenderArmyBefore: Partial<Record<UnitType, number>> = { ...defender.army };
 
-  const result = resolveBattle(march.units, {
-    army: defender.army,
-    wallMultiplier: wallMultiplier(defender),
-    garrisonBonus: garrisonBonus(defender),
-    resources: defender.resources,
-  });
-  let razedName: string | null = null;
+  const result = resolveBattle(
+    march.units,
+    {
+      army: defender.army,
+      wallMultiplier: wallMultiplier(defender),
+      garrisonBonus: garrisonBonus(defender),
+      resources: defender.resources,
+      gear: defender.armoury?.armour, // defender's armour
+    },
+    attacker.armoury?.weapon, // attacker's weapons
+  );
+  const razedNames: string[] = [];
 
   // apply defender casualties
   for (const u of Object.keys(result.defenderLosses) as UnitType[]) {
@@ -594,24 +672,27 @@ function resolveAttack(march: March, at: number): void {
       `Raided by ${attacker.name}! Lost ${defenderLost} defenders and ${lootTotal} resources.`,
     );
 
-    // a decisive victory razes one of the rival's lesser buildings — real
-    // incentive to invade: you weaken them and climb the leaderboard.
-    if (result.attackPower > result.defendPower * 1.5) {
+    // Victory destroys the rival's buildings — the more decisive, the more you
+    // raze. Wrecking their infrastructure (not just their soldiers) is the real
+    // way to weaken a world and climb the leaderboard.
+    const ratio = result.attackPower / Math.max(1, result.defendPower);
+    const razeCount = ratio > 2.5 ? 3 : ratio > 1.5 ? 2 : ratio > 1.1 ? 1 : 0;
+    if (razeCount > 0) {
       const razeable = defender.buildings
         .filter((b) => b.type !== "town_center" && b.level >= 1 && b.completesAt == null)
         .sort((a, b) => a.level - b.level);
-      const razed = razeable[0];
-      if (razed) {
-        attacker.coins += 5; // bonus for a decisive win
-        razedName = BUILDINGS[razed.type].name;
+      for (const razed of razeable.slice(0, razeCount)) {
+        attacker.coins += 5; // bounty per structure wrecked
+        const name = BUILDINGS[razed.type].name;
+        razedNames.push(name);
         if (razed.level <= 1) {
           defender.buildings = defender.buildings.filter((b) => b.id !== razed.id);
-          log(attacker, "battle", `Decisive victory — you razed the ${razedName} of ${defender.name}!`);
-          log(defender, "battle", `${attacker.name} razed your ${razedName} to the ground!`);
+          log(attacker, "battle", `You razed the ${name} of ${defender.name}!`);
+          log(defender, "battle", `${attacker.name} razed your ${name} to the ground!`);
         } else {
           razed.level -= 1;
-          log(attacker, "battle", `Decisive victory — you damaged the ${razedName} of ${defender.name}.`);
-          log(defender, "battle", `${attacker.name} damaged your ${razedName}.`);
+          log(attacker, "battle", `You wrecked the ${name} of ${defender.name}.`);
+          log(defender, "battle", `${attacker.name} wrecked your ${name}.`);
         }
       }
     }
@@ -633,7 +714,7 @@ function resolveAttack(march: March, at: number): void {
     defenderLosses: result.defenderLosses,
     attackerWon: result.attackerWins,
     loot: result.loot,
-    razed: razedName,
+    razed: razedNames,
     attackPower: result.attackPower,
     defendPower: result.defendPower,
   };

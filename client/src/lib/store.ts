@@ -28,6 +28,9 @@ interface GameStore {
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
   watchBattle: (report: BattleReport) => void;
+  // request to fly the Adventure camera + hero to the nearest source of a resource
+  locateRequest: { kind: ResourceKind; n: number } | null;
+  locate: (kind: ResourceKind) => void;
 
   setAuth: (token: string, user: AuthUser) => void;
   logout: () => void;
@@ -44,6 +47,8 @@ interface GameStore {
   gather: (resource: ResourceKind) => void;
   upgradeTool: (tool: ToolId) => void;
   slay: (kind: string) => void;
+  buyArmoury: (kind: "weapon" | "armour" | "helmet" | "heroArmour", unit?: UnitType) => void;
+  buyTrait: (traitId: string) => void;
 
   pushToast: (t: Omit<Toast, "id">) => void;
   dismissToast: (id: number) => void;
@@ -73,6 +78,8 @@ export const useGame = create<GameStore>((set, get) => ({
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
+  locateRequest: null,
+  locate: (kind) => set((s) => ({ locateRequest: { kind, n: (s.locateRequest?.n ?? 0) + 1 } })),
 
   setAuth: (token, user) => {
     localStorage.setItem(LS_TOKEN, token);
@@ -162,6 +169,8 @@ export const useGame = create<GameStore>((set, get) => ({
   gather: (resource) => socket?.emit("gather", { resource }),
   upgradeTool: (tool) => socket?.emit("upgradeTool", { tool }),
   slay: (kind) => socket?.emit("slay", { kind }),
+  buyArmoury: (kind, unit) => socket?.emit("buyArmoury", { kind, unit }),
+  buyTrait: (traitId) => socket?.emit("buyTrait", { traitId }),
 
   pushToast: (t) => {
     const id = toastSeq++;

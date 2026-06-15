@@ -7,6 +7,8 @@ import EmpireView from "../game/EmpireView";
 import HeroView from "../game/HeroView";
 import WorldView from "../game/WorldView";
 import MilitaryView from "../game/MilitaryView";
+import ArmouryView from "../game/ArmouryView";
+import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
 import LogView from "../game/LogView";
 import OperationsPanel from "../game/OperationsPanel";
@@ -14,16 +16,18 @@ import BattleSpectate from "../game/BattleSpectate";
 import TutorialOverlay from "../components/TutorialOverlay";
 import { armyTotal } from "../game/derive";
 
-type Tab = "live" | "hero" | "empire" | "world" | "military" | "quests" | "log";
+type Tab = "live" | "hero" | "empire" | "world" | "military" | "armoury" | "quests" | "log" | "rewards";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "live", label: "Adventure", icon: "🌍" },
-  { id: "hero", label: "Hero", icon: "🦸" },
-  { id: "empire", label: "Empire", icon: "🏰" },
-  { id: "world", label: "Invade", icon: "🗡️" },
-  { id: "military", label: "Military", icon: "⚔️" },
-  { id: "quests", label: "Quests", icon: "📜" },
-  { id: "log", label: "Chronicle", icon: "📖" },
+const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
+  { id: "live", label: "Play", icon: "🌍", desc: "Your live world — walk around, harvest and fight" },
+  { id: "hero", label: "My Hero", icon: "🦸", desc: "Customise your character: gear, skills & tools" },
+  { id: "empire", label: "Buildings", icon: "🏰", desc: "Build & upgrade your settlement, advance ages" },
+  { id: "world", label: "Attack", icon: "🗡️", desc: "Pick a rival empire and invade it" },
+  { id: "military", label: "Army", icon: "⚔️", desc: "Train soldiers for your army" },
+  { id: "armoury", label: "Shop", icon: "🛒", desc: "Buy weapons & armour for your army" },
+  { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
+  { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
+  { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim real SOL token rewards" },
 ];
 
 export default function Play() {
@@ -34,6 +38,7 @@ export default function Play() {
   const logout = useGame((s) => s.logout);
   const pendingBattle = useGame((s) => s.pendingBattle);
   const clearPendingBattle = useGame((s) => s.clearPendingBattle);
+  const locate = useGame((s) => s.locate);
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("live");
   const [stuck, setStuck] = useState(false);
@@ -113,7 +118,13 @@ export default function Play() {
 
   return (
     <div>
-      <ResourceBar empire={empire} />
+      <ResourceBar
+        empire={empire}
+        onLocate={(kind) => {
+          setTab("live");
+          locate(kind);
+        }}
+      />
 
       <div className="container-x pt-4 pb-3">
         {/* tab nav */}
@@ -122,6 +133,7 @@ export default function Play() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
+              title={t.desc}
               className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
                 tab === t.id
                   ? "bg-gradient-to-b from-gold-light to-gold text-ink shadow-gold"
@@ -166,7 +178,7 @@ export default function Play() {
 
       {/* The Adventure world stays mounted & running underneath everything, so
           opening Hero / Empire / Military etc. never leaves the live game. */}
-      <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} />
+      <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} onOpenTab={(t) => setTab(t as Tab)} />
 
       {/* Dashboard views overlay the live world (which keeps running behind) at
           full dashboard width, so nothing is cramped and you never leave the game. */}
@@ -176,11 +188,14 @@ export default function Play() {
           onClick={() => setTab("live")}
         >
           <div className="container-x py-6" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
-                <span>{TABS.find((t) => t.id === tab)?.icon}</span>
-                {TABS.find((t) => t.id === tab)?.label}
-              </h2>
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
+                  <span>{TABS.find((t) => t.id === tab)?.icon}</span>
+                  {TABS.find((t) => t.id === tab)?.label}
+                </h2>
+                <p className="mt-0.5 text-sm text-parchment-300/60">{TABS.find((t) => t.id === tab)?.desc}</p>
+              </div>
               <button
                 className="rounded-lg border border-parchment-300/10 bg-white/5 px-4 py-2 text-sm font-medium text-parchment-100/80 hover:border-gold/40 hover:text-gold-light"
                 onClick={() => setTab("live")}
@@ -194,8 +209,10 @@ export default function Play() {
                 {tab === "empire" && <EmpireView empire={empire} />}
                 {tab === "world" && <WorldView snapshot={snapshot} />}
                 {tab === "military" && <MilitaryView empire={empire} />}
+                {tab === "armoury" && <ArmouryView empire={empire} />}
                 {tab === "quests" && <QuestsView empire={empire} />}
                 {tab === "log" && <LogView empire={empire} />}
+                {tab === "rewards" && <RewardsPanel />}
               </div>
               <aside className="hidden xl:block">
                 <div className="sticky top-4">

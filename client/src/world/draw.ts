@@ -50,6 +50,9 @@ const BUILDING_COLOR: Record<string, string> = {
   tower: "#5f5a52",
   gate: "#7a6a4a",
   market: "#3f6bb0",
+  keep: "#8a8398",
+  temple: "#c9b07a",
+  wonder: "#d8c050",
 };
 
 const UNIT_COLOR: Record<string, string> = {
@@ -106,10 +109,10 @@ function hpBar(ctx: CanvasRenderingContext2D, sx: number, sy: number, frac: numb
   ctx.fillRect(sx - w / 2, sy, w * Math.max(0, frac), 3);
 }
 
-type Weapon = "spear" | "bow" | "sword" | "hoe" | "dagger" | null;
-type Hat = "crown" | "helmet" | "hood" | "cap" | null;
+export type Weapon = "spear" | "bow" | "sword" | "hoe" | "dagger" | null;
+export type Hat = "crown" | "helmet" | "hood" | "cap" | null;
 
-interface CharOpts {
+export interface CharOpts {
   color: string;
   facing: number;
   scale: number;
@@ -240,7 +243,7 @@ function drawWeapon(ctx: CanvasRenderingContext2D, hx: number, hy: number, f: nu
 }
 
 // A little stylised person with team colours, gear, and walk/attack animation.
-function drawCharacter(ctx: CanvasRenderingContext2D, sx: number, sy: number, o: CharOpts) {
+export function drawCharacter(ctx: CanvasRenderingContext2D, sx: number, sy: number, o: CharOpts) {
   const s = o.scale;
   const f = o.facing >= 0 ? 1 : -1;
   const ph = o.phase;
@@ -736,12 +739,16 @@ export function renderWorld(
       key: world.hero.x + world.hero.y,
       draw: () => {
         if (dead) return;
+        // the hero's tunic tints toward steel as armour improves; a helmet
+        // replaces the crown once equipped — your bought gear shows on-screen
+        const ARMOUR_TINT = ["#d8a52a", "#c9a84a", "#b8b0a0", "#a8b2b8", "#9aa6c0", "#8fb0c8", "#a6c4dc", "#cdddec"];
+        const look = world.heroLook;
         drawCharacter(ctx, hsx.x, hsx.y, {
-          color: "#d8a52a",
+          color: ARMOUR_TINT[Math.min(look.armour, ARMOUR_TINT.length - 1)],
           facing: world.hero.facing,
           scale: 1.95,
           weapon: "sword",
-          hat: "crown",
+          hat: look.helmet > 0 ? "helmet" : "crown",
           cape: true,
           moving: world.hero.state === "move",
           attacking: world.hero.state === "fight",
@@ -801,6 +808,9 @@ const B_STYLE: Record<string, BStyle> = {
   tower: { wall: "#8a847a", roof: "#6b6357", kind: "battlement", w: 22, h: 26 },
   gate: { wall: "#9a8a6a", roof: "#6b5a3a", kind: "battlement", w: 30, h: 18, banner: "#9c2b21" },
   market: { wall: "#b08a4a", roof: "#3f6bb0", kind: "awning", w: 30, h: 18, banner: "#3f6bb0" },
+  keep: { wall: "#9a93a8", roof: "#6b6478", kind: "battlement", w: 38, h: 34, banner: "#c9a227" },
+  temple: { wall: "#d8c08a", roof: "#b8923a", kind: "peak", w: 32, h: 26, banner: "#e8c75a" },
+  wonder: { wall: "#e8d48a", roof: "#c9a227", kind: "battlement", w: 44, h: 40, banner: "#f4dd8f" },
 };
 
 function drawRoof(ctx: CanvasRenderingContext2D, sx: number, top: number, bw: number, depth: number, st: BStyle) {
@@ -991,7 +1001,8 @@ function shade(hex: string, amt: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-// Draw a small top-down minimap into a separate canvas context.
+// Draw a small top-down minimap that mirrors the real world: grassy terrain,
+// the stone walls of your capital, the radiating roads, outposts and towers.
 export function renderMinimap(
   ctx: CanvasRenderingContext2D,
   size: number,
@@ -999,18 +1010,53 @@ export function renderMinimap(
 ) {
   ctx.clearRect(0, 0, size, size);
   const sc = size / world.W;
-  ctx.fillStyle = "#2f4a2c";
+  const cell = Math.max(1, sc);
+  // grassy terrain with a soft vignette
+  const g = ctx.createLinearGradient(0, 0, 0, size);
+  g.addColorStop(0, "#3c5c33");
+  g.addColorStop(1, "#2b4524");
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
-  // nodes
+
+  const town = world.town;
+  if (town) {
+    // cobblestone roads
+    ctx.fillStyle = "#6a6452";
+    for (const key of town.paths) {
+      const [x, y] = key.split(",").map(Number);
+      ctx.fillRect(x * sc, y * sc, cell, cell);
+    }
+    // stone walls (capital + outposts + ruins) in the pack's purple stone
+    const drawWalls = (keys: Iterable<string>) => {
+      for (const key of keys) {
+        const [x, y] = key.split(",").map(Number);
+        ctx.fillRect(x * sc - 0.5, y * sc - 0.5, cell + 1, cell + 1);
+      }
+    };
+    ctx.fillStyle = "#7d6fb0";
+    drawWalls(town.walls.keys());
+    for (const o of town.outposts) drawWalls(o.walls.keys());
+    // watchtowers — a stone block with a tiny red flag
+    for (const t of town.towers) {
+      ctx.fillStyle = "#5b4f7a";
+      ctx.fillRect(t.x * sc - 1, t.y * sc - 1, cell + 2, cell + 2);
+      ctx.fillStyle = "#c0392b";
+      ctx.fillRect(t.x * sc, t.y * sc - 2, 1.5, 1.5);
+    }
+  }
+
+  // resource nodes
   for (const n of world.nodes) {
     if (n.respawnAt > 0) continue;
     ctx.fillStyle = n.kind === "tree" ? "#3f7a4d" : n.kind === "rock" ? "#9b9384" : n.kind === "gold" ? "#e8c75a" : "#7c9c3a";
     ctx.fillRect(n.x * sc - 1, n.y * sc - 1, 2, 2);
   }
-  // buildings
+  // your buildings (town centre brighter)
   for (const b of world.buildings) {
-    ctx.fillStyle = "#c9a227";
-    ctx.fillRect(b.x * sc - 1.5, b.y * sc - 1.5, 3, 3);
+    const tc = b.type === "town_center";
+    ctx.fillStyle = tc ? "#f4dd8f" : "#c9a227";
+    const s = tc ? 4 : 3;
+    ctx.fillRect(b.x * sc - s / 2, b.y * sc - s / 2, s, s);
   }
   // enemies
   ctx.fillStyle = "#e0533f";
@@ -1018,9 +1064,51 @@ export function renderMinimap(
     if (e.respawnAt > 0) continue;
     ctx.fillRect(e.x * sc - 1, e.y * sc - 1, 2, 2);
   }
-  // hero
+  // hero — white dot with a ring so it stands out
+  const hx = world.hero.x * sc;
+  const hy = world.hero.y * sc;
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.fillStyle = "#fff";
   ctx.beginPath();
-  ctx.arc(world.hero.x * sc, world.hero.y * sc, 2.5, 0, Math.PI * 2);
+  ctx.arc(hx, hy, 2.4, 0, Math.PI * 2);
   ctx.fill();
+
+  // map frame
+  ctx.strokeStyle = "rgba(244,221,143,0.4)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, size - 2, size - 2);
+
+  // compass rose (top-right) — north points up on the top-down map
+  const cxN = size - 13;
+  const cyN = 13;
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.beginPath();
+  ctx.arc(cxN, cyN, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(244,221,143,0.5)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "#e0533f"; // north needle
+  ctx.beginPath();
+  ctx.moveTo(cxN, cyN - 7);
+  ctx.lineTo(cxN - 3, cyN);
+  ctx.lineTo(cxN + 3, cyN);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#cfd6e0"; // south needle
+  ctx.beginPath();
+  ctx.moveTo(cxN, cyN + 7);
+  ctx.lineTo(cxN - 3, cyN);
+  ctx.lineTo(cxN + 3, cyN);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 6px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("N", cxN, cyN - 11);
 }

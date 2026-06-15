@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { BuildingType, GameSnapshot } from "@shared/types";
+import type { BuildingType, GameSnapshot, ResourceKind } from "@shared/types";
 import {
   AGES,
   BUILDING_TYPES,
   BUILDINGS,
+  HELMET_HP,
+  HERO_ARMOUR_HP,
   ageAtLeast,
   nextLevelCost,
+  rankForPower,
+  traitBonuses,
 } from "@shared/gamedata";
 import {
   SKILLS,
@@ -20,8 +24,8 @@ import {
 import { useGame } from "../lib/store";
 import { useNow } from "../lib/hooks";
 import { RESOURCE_META, RESOURCE_ORDER, fmt } from "../lib/format";
-import { World } from "../world/engine";
-import { renderMinimap, renderWorld } from "../world/draw";
+import { World, type NodeKind } from "../world/engine";
+import { renderWorld } from "../world/draw";
 import { screenToWorld, worldToScreen } from "../world/iso";
 import { CostBadge } from "./ui";
 
@@ -41,12 +45,17 @@ function canAfford(res: GameSnapshot["empire"]["resources"], cost: Partial<Recor
 export default function LiveWorld({
   snapshot,
   onInvade,
+  onOpenTab,
 }: {
   snapshot: GameSnapshot;
   onInvade?: () => void;
+  onOpenTab?: (tab: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const miniRef = useRef<HTMLCanvasElement>(null);
+  const miniCache = useRef<HTMLCanvasElement | null>(null);
+  const miniCenter = useRef({ x: 0, y: 0 });
+  const lastMini = useRef(0);
   const worldRef = useRef<World | null>(null);
   const keys = useRef<Set<string>>(new Set());
   const hover = useRef<{ wx: number; wy: number } | null>(null);
@@ -95,9 +104,55 @@ export default function LiveWorld({
         yld[r] = gatherYield(levelForXp(hero.skills[resourceSkill(r)] ?? 0), hero.tools[resourceTool(r)] ?? 1);
       }
       const cl = levelForXp(hero.skills.combat ?? 0);
-      wd.setHeroStats({ dmg: heroDamage(cl, hero.tools.sword ?? 1), maxHp: heroMaxHp(cl), yield: yld });
+      const arm = snapshot.empire.armoury;
+      const gearHp = (arm?.helmet ?? 0) * HELMET_HP + (arm?.heroArmour ?? 0) * HERO_ARMOUR_HP;
+      const tb = traitBonuses(snapshot.empire.traits);
+      const dmg = Math.round((heroDamage(cl, hero.tools.sword ?? 1) + tb.dmg) * (1 + tb.dmgPct));
+      wd.setHeroStats({ dmg, maxHp: heroMaxHp(cl) + gearHp + tb.hp, yield: yld });
+      wd.setHeroLook(arm?.helmet ?? 0, arm?.heroArmour ?? 0);
+      wd.hero.speed = 4.2 * (1 + tb.speedPct); // base hero speed × trait bonus
     }
   }, [snapshot]);
+
+  // Click a resource in the top bar → fly the camera to, and send the hero to
+  // harvest, the nearest source of that resource (so you can see & reach it).
+  const locateRequest = useGame((s) => s.locateRequest);
+  useEffect(() => {
+    if (!locateRequest) return;
+    const wd = worldRef.current;
+    if (!wd) return;
+    const RES_NODE: Record<ResourceKind, NodeKind> = { wood: "tree", stone: "rock", gold: "gold", food: "bush" };
+    const want = RES_NODE[locateRequest.kind];
+    const clearOfEnemies = (x: number, y: number) =>
+      !wd.enemies.some((e) => e.respawnAt === 0 && Math.hypot(e.x - x, e.y - y) < 6);
+    let safe: { x: number; y: number } | null = null;
+    let safeD = Infinity;
+    let any: { x: number; y: number } | null = null;
+    let anyD = Infinity;
+    for (const n of wd.nodes) {
+      if (n.kind !== want || n.respawnAt > 0 || n.amount <= 0) continue;
+      const d = Math.hypot(n.x - wd.hero.x, n.y - wd.hero.y);
+      if (d < anyD) {
+        anyD = d;
+        any = n;
+      }
+      if (d < safeD && clearOfEnemies(n.x, n.y)) {
+        safeD = d;
+        safe = n;
+      }
+    }
+    const label = RESOURCE_META[locateRequest.kind].label.toLowerCase();
+    const target = safe ?? any;
+    if (!target) {
+      pushToast({ kind: "warn", text: `No ${label} sources nearby right now — they regrow over time.` });
+      return;
+    }
+    wd.focusOn(target.x, target.y);
+    wd.interact(target.x, target.y); // hero walks over and harvests it
+    if (safe) pushToast({ kind: "info", text: `📍 Marching your hero to the nearest ${label}.` });
+    else pushToast({ kind: "warn", text: `⚠ The nearest ${label} is guarded — take your army!` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locateRequest]);
 
   const setMode = (t: BuildingType | null) => {
     buildModeRef.current = t;
@@ -384,7 +439,70 @@ export default function LiveWorld({
         hover: hover.current,
         ghost,
       });
-      if (mctx && mini) renderMinimap(mctx, mini.width, wd);
+      // minimap: a real rendered view of the world around you using the actual
+      // tiles — zoomed in on your surroundings so walls/roads/castle are legible.
+      // Terrain is cached & refreshed periodically; the hero marker is live.
+      if (mctx && mini) {
+        const sz = mini.width;
+        if (!miniCache.current) {
+          const c = document.createElement("canvas");
+          c.width = sz;
+          c.height = sz;
+          miniCache.current = c;
+        }
+        const z = sz / (26 * 128); // show ~26 tiles across, centred on the hero
+        if (t - lastMini.current > 500) {
+          lastMini.current = t;
+          miniCenter.current = { x: wd.hero.x, y: wd.hero.y };
+          const cc = miniCache.current.getContext("2d");
+          if (cc) {
+            const sZoom = wd.zoom;
+            const sCamX = wd.cam.x;
+            const sCamY = wd.cam.y;
+            wd.zoom = z;
+            wd.cam = { x: wd.hero.x, y: wd.hero.y };
+            renderWorld(cc, sz, sz, wd, t + performance.timeOrigin, { hover: null, ghost: null });
+            wd.zoom = sZoom;
+            wd.cam = { x: sCamX, y: sCamY };
+          }
+        }
+        mctx.clearRect(0, 0, sz, sz);
+        mctx.drawImage(miniCache.current, 0, 0);
+        // live hero marker, projected relative to the cached centre
+        const cs = worldToScreen(miniCenter.current.x, miniCenter.current.y);
+        const hs = worldToScreen(wd.hero.x, wd.hero.y);
+        const hx = sz / 2 + (hs.sx - cs.sx) * z;
+        const hy = sz / 2 + (hs.sy - cs.sy) * z;
+        mctx.strokeStyle = "rgba(0,0,0,0.6)";
+        mctx.lineWidth = 2.5;
+        mctx.beginPath();
+        mctx.arc(hx, hy, 3.5, 0, Math.PI * 2);
+        mctx.stroke();
+        mctx.fillStyle = "#fff";
+        mctx.beginPath();
+        mctx.arc(hx, hy, 3, 0, Math.PI * 2);
+        mctx.fill();
+        // frame + compass
+        mctx.strokeStyle = "rgba(244,221,143,0.35)";
+        mctx.lineWidth = 2;
+        mctx.strokeRect(1, 1, sz - 2, sz - 2);
+        mctx.fillStyle = "rgba(0,0,0,0.5)";
+        mctx.beginPath();
+        mctx.arc(sz - 13, 13, 9, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.fillStyle = "#e0533f";
+        mctx.beginPath();
+        mctx.moveTo(sz - 13, 6);
+        mctx.lineTo(sz - 16, 13);
+        mctx.lineTo(sz - 10, 13);
+        mctx.closePath();
+        mctx.fill();
+        mctx.fillStyle = "#fff";
+        mctx.font = "bold 6px sans-serif";
+        mctx.textAlign = "center";
+        mctx.textBaseline = "middle";
+        mctx.fillText("N", sz - 13, 18);
+      }
 
       raf = requestAnimationFrame(loop);
     };
@@ -526,14 +644,22 @@ export default function LiveWorld({
         </div>
       )}
 
-      {/* minimap + hero panel (top-left) */}
-      <div className="absolute left-3 top-3 z-10 w-44">
+      {/* character panel (top-left): minimap, health, rank, stats & gear */}
+      <div className="absolute left-3 top-3 z-10 w-48">
         <div className="panel overflow-hidden p-2">
           <canvas ref={miniRef} width={160} height={160} className="h-32 w-full rounded" />
           <div className="mt-2 px-1">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-parchment-100">{empire.name}</span>
               <span className="text-parchment-300/60">{AGES[empire.age].name.split(" ")[0]}</span>
+            </div>
+            {/* rank + hero damage */}
+            <div className="mt-1 flex items-center gap-1.5 text-[11px]">
+              <span className="font-semibold text-gold-light">🏅 {rankForPower(empire.power).name}</span>
+              <span className="text-parchment-300/40">·</span>
+              <span className="text-parchment-300/70">
+                ⚔ {heroDamage(levelForXp(empire.hero?.skills.combat ?? 0), empire.hero?.tools.sword ?? 1)} dmg
+              </span>
             </div>
             {/* hero HP */}
             <div className="mt-1.5 flex items-center gap-1.5">
@@ -548,9 +674,27 @@ export default function LiveWorld({
                 {Math.ceil(hero.hp)}/{hero.maxHp}
               </span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-[10px] text-parchment-300/55">
-              <span>⚔ {wd.armyAlive} troops afield</span>
-              <span>{activity}</span>
+            {/* equipped gear + troops */}
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-parchment-300/60">
+              <span title="Sword tier">🗡️{empire.hero?.tools.sword ?? 1}</span>
+              <span title="Helmet level">⛑️{empire.armoury?.helmet ?? 0}</span>
+              <span title="Armour level">🦺{empire.armoury?.heroArmour ?? 0}</span>
+              <span className="ml-auto">⚔ {wd.armyAlive} afield · {activity}</span>
+            </div>
+            {/* quick access to customise & shop */}
+            <div className="mt-2 flex gap-1">
+              <button
+                onClick={() => onOpenTab?.("hero")}
+                className="flex-1 rounded-md border border-gold/30 bg-gold/10 px-1 py-1 text-[10px] font-semibold text-gold-light hover:bg-gold/20"
+              >
+                🦸 Customise
+              </button>
+              <button
+                onClick={() => onOpenTab?.("armoury")}
+                className="flex-1 rounded-md border border-gold/30 bg-gold/10 px-1 py-1 text-[10px] font-semibold text-gold-light hover:bg-gold/20"
+              >
+                🛒 Shop
+              </button>
             </div>
           </div>
         </div>

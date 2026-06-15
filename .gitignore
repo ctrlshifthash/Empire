@@ -15,3 +15,9 @@ screenshots/
 # editor
 .vscode/
 .idea/
+
+# secrets / env (never commit)
+.env
+.env.local
+*/.env
+*/.env.local

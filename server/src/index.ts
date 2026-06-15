@@ -3,6 +3,7 @@
 // Express REST for auth + public stats, Socket.IO for the live game, and two
 // timers that drive the persistent 24/7 world (engine tick + bot AI).
 // ─────────────────────────────────────────────────────────────────────────────
+import "dotenv/config"; // load server/.env (TOKEN_MINT, TREASURY_SECRET_KEY, …) before anything reads it
 import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
@@ -14,6 +15,7 @@ import { Server as SocketServer } from "socket.io";
 
 import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, login, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -24,6 +26,8 @@ import {
   actClaimQuest,
   actGather,
   actRush,
+  actBuyArmoury,
+  actBuyTrait,
   actSlay,
   actTrain,
   actUpgrade,
@@ -130,6 +134,23 @@ app.get("/api/leaderboard", (_req, res) => {
   res.json({ ok: true, rows });
 });
 
+// ── Token-holder rewards (Solana) ───────────────────────────────────────────
+app.get("/api/rewards/config", (_req, res) => res.json({ ok: true, configured: rewardsConfigured(), payouts: payoutsLive() }));
+app.get("/api/rewards/:address", async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await rewardStatus(req.params.address)) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+app.post("/api/rewards/:address/claim", async (req, res) => {
+  try {
+    res.json(await claim(req.params.address));
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+
 // Serve the built client in production (single-port deploy).
 const clientDist = join(__dirname, "..", "..", "client", "dist");
 if (existsSync(clientDist)) {
@@ -215,6 +236,12 @@ io.on("connection", (socket) => {
   );
   socket.on("slay", (p: { kind: any }) =>
     withEmpire((id) => handle(actSlay(state.empires[id], p?.kind))),
+  );
+  socket.on("buyArmoury", (p: { kind: any; unit?: any }) =>
+    withEmpire((id) => handle(actBuyArmoury(state.empires[id], p?.kind, p?.unit), "Equipment forged!")),
+  );
+  socket.on("buyTrait", (p: { traitId: any }) =>
+    withEmpire((id) => handle(actBuyTrait(state.empires[id], p?.traitId), "Trait learned!")),
   );
 
   socket.on("disconnect", () => {

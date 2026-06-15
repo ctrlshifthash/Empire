@@ -21,7 +21,10 @@ export type BuildingType =
   | "wall"
   | "tower"
   | "gate"
-  | "market";
+  | "market"
+  | "keep"
+  | "temple"
+  | "wonder";
 
 export type UnitType = "villager" | "spearman" | "archer" | "knight";
 
@@ -91,7 +94,7 @@ export interface BattleReport {
   defenderLosses: Partial<Record<UnitType, number>>;
   attackerWon: boolean;
   loot: Resources;
-  razed?: string | null;
+  razed?: string[]; // buildings destroyed/damaged in the raid (weakens the foe)
   attackPower: number;
   defendPower: number;
 }
@@ -142,6 +145,16 @@ export interface Empire {
   createdAt: number;
   // bot difficulty tier (1 = rookie … 5 = conqueror); undefined for human players
   tier?: number;
+  // bought equipment: per-unit-type army weapon (attack) & armour (defense),
+  // plus the hero's own helmet & armour (extra HP). Undefined on old saves.
+  armoury?: {
+    weapon: Partial<Record<UnitType, number>>;
+    armour: Partial<Record<UnitType, number>>;
+    helmet: number;
+    heroArmour: number;
+  };
+  // learned hero traits/perks (ids from gamedata TRAITS)
+  traits?: string[];
 }
 
 // Public, trimmed view of an empire shown on the world map / to opponents.

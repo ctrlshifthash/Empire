@@ -10,12 +10,13 @@ function dist(ax: number, ay: number, bx: number, by: number): number {
   return Math.round(Math.hypot(ax - bx, ay - by));
 }
 function travelSeconds(d: number): number {
-  return Math.max(15, Math.min(600, 12 + d * 6));
+  return Math.max(6, Math.min(40, 6 + d * 2));
 }
 
 export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
   const { empire, world, others, outgoingMarches, incomingMarches } = snapshot;
   const attack = useGame((s) => s.attack);
+  const pushToast = useGame((s) => s.pushToast);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const markers: WorldMarker[] = useMemo(() => {
@@ -40,6 +41,9 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
       power: o.power,
       name: o.name,
       self: false,
+      rank: o.rank,
+      armySize: o.armySize,
+      age: o.age,
     }));
     return [self, ...rest];
   }, [empire, others]);
@@ -133,6 +137,11 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
             onClose={() => setSelectedId(null)}
             onAttack={(units) => {
               attack(selected.id, units);
+              const eta = travelSeconds(dist(empire.tileX, empire.tileY, selected.x, selected.y));
+              pushToast({
+                kind: "info",
+                text: `⚔ Your army marches on ${selected.name} — the live battle opens in ~${eta}s.`,
+              });
               setSelectedId(null);
             }}
           />
@@ -210,7 +219,8 @@ function TargetPanel({
           <div>
             <div className="font-display text-lg font-bold text-parchment-100">{target.name}</div>
             <div className="text-xs text-parchment-300/55">
-              {target.isBot ? "AI empire" : "Rival ruler"} · {distance} tiles away
+              {target.isBot ? "AI empire" : "Rival ruler"}
+              {target.age ? ` · ${AGE_META[target.age as keyof typeof AGE_META].short}` : ""} · {distance} tiles away
             </div>
           </div>
         </div>
@@ -221,14 +231,47 @@ function TargetPanel({
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-lg bg-black/25 px-3 py-2">
-          <div className="text-xs text-parchment-300/55">Power</div>
+          <div className="text-xs text-parchment-300/55">🏅 Rank</div>
+          <div className="font-semibold text-gold-light">{target.rank ?? (target.isBot ? "AI" : "Ruler")}</div>
+        </div>
+        <div className="rounded-lg bg-black/25 px-3 py-2">
+          <div className="text-xs text-parchment-300/55">⚡ Power</div>
           <div className="font-semibold text-gold-light">{fmt(target.power)}</div>
         </div>
         <div className="rounded-lg bg-black/25 px-3 py-2">
-          <div className="text-xs text-parchment-300/55">March time</div>
+          <div className="text-xs text-parchment-300/55">⚔ Their army</div>
+          <div className="font-semibold">{target.armySize != null ? `${target.armySize} units` : "—"}</div>
+        </div>
+        <div className="rounded-lg bg-black/25 px-3 py-2">
+          <div className="text-xs text-parchment-300/55">🕑 March time</div>
           <div className="font-semibold">{fmtTime(eta)}</div>
         </div>
       </div>
+
+      {/* strength verdict: your power vs theirs */}
+      {(() => {
+        const ratio = target.power > 0 ? empire.power / target.power : 2;
+        const cls =
+          ratio >= 1.1
+            ? "bg-emerald-500/15 text-emerald-300"
+            : ratio >= 0.9
+              ? "bg-gold/15 text-gold-light"
+              : "bg-blood/15 text-blood-light";
+        const msg =
+          ratio >= 1.1
+            ? "✅ You outmatch them — a favourable raid"
+            : ratio >= 0.9
+              ? "⚖️ Evenly matched — send your best troops"
+              : "⚠️ They're stronger than you — risky";
+        return (
+          <div className={`mt-2 rounded-lg px-3 py-2 text-xs font-semibold ${cls}`}>
+            {msg}
+            <span className="ml-1 font-normal opacity-70">
+              (you {fmt(empire.power)} vs them {fmt(target.power)})
+            </span>
+          </div>
+        );
+      })()}
 
       <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-2.5 text-xs leading-relaxed text-parchment-200">
         <div className="mb-0.5 font-semibold text-gold-light">⚔ Spoils of invasion</div>

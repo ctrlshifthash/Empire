@@ -14,34 +14,131 @@ import {
   levelProgress,
   toolUpgradeCost,
 } from "@shared/progression";
+import { HELMET_HP, HERO_ARMOUR_HP, MAX_HERO_GEAR, TRAITS, heroGearCost, traitBonuses } from "@shared/gamedata";
 import { RESOURCE_META, RESOURCE_ORDER, fmt } from "../lib/format";
 import { useGame } from "../lib/store";
 import { ProgressBar } from "./ui";
+import HeroPreview from "./HeroPreview";
 
 export default function HeroView({ empire }: { empire: Empire }) {
   const upgradeTool = useGame((s) => s.upgradeTool);
+  const buyArmoury = useGame((s) => s.buyArmoury);
+  const buyTrait = useGame((s) => s.buyTrait);
   const hero = empire.hero;
   if (!hero) return null;
 
   const combatLvl = levelForXp(hero.skills.combat ?? 0);
+  const helmet = empire.armoury?.helmet ?? 0;
+  const heroArmour = empire.armoury?.heroArmour ?? 0;
+  const gearHp = helmet * HELMET_HP + heroArmour * HERO_ARMOUR_HP;
+  const tb = traitBonuses(empire.traits);
+  const owned = new Set(empire.traits ?? []);
+  const baseHp = heroMaxHp(combatLvl);
+  const maxHp = baseHp + gearHp + tb.hp;
+  const dmg = Math.round((heroDamage(combatLvl, hero.tools.sword ?? 1) + tb.dmg) * (1 + tb.dmgPct));
 
   return (
     <div className="space-y-6">
-      {/* hero summary */}
+      {/* hero summary — with a live portrait of your character */}
       <div className="panel flex flex-wrap items-center gap-6 p-5">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-gold/30 to-transparent text-4xl ring-1 ring-gold/30">
-            🦸
+          <div className="h-28 w-24 overflow-hidden rounded-xl bg-gradient-to-br from-gold/20 to-black/30 ring-1 ring-gold/30">
+            <HeroPreview helmet={helmet} armour={heroArmour} />
           </div>
           <div>
             <div className="font-display text-xl font-bold">{empire.name}'s Champion</div>
             <div className="text-sm text-parchment-300/70">Total level {heroLevel(hero)}</div>
+            <div className="mt-1 text-xs text-parchment-300/55">
+              🗡️ Sword {hero.tools.sword ?? 1} · ⛑️ Helmet {helmet} · 🦺 Armour {heroArmour}
+            </div>
           </div>
         </div>
-        <div className="flex gap-6 text-sm">
+        <div className="flex flex-wrap gap-6 text-sm">
           <Stat label="Combat lvl" value={combatLvl} />
-          <Stat label="Hero damage" value={heroDamage(combatLvl, hero.tools.sword ?? 1)} />
-          <Stat label="Max HP" value={heroMaxHp(combatLvl)} />
+          <Stat label="Hero damage" value={dmg} />
+          <div>
+            <div className="font-display text-2xl font-bold text-gold-light">{maxHp}</div>
+            <div className="text-[11px] uppercase tracking-wider text-parchment-300/55">Max HP</div>
+            <div className="text-[10px] text-parchment-300/45">
+              {baseHp} base{gearHp ? ` +${gearHp} gear` : ""}{tb.hp ? ` +${tb.hp} traits` : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* hero equipment — customise your character with coins */}
+      <div>
+        <h3 className="mb-1 font-display text-lg font-semibold">🛡️ Equipment</h3>
+        <p className="mb-3 text-sm text-parchment-300/60">
+          Outfit your champion with coins. Your sword is below in Tools; a helmet and armour raise your max HP and
+          change how your hero looks in the world.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <GearCard
+            icon="⛑️"
+            name="Helmet"
+            level={helmet}
+            bonus={`+${helmet * HELMET_HP} max HP`}
+            cost={heroGearCost(helmet)}
+            coins={empire.coins}
+            maxed={helmet >= MAX_HERO_GEAR}
+            onBuy={() => buyArmoury("helmet")}
+          />
+          <GearCard
+            icon="🦺"
+            name="Body Armour"
+            level={heroArmour}
+            bonus={`+${heroArmour * HERO_ARMOUR_HP} max HP`}
+            cost={heroGearCost(heroArmour)}
+            coins={empire.coins}
+            maxed={heroArmour >= MAX_HERO_GEAR}
+            onBuy={() => buyArmoury("heroArmour")}
+          />
+        </div>
+      </div>
+
+      {/* traits / perks — free & paid */}
+      <div>
+        <h3 className="mb-1 font-display text-lg font-semibold">✨ Traits</h3>
+        <p className="mb-3 text-sm text-parchment-300/60">
+          Permanent perks for your champion. Some are free to learn; stronger ones cost coins.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {TRAITS.map((t) => {
+            const have = owned.has(t.id);
+            const free = t.cost === 0;
+            const afford = empire.coins >= t.cost;
+            return (
+              <div key={t.id} className={`panel p-3 ${have ? "ring-1 ring-emerald-500/40" : ""}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{t.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-parchment-100">{t.name}</div>
+                    <div className="text-xs text-emerald-300/85">{t.desc}</div>
+                  </div>
+                </div>
+                {have ? (
+                  <div className="mt-2 rounded-md bg-emerald-500/10 py-1.5 text-center text-xs font-semibold text-emerald-300">
+                    ✓ Active
+                  </div>
+                ) : (
+                  <button
+                    className={`mt-2 w-full rounded-md border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                      free
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                        : afford
+                          ? "border-gold/40 bg-gold/10 text-gold-light hover:bg-gold/20"
+                          : "border-parchment-300/10 text-parchment-300/40"
+                    }`}
+                    disabled={!free && !afford}
+                    onClick={() => buyTrait(t.id)}
+                  >
+                    {free ? "Learn — Free" : `Learn — 🪙 ${t.cost}`}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -168,6 +265,48 @@ function Stat({ label, value }: { label: string; value: number }) {
     <div>
       <div className="font-display text-2xl font-bold text-gold-light">{value}</div>
       <div className="text-[11px] uppercase tracking-wider text-parchment-300/55">{label}</div>
+    </div>
+  );
+}
+
+function GearCard({
+  icon,
+  name,
+  level,
+  bonus,
+  cost,
+  coins,
+  maxed,
+  onBuy,
+}: {
+  icon: string;
+  name: string;
+  level: number;
+  bonus: string;
+  cost: number;
+  coins: number;
+  maxed: boolean;
+  onBuy: () => void;
+}) {
+  return (
+    <div className="panel p-4">
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">{icon}</span>
+        <div>
+          <div className="font-semibold text-parchment-100">{name}</div>
+          <div className="text-xs text-gold-light">
+            Level {level}/{MAX_HERO_GEAR}
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 text-xs text-emerald-300">{bonus}</div>
+      {maxed ? (
+        <div className="mt-3 rounded-lg bg-black/20 py-2 text-center text-xs text-gold-light">★ Fully forged</div>
+      ) : (
+        <button className="btn-gold btn-sm mt-3 w-full" disabled={coins < cost} onClick={onBuy}>
+          ⬆ Forge — 🪙 {cost}
+        </button>
+      )}
     </div>
   );
 }

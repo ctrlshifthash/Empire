@@ -373,7 +373,7 @@ export class World {
       let by = cy;
       for (let tries = 0; tries < 40; tries++) {
         const ang = rng() * Math.PI * 2;
-        const rad = 12 + rng() * 30; // spread further out across the bigger map
+        const rad = 16 + rng() * 28; // keep camps well outside the town's safe zone
         bx = cx + Math.cos(ang) * rad;
         by = cy + Math.sin(ang) * rad;
         if (bx > 4 && by > 4 && bx < this.W - 4 && by < this.H - 4) break;
@@ -382,10 +382,10 @@ export class World {
         this.spawnEnemy(bx + (rng() - 0.5) * 2.5, by + (rng() - 0.5) * 2.5);
       }
     }
-    // lone wolves roaming
+    // lone wolves roaming (also kept clear of the town's safe zone)
     for (let i = 0; i < 8; i++) {
       const ang = rng() * Math.PI * 2;
-      const rad = 8 + rng() * 32;
+      const rad = 15 + rng() * 28;
       this.spawnEnemy(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, "wolf");
     }
 
@@ -441,10 +441,16 @@ export class World {
   setHeroStats(stats: { dmg: number; maxHp: number; yield: Record<ResourceKind, number> }) {
     this.heroStats.dmg = stats.dmg;
     this.heroStats.yield = stats.yield;
-    const wasFull = this.hero.hp >= this.hero.maxHp;
+    // raising max HP (buying armour/traits) heals the hero by the same amount
+    const gain = Math.max(0, stats.maxHp - this.hero.maxHp);
     this.hero.maxHp = stats.maxHp;
-    if (wasFull) this.hero.hp = stats.maxHp;
-    else this.hero.hp = Math.min(this.hero.hp, stats.maxHp);
+    this.hero.hp = Math.min(stats.maxHp, this.hero.hp + gain);
+  }
+
+  // visual loadout of the hero, reflected in the world (helmet/armour levels)
+  heroLook = { helmet: 0, armour: 0 };
+  setHeroLook(helmet: number, armour: number) {
+    this.heroLook = { helmet, armour };
   }
 
   setArmy(counts: Record<UnitType, number>) {
@@ -684,6 +690,17 @@ export class World {
       return;
     }
     if (h.swing > 0) h.swing -= dt;
+
+    // auto-retaliate: if an enemy is right on top of us, fight back (and rally
+    // the army) instead of standing there harvesting and getting killed
+    if (h.attackId == null) {
+      const foe = this.enemyAt(h.x, h.y, 1.8);
+      if (foe) {
+        h.attackId = foe.id;
+        h.harvestId = null;
+        for (const u of this.units) u.attackId = foe.id;
+      }
+    }
 
     // attacking an enemy
     if (h.attackId != null) {

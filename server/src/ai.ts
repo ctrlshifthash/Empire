@@ -13,6 +13,7 @@ import {
   actTrain,
   actUpgrade,
   populationCap,
+  recomputePower,
   refreshEmpire,
   usedPopulation,
 } from "./engine.ts";
@@ -105,6 +106,7 @@ function maybeAttack(bot: Empire): void {
 
 export function stepBot(bot: Empire): void {
   refreshEmpire(bot, now());
+  recomputePower(bot); // keep power current so the tier cap is enforced accurately
 
   // a bot that's reached its difficulty tier's power cap stops growing, so it
   // stays a farmable target in its band instead of snowballing forever

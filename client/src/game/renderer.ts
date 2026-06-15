@@ -24,6 +24,9 @@ const BUILDING_COLOR: Record<BuildingType, string> = {
   tower: "#5f5a52",
   gate: "#7a6a4a",
   market: "#3f6bb0",
+  keep: "#8a8398",
+  temple: "#c9b07a",
+  wonder: "#d8c050",
 };
 
 function roundRect(
@@ -49,6 +52,30 @@ function hash(x: number, y: number, seed: number): number {
   let h = (x * 374761393 + y * 668265263 + seed * 2147483647) | 0;
   h = (h ^ (h >> 13)) * 1274126177;
   return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+}
+
+// Smooth (interpolated) value noise so terrain forms coherent lakes, forests
+// and hills instead of per-tile static. `scale` = feature size in tiles.
+function smoothNoise(x: number, y: number, seed: number, scale: number): number {
+  const gx = x / scale;
+  const gy = y / scale;
+  const x0 = Math.floor(gx);
+  const y0 = Math.floor(gy);
+  const fx = gx - x0;
+  const fy = gy - y0;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const a = hash(x0, y0, seed);
+  const b = hash(x0 + 1, y0, seed);
+  const c = hash(x0, y0 + 1, seed);
+  const d = hash(x0 + 1, y0 + 1, seed);
+  const top = a + (b - a) * sx;
+  const bot = c + (d - c) * sx;
+  return top + (bot - top) * sy;
+}
+// Two octaves → smooth landmasses with a little fine detail.
+function terrainNoise(x: number, y: number, seed: number): number {
+  return smoothNoise(x, y, seed, 7) * 0.72 + smoothNoise(x, y, seed + 1337, 3) * 0.28;
 }
 
 // ── Base view ───────────────────────────────────────────────────────────────
@@ -202,6 +229,9 @@ export interface WorldMarker {
   power: number;
   name: string;
   self: boolean;
+  rank?: string;
+  armySize?: number;
+  age?: string;
 }
 
 export interface WorldLayout {
@@ -275,20 +305,30 @@ export function renderWorld(
   const layout = getWorldLayout(w, h, world, view);
   const s = layout.scale;
 
-  // terrain
+  // terrain — coherent landmasses: water with shores, grass, forest, hills, peaks
   for (let ty = 0; ty < world.height; ty++) {
     for (let tx = 0; tx < world.width; tx++) {
-      const n = hash(tx, ty, world.seed);
+      const v = terrainNoise(tx, ty, world.seed) + (hash(tx, ty, world.seed) - 0.5) * 0.04;
       let col: string;
-      if (n < 0.12) col = "#1f3a52"; // water
-      else if (n < 0.34) col = "#2f5d3a"; // forest
-      else if (n < 0.5) col = "#3a6b41"; // grass dark
-      else if (n < 0.78) col = "#467a48"; // grass
-      else col = "#6b6a4a"; // hills
+      if (v < 0.28) col = "#284f6e"; //       deep water
+      else if (v < 0.34) col = "#356986"; //  shallow water
+      else if (v < 0.375) col = "#c2ab78"; // sandy shore
+      else if (v < 0.56) col = "#4a7a44"; //  grass
+      else if (v < 0.70) col = "#3c6739"; //  meadow
+      else if (v < 0.82) col = "#2c5230"; //  forest
+      else if (v < 0.9) col = "#6f6347"; //   hills
+      else col = "#8c8579"; //                mountains
       ctx.fillStyle = col;
       ctx.fillRect(layout.ox + tx * s, layout.oy + ty * s, s + 1, s + 1);
     }
   }
+
+  // soft vignette to frame the map
+  const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7);
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.28)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
 
   // subtle grid
   ctx.strokeStyle = "rgba(0,0,0,0.12)";
@@ -350,9 +390,24 @@ export function renderWorld(
     ctx.beginPath();
     ctx.arc(mx, my, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // stronghold icon — a castle for rivals, a crown for you
+    ctx.font = `${Math.round(r * 1.15)}px serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(m.self ? "👑" : "🏰", mx, my + 0.5);
+
+    // name label under the marker
+    const label = m.name.length > 14 ? m.name.slice(0, 13) + "…" : m.name;
+    ctx.font = "600 9px sans-serif";
+    const lw = ctx.measureText(label).width;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(mx - lw / 2 - 3, my + r + 2, lw + 6, 12);
+    ctx.fillStyle = m.self ? "#f4dd8f" : "#e8e2d2";
+    ctx.fillText(label, mx, my + r + 8);
 
     // online dot
     if (m.online && !m.isBot) {

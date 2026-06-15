@@ -4,10 +4,13 @@
 // takes heavy proportional casualties while the winner loses a share scaled by
 // how close the fight was. Defenders gain a home / wall advantage.
 // ─────────────────────────────────────────────────────────────────────────────
-import { UNITS } from "./gamedata";
+import { GEAR_BONUS, UNITS } from "./gamedata";
 import type { Resources, UnitType } from "./types";
 
 export type Army = Partial<Record<UnitType, number>>;
+export type Gear = Partial<Record<UnitType, number>>; // weapon/armour level per unit type
+
+const gearMult = (gear: Gear | undefined, u: UnitType) => 1 + (gear?.[u] ?? 0) * GEAR_BONUS;
 
 export interface BattleResult {
   attackerWins: boolean;
@@ -24,24 +27,24 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function offensivePower(army: Army): number {
+function offensivePower(army: Army, gear?: Gear): number {
   let p = 0;
   for (const [u, n] of Object.entries(army)) {
     if (!n) continue;
     const def = UNITS[u as UnitType];
     if (!def) continue; // ignore unknown unit keys (defensive)
-    p += n * (def.attack + def.hp * 0.05);
+    p += n * (def.attack + def.hp * 0.05) * gearMult(gear, u as UnitType);
   }
   return p;
 }
 
-function defensivePower(army: Army, wallMultiplier: number, garrisonBonus: number): number {
+function defensivePower(army: Army, wallMultiplier: number, garrisonBonus: number, gear?: Gear): number {
   let p = 0;
   for (const [u, n] of Object.entries(army)) {
     if (!n) continue;
     const def = UNITS[u as UnitType];
     if (!def) continue;
-    p += n * (def.defense + def.hp * 0.05);
+    p += n * (def.defense + def.hp * 0.05) * gearMult(gear, u as UnitType);
   }
   return p * wallMultiplier + garrisonBonus;
 }
@@ -77,14 +80,17 @@ export interface DefenderContext {
   garrisonBonus: number;
   // resources available to plunder
   resources: Resources;
+  // defender's armour levels per unit type
+  gear?: Gear;
 }
 
-export function resolveBattle(attacker: Army, defender: DefenderContext): BattleResult {
-  const attackPower = offensivePower(attacker);
+export function resolveBattle(attacker: Army, defender: DefenderContext, attackerGear?: Gear): BattleResult {
+  const attackPower = offensivePower(attacker, attackerGear);
   const defendPower = defensivePower(
     defender.army,
     defender.wallMultiplier,
     defender.garrisonBonus,
+    defender.gear,
   );
 
   const attackerWins = attackPower > defendPower;

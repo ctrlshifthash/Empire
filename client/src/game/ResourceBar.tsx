@@ -1,8 +1,9 @@
-import type { Empire } from "@shared/types";
+import type { Empire, ResourceKind } from "@shared/types";
+import { rankForPower } from "@shared/gamedata";
 import { RESOURCE_META, RESOURCE_ORDER, AGE_META, fmt } from "../lib/format";
 import { populationCap, productionPerMin, usedPopulation, warehouseCapacity } from "./derive";
 
-export default function ResourceBar({ empire }: { empire: Empire }) {
+export default function ResourceBar({ empire, onLocate }: { empire: Empire; onLocate?: (kind: ResourceKind) => void }) {
   const cap = warehouseCapacity(empire);
   const rates = productionPerMin(empire);
   const popUsed = usedPopulation(empire);
@@ -16,10 +17,12 @@ export default function ResourceBar({ empire }: { empire: Empire }) {
           const amount = Math.floor(empire.resources[k]);
           const near = amount >= cap * 0.97;
           return (
-            <div
+            <button
               key={k}
-              className="flex shrink-0 items-center gap-2 rounded-lg border border-parchment-300/10 bg-black/30 px-3 py-1.5"
-              title={`${RESOURCE_META[k].label} — capacity ${fmt(cap)}`}
+              type="button"
+              onClick={() => onLocate?.(k)}
+              className="group flex shrink-0 items-center gap-2 rounded-lg border border-parchment-300/10 bg-black/30 px-3 py-1.5 text-left transition-colors hover:border-gold/40 hover:bg-white/5"
+              title={`${RESOURCE_META[k].label} — capacity ${fmt(cap)}. Click to send your hero to the nearest source.`}
             >
               <span className="text-lg leading-none">{RESOURCE_META[k].icon}</span>
               <div className="leading-tight">
@@ -29,9 +32,10 @@ export default function ResourceBar({ empire }: { empire: Empire }) {
                 </div>
                 <div className="text-[10px] font-medium text-emerald-400/80">
                   +{Math.round(rates[k])}/min
+                  <span className="ml-1 text-parchment-300/40 opacity-0 transition-opacity group-hover:opacity-100">📍 find</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
 
@@ -63,6 +67,14 @@ export default function ResourceBar({ empire }: { empire: Empire }) {
             <span className="font-semibold" style={{ color: AGE_META[empire.age].color }}>
               {AGE_META[empire.age].short}
             </span>
+          </div>
+
+          <div
+            className="hidden items-center gap-1.5 rounded-lg border border-gold/25 bg-black/30 px-3 py-1.5 sm:flex"
+            title={`Rank — +${Math.round((rankForPower(empire.power).gatherMult - 1) * 100)}% harvest yield. Rise by gaining power.`}
+          >
+            <span>🏅</span>
+            <span className="font-semibold text-gold-light">{rankForPower(empire.power).name}</span>
           </div>
 
           <div className="hidden items-center gap-1.5 rounded-lg border border-parchment-300/10 bg-black/30 px-3 py-1.5 md:flex" title="Empire power (leaderboard score)">

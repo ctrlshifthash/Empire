@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
 import { useGame } from "../lib/store";
+import { useWallet } from "../lib/web3";
+import RewardsPanel from "../game/RewardsPanel";
 
 const LINKS = [
   { to: "/", label: "Home", end: true },
@@ -13,9 +15,11 @@ const LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
   const user = useGame((s) => s.user);
   const token = useGame((s) => s.token);
   const logout = useGame((s) => s.logout);
+  const walletAddr = useWallet((s) => s.address);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,6 +64,13 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <button
+            className="chip hover:border-gold/40"
+            onClick={() => setRewardsOpen(true)}
+            title="Token rewards — connect your wallet & claim SOL"
+          >
+            💰 {walletAddr ? `${walletAddr.slice(0, 4)}…${walletAddr.slice(-4)}` : "Rewards"}
+          </button>
           {token && user ? (
             <>
               <Link to="/play" className="chip hover:border-gold/40">
@@ -135,6 +146,24 @@ export default function Navbar() {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* token rewards modal */}
+      {rewardsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 backdrop-blur-sm p-4 pt-20"
+          onClick={() => setRewardsOpen(false)}
+        >
+          <div className="relative w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="absolute -top-10 right-0 rounded-lg border border-parchment-300/20 bg-black/60 px-3 py-1.5 text-sm text-parchment-100/90 hover:border-gold/50"
+              onClick={() => setRewardsOpen(false)}
+            >
+              ✕ Close
+            </button>
+            <RewardsPanel />
           </div>
         </div>
       )}

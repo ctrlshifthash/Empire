@@ -60,7 +60,7 @@ export default function LogView({ empire, compact = false }: { empire: Empire; c
                     </div>
                     <div className={`text-xs ${youWon ? "text-emerald-300" : "text-blood-light"}`}>
                       {youWon ? "Victory" : "Defeat"}
-                      {b.razed ? ` · razed ${b.razed}` : ""} · {ago(b.at, now)}
+                      {b.razed?.length ? ` · razed ${b.razed.join(", ")}` : ""} · {ago(b.at, now)}
                     </div>
                   </div>
                   <button className="btn-gold btn-sm" onClick={() => watchBattle(b)}>
