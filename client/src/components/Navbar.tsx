@@ -83,7 +83,9 @@ export default function Navbar() {
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <nav className="container-x flex h-16 items-center justify-between gap-4">
+      <nav className="container-x flex h-16 items-center gap-4">
+        {/* left: brand */}
+        <div className="flex flex-1 items-center">
         <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <Logo />
           <span className="flex flex-col leading-none">
@@ -93,7 +95,9 @@ export default function Navbar() {
             </span>
           </span>
         </Link>
+        </div>
 
+        {/* center: primary nav — always centered */}
         <div className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <NavLink
@@ -109,8 +113,9 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-5 md:-mr-6 md:flex">
-          <div className="flex items-center gap-3">
+        {/* right: account + social links */}
+        <div className="flex flex-1 items-center justify-end gap-4 md:-mr-4">
+          <div className="hidden items-center gap-3 md:flex">
             {token && user ? (
               <>
                 <NavLink
@@ -142,17 +147,19 @@ export default function Navbar() {
               </Link>
             )}
           </div>
-          <SocialLinks />
-        </div>
+          <div className="hidden md:block">
+            <SocialLinks className="border-l border-parchment-300/15 pl-4" />
+          </div>
 
-        {/* mobile toggle */}
-        <button
-          className="btn-ghost btn-sm md:hidden"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Toggle menu"
-        >
-          {open ? "✕" : "☰"}
-        </button>
+          {/* mobile toggle */}
+          <button
+            className="btn-ghost btn-sm md:hidden"
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Toggle menu"
+          >
+            {open ? "✕" : "☰"}
+          </button>
+        </div>
       </nav>
 
       {open && (
