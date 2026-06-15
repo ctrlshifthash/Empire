@@ -6,18 +6,19 @@ echo ============================================================
 echo   EMPIRES ETERNAL
 echo ============================================================
 echo.
-echo   Starting the game server and client...
+echo   Building the game and starting the server...
+echo   (the first time can take ~10-20 seconds)
 echo.
-echo   IMPORTANT: keep THIS window open while you play.
-echo   Closing it stops the server and you won't be able to log in.
+echo   When you see:
+echo       Empires Eternal server running on http://localhost:4000
+echo   open  http://localhost:4000  in your browser.
 echo.
-echo   When you see a line like:
-echo       CLIENT  ^>  Local:  http://localhost:5173/
-echo   open that address in your browser.
+echo   KEEP THIS WINDOW OPEN while you play. Close it to stop.
 echo ============================================================
 echo.
 
-call npm run dev
+call npm install
+call npm run preview
 
 echo.
 echo The game server has stopped. Press any key to close.

@@ -28,6 +28,7 @@ function loadList(prefix: string, n: number): HTMLImageElement[] {
 
 export const TILES = {
   ready: false,
+  grassBase: [load("/tiles/grass_base_1.png"), load("/tiles/grass_base_2.png"), load("/tiles/grass_base_3.png")], // plain grass (made from the pack)
   grass: loadList("/tiles/grass/grass_path_", 16), // grass + cobblestone paths
   wall: loadList("/tiles/wall/wall_", 16), // stone walls & towers
   plot: loadList("/tiles/plot/weat_", 16), // wooden fenced building plots
@@ -39,6 +40,7 @@ export const TILES = {
 // mark ready once the core tiles have loaded
 let pending = 0;
 const all: HTMLImageElement[] = [
+  ...TILES.grassBase,
   ...TILES.grass,
   ...TILES.wall,
   ...TILES.plot,

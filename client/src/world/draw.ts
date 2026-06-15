@@ -406,28 +406,21 @@ export function renderWorld(
 
   const town = world.town;
 
-  // ground: procedural grass (matched to the tileset's green), real cobble paths
+  // ground: real grass tiles (made from the pack), real cobblestone paths
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       const s = toScreen(tx, ty);
-      const n = hash(tx, ty, 11);
-      let col: string;
-      if (n < 0.12) col = "#3f6230";
-      else if (n < 0.5) col = "#46692f";
-      else if (n < 0.82) col = "#4d7536";
-      else col = "#56813c";
-      ctx.fillStyle = col;
-      tileDiamond(ctx, s.x, s.y);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.07)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      if (n > 0.9) {
-        ctx.fillStyle = "rgba(120,170,90,0.45)";
-        ctx.fillRect(s.x - 3, s.y - 3, 3, 4);
-        ctx.fillRect(s.x + 4, s.y, 3, 4);
+      if (TILES.ready) {
+        const gi = Math.abs(tx * 7 + ty * 13) % TILES.grassBase.length;
+        drawTile(ctx, TILES.grassBase[gi], s.x, s.y);
+      } else {
+        // procedural fallback while the tiles load
+        const n = hash(tx, ty, 11);
+        ctx.fillStyle = n < 0.5 ? "#46692f" : "#4d7536";
+        tileDiamond(ctx, s.x, s.y);
+        ctx.fill();
       }
-      // real cobblestone road on path tiles
+      // cobblestone road on path tiles
       if (town && town.paths.has(`${tx},${ty}`) && isReady(TILES.grass[7])) {
         drawTile(ctx, TILES.grass[7], s.x, s.y);
       }
@@ -470,8 +463,24 @@ export function renderWorld(
     for (const [key, kind] of town.walls) {
       const [wx, wy] = key.split(",").map(Number);
       const s = toScreen(wx, wy);
-      objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[WALL_TILE[kind]], s.x, s.y) });
+      // draw straight walls a touch larger so the narrow pieces overlap seamlessly
+      const sc = kind === "corner" ? 1.12 : 1.22;
+      objs.push({ key: wx + wy, draw: () => drawTile(ctx, TILES.wall[WALL_TILE[kind]], s.x, s.y, sc) });
     }
+    // fenced building plots laid out inside the walls
+    for (const p of town.decorPlots) {
+      const s = toScreen(p.x, p.y);
+      objs.push({ key: p.x + p.y - 0.01, draw: () => drawTile(ctx, TILES.plot[p.tile], s.x, s.y) });
+    }
+    // a working windmill inside the town
+    const ws = toScreen(town.windmill.x, town.windmill.y);
+    objs.push({
+      key: town.windmill.x + town.windmill.y,
+      draw: () => {
+        drawTile(ctx, TILES.plot[1], ws.x, ws.y);
+        drawTileFrame(ctx, TILES.windmill, Math.floor(now / 110), WINDMILL_FRAMES, ws.x, ws.y);
+      },
+    });
   }
 
   for (const n of world.nodes) {

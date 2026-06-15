@@ -137,6 +137,8 @@ export class World {
     walls: Map<string, "corner" | "h" | "v">;
     paths: Set<string>;
     gate: { x: number; y: number };
+    decorPlots: Array<{ x: number; y: number; tile: number }>;
+    windmill: { x: number; y: number };
   };
   private focus: { x: number; y: number } | null = null;
   private focusTime = 0;
@@ -206,7 +208,27 @@ export class World {
     const paths = new Set<string>();
     for (let y = cy; y <= cy + R; y++) paths.add(`${cx},${y}`); // gate -> centre
     for (let x = cx - R + 1; x <= cx + R - 1; x++) paths.add(`${x},${cy}`); // cross road
-    this.town = { cx, cy, R, walls, paths, gate };
+
+    // fenced building plots laid out inside the walls (avoiding the roads)
+    const decorPlots: Array<{ x: number; y: number; tile: number }> = [];
+    const candidates = [
+      [-4, -4], [-2, -4], [2, -4], [4, -4],
+      [-4, -2], [4, -2],
+      [-4, 2], [4, 2],
+      [-4, 4], [-2, 4], [2, 4], [4, 4],
+      [-3, -3], [3, -3], [-3, 3], [3, 3],
+    ];
+    for (const [dx, dy] of candidates) {
+      const x = cx + dx;
+      const y = cy + dy;
+      if (paths.has(`${x},${y}`)) continue;
+      // plot tiles 1,2,3,4,6,7,8,9 are full-ish fenced lots; vary them
+      const tiles = [0, 1, 2, 3, 5, 6, 7, 8];
+      const t = tiles[(Math.abs(dx * 7 + dy * 13)) % tiles.length];
+      decorPlots.push({ x, y, tile: t });
+    }
+    const windmill = { x: cx - 3, y: cy - 3 };
+    this.town = { cx, cy, R, walls, paths, gate, decorPlots, windmill };
   }
 
   private generate() {
