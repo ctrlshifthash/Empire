@@ -272,4 +272,4 @@ export interface ClientToServer {
 
 // Dimensions of the live, walkable local world (tiles), shared so the server
 // can place buildings the client will render.
-export const LOCAL_WORLD = { width: 64, height: 64, centerX: 24, centerY: 24 } as const;
+export const LOCAL_WORLD = { width: 80, height: 80, centerX: 24, centerY: 24 } as const;

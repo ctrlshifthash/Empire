@@ -281,9 +281,13 @@ export class World {
       { x: cx + 16, y: cy - 16 },
       { x: cx - 16, y: cy + 16 },
       { x: cx + 16, y: cy + 16 },
-      { x: cx + 28, y: cy + 28 }, // far frontier lookouts in the expanded map
-      { x: cx + 30, y: cy },
-      { x: cx, y: cy + 30 },
+      // far frontier lookouts dotting the expanded map
+      { x: cx + 36, y: cy + 36 },
+      { x: cx + 40, y: cy + 8 },
+      { x: cx + 8, y: cy + 40 },
+      { x: cx + 46, y: cy + 46 },
+      { x: cx + 30, y: cy - 14 },
+      { x: cx - 14, y: cy + 30 },
     ].filter((t) => t.x > 2 && t.y > 2 && t.x < this.W - 2 && t.y < this.H - 2);
 
     // fenced building plots laid out inside the walls (avoiding the roads)
@@ -324,7 +328,7 @@ export class World {
       { kind: "tree", count: 6, spread: 2.4 },
       { kind: "rock", count: 4, spread: 1.8 },
       { kind: "bush", count: 5, spread: 2.4 },
-      // extra clusters to keep the larger 64×64 world full of things to gather
+      // extra clusters to keep the larger 80×80 world full of things to gather
       { kind: "tree", count: 8, spread: 2.6 },
       { kind: "tree", count: 7, spread: 2.4 },
       { kind: "rock", count: 5, spread: 2.0 },
@@ -332,6 +336,12 @@ export class World {
       { kind: "gold", count: 2, spread: 1.4 },
       { kind: "bush", count: 6, spread: 2.6 },
       { kind: "rock", count: 5, spread: 2.2 },
+      { kind: "tree", count: 8, spread: 2.6 },
+      { kind: "tree", count: 6, spread: 2.2 },
+      { kind: "bush", count: 7, spread: 2.8 },
+      { kind: "rock", count: 5, spread: 2.0 },
+      { kind: "gold", count: 3, spread: 1.6 },
+      { kind: "tree", count: 7, spread: 2.4 },
     ];
     for (const c of clusters) {
       // cluster center somewhere away from the town clearing
@@ -354,12 +364,12 @@ export class World {
     }
 
     // bandit camps scattered around the larger world
-    for (let camp = 0; camp < 3; camp++) {
+    for (let camp = 0; camp < 4; camp++) {
       let bx = cx;
       let by = cy;
       for (let tries = 0; tries < 40; tries++) {
         const ang = rng() * Math.PI * 2;
-        const rad = 12 + rng() * 16; // spread further out across the bigger map
+        const rad = 12 + rng() * 30; // spread further out across the bigger map
         bx = cx + Math.cos(ang) * rad;
         by = cy + Math.sin(ang) * rad;
         if (bx > 4 && by > 4 && bx < this.W - 4 && by < this.H - 4) break;
@@ -369,9 +379,9 @@ export class World {
       }
     }
     // lone wolves roaming
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       const ang = rng() * Math.PI * 2;
-      const rad = 8 + rng() * 18;
+      const rad = 8 + rng() * 32;
       this.spawnEnemy(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, "wolf");
     }
 
