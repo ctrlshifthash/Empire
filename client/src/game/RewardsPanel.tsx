@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { privyConfigured, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
-import { AGES, rankForPower, nextRank } from "@shared/gamedata";
+import { AGES, rankForPower, nextRank, REWARD_TIERS, rewardTier } from "@shared/gamedata";
 import type { BattleReport } from "@shared/types";
 
 function short(a: string) {
@@ -186,7 +186,12 @@ export default function RewardsPanel() {
             <BigStat label="Claimable now" value={fmtSol(status?.claimableSol ?? 0)} gold />
             <BigStat label="Total earned" value={fmtSol(status?.totalClaimedSol ?? 0, 4)} />
             <BigStat label="Daily rate" value={fmtSol(status?.dailySol ?? 0, 4)} />
-            <BigStat label="Multiplier" value={`${(status?.multiplier ?? 1).toFixed(2)}×`} gold />
+            <BigStat
+              label="Boost tier"
+              value={holds ? `${status?.tier} ${(status?.multiplier ?? 1).toFixed(2)}×` : "—"}
+              color={holds ? status?.tierColor : undefined}
+              gold
+            />
           </div>
 
           {status?.configured && holds && (
@@ -235,6 +240,8 @@ export default function RewardsPanel() {
             )}
             {msg && <div className="mt-2 text-center text-sm text-parchment-200">{msg}</div>}
           </div>
+
+          <TierLadder share={status?.holdings.sharePct ?? 0} holds={holds} />
         </div>
       )}
 
@@ -279,12 +286,64 @@ export default function RewardsPanel() {
   );
 }
 
-function BigStat({ label, value, gold }: { label: string; value: string; gold?: boolean }) {
+function BigStat({
+  label,
+  value,
+  gold,
+  color,
+}: {
+  label: string;
+  value: string;
+  gold?: boolean;
+  color?: string;
+}) {
   return (
     <div className="rounded-lg bg-black/30 px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-wide text-parchment-300/55">{label}</div>
-      <div className={`mt-0.5 text-lg font-bold tabular-nums ${gold ? "text-gold-light" : "text-parchment-100"}`}>
+      <div
+        className={`mt-0.5 text-lg font-bold tabular-nums ${color ? "" : gold ? "text-gold-light" : "text-parchment-100"}`}
+        style={color ? { color } : undefined}
+      >
         {value}
+      </div>
+    </div>
+  );
+}
+
+// The holder-tier ladder: shows every tier, highlights the one the wallet sits
+// in, and the supply share each one needs.
+function TierLadder({ share, holds }: { share: number; holds: boolean }) {
+  const current = holds ? rewardTier(share) : null;
+  return (
+    <div className="mt-4 border-t border-parchment-300/10 pt-3">
+      <div className="mb-2 text-[11px] uppercase tracking-wide text-parchment-300/55">
+        Holder tiers — bigger holdings, bigger boost
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {REWARD_TIERS.map((t) => {
+          const active = current?.name === t.name;
+          return (
+            <div
+              key={t.name}
+              className={`rounded-lg px-2.5 py-2 ${active ? "border-2" : "border border-parchment-300/10 bg-black/20"}`}
+              style={active ? { borderColor: t.color, background: `${t.color}1f` } : undefined}
+            >
+              <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: t.color }}>
+                <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />
+                {t.name}
+              </div>
+              <div className="mt-0.5 text-[11px] text-parchment-300/60">
+                {t.minShare === 0 ? "any holder" : `≥ ${(t.minShare * 100).toFixed(t.minShare < 0.01 ? 1 : 0)}%`}
+              </div>
+              <div className="text-[11px] font-semibold text-parchment-200">{t.multiplier.toFixed(2)}× boost</div>
+              {active && (
+                <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: t.color }}>
+                  ◆ You
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

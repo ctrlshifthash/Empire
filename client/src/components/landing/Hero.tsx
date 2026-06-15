@@ -58,9 +58,9 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-parchment-300/80"
         >
-          Found your settlement, gather wood, food, gold and stone, raise mighty armies and march
-          through four ages of history. Battle other players and cunning AI empires, complete quests,
-          earn coins — in a world that keeps turning 24/7, even while you rest.
+          Found your settlement, raise mighty armies and march through four ages of history. Battle
+          other players and cunning AI empires, spectate raids live, and climb the ranks — in a world
+          that turns 24/7. Hold the token and earn real Solana from a daily reward pool.
         </motion.p>
 
         <motion.div

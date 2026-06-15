@@ -21,6 +21,7 @@ import {
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
+import { rewardTier, nextRewardTier } from "../../shared/gamedata.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
@@ -88,9 +89,10 @@ export async function getHoldings(address: string): Promise<Holdings> {
   return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
 }
 
-// Bigger holders earn a bigger multiplier on their pro-rata share (up to 3×).
+// Bigger holders earn a bigger multiplier on their pro-rata share. The exact
+// value comes from the holder's reward tier (Bronze … Diamond, up to 3×).
 export function multiplier(sharePct: number): number {
-  return 1 + Math.min(2, sharePct * 8);
+  return rewardTier(sharePct).multiplier;
 }
 
 export interface RewardStatus {
@@ -107,10 +109,16 @@ export interface RewardStatus {
   cooldownMs: number; // ms until the next claim is allowed (0 = claim now)
   nextClaimAt: number; // timestamp the next claim unlocks (0 = now)
   memberSince: number; // first time we saw this wallet holding (0 = never)
+  tier: string; // holder tier name (Bronze … Diamond)
+  tierColor: string; // tier accent colour
+  nextTier: string | null; // next tier name, or null at the top
+  nextTierShare: number | null; // supply share needed to reach the next tier
 }
 
 export async function rewardStatus(address: string): Promise<RewardStatus> {
   const holdings = await getHoldings(address);
+  const tier = rewardTier(holdings.sharePct);
+  const next = nextRewardTier(holdings.sharePct);
   const m = multiplier(holdings.sharePct);
   const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
   const rec = ensureRecord(address, holdings.balance > 0);
@@ -133,6 +141,10 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     cooldownMs: Math.max(0, nextClaimAt - now()),
     nextClaimAt,
     memberSince: rec.firstSeenAt || 0,
+    tier: tier.name,
+    tierColor: tier.color,
+    nextTier: next?.name ?? null,
+    nextTierShare: next?.minShare ?? null,
   };
 }
 

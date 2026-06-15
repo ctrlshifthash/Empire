@@ -23,6 +23,10 @@ export interface RewardStatus {
   cooldownMs: number;
   nextClaimAt: number;
   memberSince: number;
+  tier: string;
+  tierColor: string;
+  nextTier: string | null;
+  nextTierShare: number | null;
 }
 
 interface WalletStore {

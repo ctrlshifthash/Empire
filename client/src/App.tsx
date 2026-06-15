@@ -9,6 +9,7 @@ import Play from "./pages/Play";
 import DashboardPage from "./pages/DashboardPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import GuidePage from "./pages/GuidePage";
+import DocsPage from "./pages/DocsPage";
 import { useGame } from "./lib/store";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/register" element={<AuthPage mode="register" />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/guide" element={<GuidePage />} />
+          <Route path="/docs" element={<DocsPage />} />
           <Route
             path="/play"
             element={

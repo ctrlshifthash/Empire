@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Hero from "../components/landing/Hero";
-import { Ages, Features, FinalCTA, HowItWorks, LeaderboardPreview } from "../components/landing/Sections";
+import { Ages, Features, FinalCTA, HowItWorks, LeaderboardPreview, PlayAndEarn } from "../components/landing/Sections";
 import { api } from "../lib/api";
 
 type Stats = Awaited<ReturnType<typeof api.stats>>;
@@ -30,6 +30,7 @@ export default function Landing() {
       <Hero stats={stats} />
       <Features />
       <HowItWorks />
+      <PlayAndEarn />
       <Ages />
       <LeaderboardPreview rows={board?.rows ?? []} />
       <FinalCTA />

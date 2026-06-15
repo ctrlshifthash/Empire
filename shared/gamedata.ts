@@ -630,6 +630,34 @@ export function nextRank(power: number): Rank | null {
   return RANKS.find((r) => r.minPower > power) ?? null;
 }
 
+// ── Token-holder reward tiers ───────────────────────────────────────────────
+// Holders of the game token are sorted into tiers by their share of circulating
+// supply. The tier sets the multiplier applied on top of a holder's pro-rata
+// slice of the daily SOL pool — the more you hold, the higher the tier, the
+// bigger the multiplier. minShare is a fraction of supply (0.001 = 0.1%).
+export interface RewardTier {
+  name: string;
+  minShare: number;
+  multiplier: number;
+  color: string;
+  blurb: string;
+}
+export const REWARD_TIERS: RewardTier[] = [
+  { name: "Bronze", minShare: 0, multiplier: 1.0, color: "#cd7f32", blurb: "Any holder. Full pro-rata share of the pool." },
+  { name: "Silver", minShare: 0.001, multiplier: 1.25, color: "#c7ccd1", blurb: "≥ 0.1% of supply. +25% on your share." },
+  { name: "Gold", minShare: 0.005, multiplier: 1.5, color: "#e8c75a", blurb: "≥ 0.5% of supply. +50% on your share." },
+  { name: "Sapphire", minShare: 0.02, multiplier: 2.0, color: "#5a8fd8", blurb: "≥ 2% of supply. Double your share." },
+  { name: "Diamond", minShare: 0.05, multiplier: 3.0, color: "#86e8e0", blurb: "≥ 5% of supply. Triple your share — the whales." },
+];
+export function rewardTier(share: number): RewardTier {
+  let t = REWARD_TIERS[0];
+  for (const tier of REWARD_TIERS) if (share >= tier.minShare) t = tier;
+  return t;
+}
+export function nextRewardTier(share: number): RewardTier | null {
+  return REWARD_TIERS.find((t) => t.minShare > share) ?? null;
+}
+
 // ── Armoury (army equipment) & Hero gear (bought with coins) ────────────────
 export const MAX_GEAR = 8; // max weapon / armour level per army unit type
 export const MAX_HERO_GEAR = 8; // max hero helmet / armour level

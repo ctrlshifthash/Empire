@@ -8,6 +8,7 @@ const LINKS = [
   { to: "/play", label: "Play" },
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/guide", label: "Guide" },
+  { to: "/docs", label: "Docs" },
 ];
 
 const SOCIALS = [

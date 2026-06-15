@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import Reveal from "./Reveal";
-import { AGES, AGE_ORDER } from "@shared/gamedata";
+import { AGES, AGE_ORDER, REWARD_TIERS } from "@shared/gamedata";
 import { AGE_META, fmt } from "../../lib/format";
 
 // ── Features ────────────────────────────────────────────────────────────────
@@ -13,28 +13,28 @@ const FEATURES = [
   },
   {
     icon: "🏗️",
-    title: "Build & Expand",
-    body: "Raise lumber camps, farms, mines, barracks, walls and more. Every building you place and upgrade strengthens your settlement and unlocks new strategies.",
+    title: "Build, Fortify & Expand",
+    body: "Raise lumber camps, farms, mines and barracks, then barricade your territory with walls, towers and gates. Every building you place strengthens your realm.",
   },
   {
     icon: "⚔️",
-    title: "Raise Armies & Raid",
-    body: "Train spearmen, archers and thundering knights, then march on rival empires to plunder their resources. Fortify your walls before they march on you.",
+    title: "Raid & Spectate Live",
+    body: "Train spearmen, archers and knights, then march on rivals — and watch the battle play out live in the isometric world as buildings are razed. No more paper results.",
   },
   {
-    icon: "🏛️",
-    title: "Four Ages of History",
-    body: "Advance from the humble Dark Age through Feudal and Castle to the mighty Imperial Age, unlocking powerful buildings and units at every step.",
+    icon: "💰",
+    title: "Earn Real Solana",
+    body: "Hold the game token and a daily 1 SOL pool accrues to your wallet, split pro-rata with a bigger multiplier for bigger holders. Claim real SOL — or play free in demo mode.",
   },
   {
-    icon: "📜",
-    title: "Quests & Coins",
-    body: "Complete quests as you grow to earn coins and resource rewards. Spend coins to rush construction, finish research and accelerate your rise to power.",
+    icon: "🎖️",
+    title: "Ranks, Heroes & Gear",
+    body: "Climb the renown ranks for permanent harvest bonuses, customise your hero, and spend coins in the shop on weapons, armour and traits that show on the battlefield.",
   },
   {
     icon: "🤖",
-    title: "Players & Cunning Bots",
-    body: "Test your strategy against real rulers worldwide or against AI empires that build, expand and raid with a will of their own. The world is always full of rivals.",
+    title: "Rivals at Every Tier",
+    body: "The world is full of AI empires across difficulty tiers — from defenceless hamlets to fearsome conquerors — so there's always someone to farm for loot or a real challenge to fight.",
   },
 ];
 
@@ -71,28 +71,108 @@ export function Features() {
   );
 }
 
+// ── Play & earn (token rewards) ─────────────────────────────────────────────
+
+export function PlayAndEarn() {
+  return (
+    <section id="rewards" className="relative py-24">
+      <div className="absolute inset-0 bg-grid opacity-20" />
+      <div className="container-x relative">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <span className="kicker">💰 Play &amp; earn</span>
+          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+            Hold the token, earn <span className="text-gold-gradient">real Solana</span>
+          </h2>
+          <p className="mt-4 text-parchment-300/70">
+            A single pool of <b className="text-gold-light">1 SOL every day</b> is shared among all token holders — split
+            pro-rata to how much you hold, then boosted by your holder tier. Claim real SOL straight to your wallet.
+          </p>
+        </Reveal>
+
+        <div className="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-3">
+          <Reveal>
+            <div className="h-full rounded-2xl border border-parchment-300/10 bg-ink-800/60 p-6 shadow-panel">
+              <div className="text-2xl">📈</div>
+              <h3 className="mt-3 font-semibold text-parchment-100">Pro-rata, every day</h3>
+              <p className="mt-2 text-sm text-parchment-300/70">
+                Your share of the 1 SOL pool tracks your share of supply, read live on-chain. Rewards accrue continuously,
+                even while you’re offline.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <div className="h-full rounded-2xl border border-parchment-300/10 bg-ink-800/60 p-6 shadow-panel">
+              <div className="text-2xl">◆</div>
+              <h3 className="mt-3 font-semibold text-parchment-100">Bigger holdings, bigger boost</h3>
+              <p className="mt-2 text-sm text-parchment-300/70">
+                Holders are sorted into tiers from Bronze to Diamond, each adding a multiplier on top of your slice — up
+                to 3× for the whales.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="h-full rounded-2xl border border-parchment-300/10 bg-ink-800/60 p-6 shadow-panel">
+              <div className="text-2xl">💸</div>
+              <h3 className="mt-3 font-semibold text-parchment-100">Claim on your terms</h3>
+              <p className="mt-2 text-sm text-parchment-300/70">
+                First claim any time, then once every 6 hours. Paid in real SOL on Solana mainnet. No tokens? Play the
+                full game free in demo mode.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+
+        <Reveal className="mx-auto mt-8 max-w-4xl">
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            {REWARD_TIERS.map((t) => (
+              <span
+                key={t.name}
+                className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold"
+                style={{ borderColor: `${t.color}55`, color: t.color, background: `${t.color}14` }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />
+                {t.name}
+                <span className="text-parchment-300/60">{t.multiplier.toFixed(2)}×</span>
+              </span>
+            ))}
+          </div>
+        </Reveal>
+
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link to="/login" className="btn-gold px-7 py-3">
+            🔗 Connect &amp; start earning
+          </Link>
+          <Link to="/docs" className="btn-ghost px-7 py-3">
+            Read the docs →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── How it works ────────────────────────────────────────────────────────────
 
 const STEPS = [
   {
     n: "01",
-    title: "Found your empire",
-    body: "Pick a name and a banner colour. Your town center rises on the shared world map with villagers ready to work.",
+    title: "Sign in & found your empire",
+    body: "Connect a Solana wallet or email — or jump into demo mode. Your town center rises on the shared world map instantly, no password needed.",
   },
   {
     n: "02",
-    title: "Grow your economy",
-    body: "Build lumber camps, farms, mines and quarries. Resources flow in every second — even while you're away.",
+    title: "Grow & fortify",
+    body: "Build lumber camps, farms and mines, then barricade your land with walls, towers and gates. Resources flow every second — even while you're away.",
   },
   {
     n: "03",
     title: "Raise an army",
-    body: "Construct military buildings and train troops. Advance through the ages to unlock archers and knights.",
+    body: "Train troops, gear them in the shop, and advance through the ages to unlock archers and knights. Customise your hero as you go.",
   },
   {
     n: "04",
-    title: "Conquer & climb",
-    body: "Raid rivals for loot, defend your walls, complete quests for coins, and climb the global leaderboard.",
+    title: "Conquer, climb & earn",
+    body: "Raid rivals and spectate the battle live, climb the renown ranks, and — if you hold the token — claim your share of the daily SOL pool.",
   },
 ];
 
