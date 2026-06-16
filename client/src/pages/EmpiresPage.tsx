@@ -135,8 +135,6 @@ function EmpireCard({ e, onClick }: { e: EmpireRow; onClick: () => void }) {
           {e.online && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" title="Online" />}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-parchment-300/55">
-          <span className={e.isBot ? "" : "text-gold-light"}>{e.isBot ? "AI empire" : "Ruler"}</span>
-          <span>·</span>
           <span>⚜ {e.rank}</span>
           <span>·</span>
           <span style={{ color: AGE_META[e.age as keyof typeof AGE_META]?.color }}>
@@ -213,7 +211,7 @@ function EmpireDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     {online && <span className="h-2 w-2 rounded-full bg-emerald-400" title="Online" />}
                   </div>
                   <div className="text-sm text-parchment-300/60">
-                    {empire.isBot ? "AI empire" : "Rival ruler"} · ⚜ {rank} ·{" "}
+                    Rival ruler · ⚜ {rank} ·{" "}
                     {AGE_META[empire.age as keyof typeof AGE_META]?.name ?? empire.age}
                   </div>
                 </div>

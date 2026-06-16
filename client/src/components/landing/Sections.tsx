@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import Reveal from "./Reveal";
-import { AGES, AGE_ORDER, REWARD_TIERS } from "@shared/gamedata";
+import { AGES, AGE_ORDER, REWARD_TIERS, rankForPower } from "@shared/gamedata";
 import { AGE_META, fmt } from "../../lib/format";
 
 // ── Features ────────────────────────────────────────────────────────────────
@@ -32,9 +32,9 @@ const FEATURES = [
     body: "Climb the renown ranks for permanent harvest bonuses, customise your hero, and spend coins in the shop on weapons, armour and traits that show on the battlefield.",
   },
   {
-    icon: "🤖",
-    title: "Rivals at Every Tier",
-    body: "The world is full of AI empires across difficulty tiers — from defenceless hamlets to fearsome conquerors — so there's always someone to farm for loot or a real challenge to fight.",
+    icon: "🏰",
+    title: "Scout & Raid Real Rivals",
+    body: "Every ruler shares one map. Browse rival empires, spectate their worlds, and march on them for loot — a living world of opponents that grows as more players join.",
   },
 ];
 
@@ -309,8 +309,7 @@ export function LeaderboardPreview({ rows }: { rows: Row[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-parchment-100">{r.name}</div>
                   <div className="text-xs text-parchment-300/55">
-                    {AGE_META[r.age as keyof typeof AGE_META]?.name ?? r.age} ·{" "}
-                    {r.isBot ? "AI empire" : "Ruler"}
+                    {AGE_META[r.age as keyof typeof AGE_META]?.name ?? r.age} · ⚜ {rankForPower(r.power).name}
                   </div>
                 </div>
                 <div className="text-right">

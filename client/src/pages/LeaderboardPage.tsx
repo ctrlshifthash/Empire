@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
 import { AGE_META, fmt } from "../lib/format";
+import { rankForPower } from "@shared/gamedata";
 
 type Board = Awaited<ReturnType<typeof api.leaderboard>>;
 
@@ -81,7 +82,7 @@ export default function LeaderboardPage() {
                       <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 align-middle" />
                     )}
                   </div>
-                  <div className="text-xs text-parchment-300/55">{r.isBot ? "AI empire" : "Ruler"}</div>
+                  <div className="text-xs text-parchment-300/55">⚜ {rankForPower(r.power).name}</div>
                 </div>
               </div>
               <div

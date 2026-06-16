@@ -41,15 +41,33 @@ import { stepBots } from "./ai.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 4000;
-const TARGET_BOTS = 16;
+const TARGET_BOTS = 3;
 
 // ── world bootstrap ─────────────────────────────────────────────────────────
 
+function removeEmpire(empireId: string): void {
+  delete state.empires[empireId];
+  state.marches = state.marches.filter(
+    (m) => m.fromEmpireId !== empireId && m.toEmpireId !== empireId,
+  );
+}
+
+// Keep the AI population at exactly `target`: spawn up if short, or trim the
+// excess (spread across the power range, strong → weak) if over — e.g. after
+// lowering the target so the world is mostly real players.
 function ensureBots(target: number): void {
-  let count = Object.values(state.empires).filter((e) => e.isBot).length;
-  while (count < target) {
-    spawnBot();
-    count++;
+  const bots = Object.values(state.empires).filter((e) => e.isBot);
+  if (bots.length > target) {
+    const sorted = [...bots].sort((a, b) => b.power - a.power);
+    const keep = new Set<string>();
+    for (let i = 0; i < target; i++) {
+      const idx = target <= 1 ? 0 : Math.round((i * (sorted.length - 1)) / (target - 1));
+      keep.add(sorted[idx].id);
+    }
+    for (const e of bots) if (!keep.has(e.id)) removeEmpire(e.id);
+    scheduleSave(0);
+  } else {
+    for (let i = bots.length; i < target; i++) spawnBot();
   }
 }
 

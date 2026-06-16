@@ -183,7 +183,7 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
                       {r.name} {r.online && !r.isBot && <span className="text-emerald-400">●</span>}
                     </div>
                     <div className="text-xs text-parchment-300/55">
-                      {AGE_META[r.age].short} · {r.isBot ? (r.rank ?? "AI") : "Ruler"} · {r.d} tiles
+                      {AGE_META[r.age].short} · {r.rank ?? "Ruler"} · {r.d} tiles
                     </div>
                   </div>
                   <div className="text-right">
@@ -231,7 +231,7 @@ function TargetPanel({
           <div>
             <div className="font-display text-lg font-bold text-parchment-100">{target.name}</div>
             <div className="text-xs text-parchment-300/55">
-              {target.isBot ? "AI empire" : "Rival ruler"}
+              Rival ruler
               {target.age ? ` · ${AGE_META[target.age as keyof typeof AGE_META].short}` : ""} · {distance} tiles away
             </div>
           </div>
@@ -244,7 +244,7 @@ function TargetPanel({
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-lg bg-black/25 px-3 py-2">
           <div className="text-xs text-parchment-300/55">🏅 Rank</div>
-          <div className="font-semibold text-gold-light">{target.rank ?? (target.isBot ? "AI" : "Ruler")}</div>
+          <div className="font-semibold text-gold-light">{target.rank ?? "Ruler"}</div>
         </div>
         <div className="rounded-lg bg-black/25 px-3 py-2">
           <div className="text-xs text-parchment-300/55">⚡ Power</div>

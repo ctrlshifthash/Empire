@@ -3,6 +3,7 @@ import {
   QUESTS,
   STARTING_RESOURCES,
   botTier,
+  rankForPower,
   rollBotTier,
 } from "../../shared/gamedata.ts";
 import { newHeroState } from "../../shared/progression.ts";
@@ -217,7 +218,7 @@ export function publicView(e: Empire, online: boolean): EmpirePublic {
     armySize: armySize(e.army),
     online: e.isBot ? true : online,
     tier: e.tier,
-    rank: e.isBot ? botTier(e.tier).rank : undefined,
+    rank: e.isBot ? botTier(e.tier).rank : rankForPower(e.power).name,
   };
 }
 
