@@ -94,7 +94,7 @@ export default function BattleSpectate({ report, onClose }: { report: BattleRepo
         return {
           id, type, x: formX, y: spawnY, hp: 100, maxHp: 100, speed: 2, atk: 5,
           attackId: null, order: { x: cx, y: side === "att" ? cy : cy + 12 }, swing: 0,
-          downUntil: 0, ox: 0, oy: 0,
+          downUntil: 0, ox: 0, oy: 0, px: formX, py: spawnY, vx: 0, vy: 0,
           color: side === "att" ? ATT_COLOR : DEF_COLOR,
           ring: side === "att" ? "rgba(216,165,42,0.5)" : "rgba(160,60,70,0.5)",
           face: side === "att" ? 1 : -1,

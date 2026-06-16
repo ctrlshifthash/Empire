@@ -6,7 +6,7 @@ import { BUILDINGS } from "@shared/gamedata";
 import { LOCAL_WORLD } from "@shared/types";
 import { TILE_H, TILE_W, screenToWorld, worldToScreen } from "./iso";
 import type { BuildingView, Compound, Enemy, ResNode, Unit, World } from "./engine";
-import { drawSpriteChar, UNIT_SHEET } from "./sprites";
+import { drawSpriteChar, UNIT_SHEET, spriteDir } from "./sprites";
 import {
   CANNON_COLS,
   CANNON_ROWS,
@@ -687,12 +687,18 @@ export function renderWorld(
       key: u.x + u.y,
       draw: () => {
         const ring = u.ring ?? (sel ? "#5fd16a" : undefined);
-        const moving = !!u.order || u.attackId != null;
-        const state = u.attackId != null || u.swing > 0.25 ? "attack" : u.order ? "move" : "idle";
+        const fighting = u.attackId != null || u.swing > 0.25;
+        const speed2 = u.vx * u.vx + u.vy * u.vy;
+        const state = fighting ? "attack" : speed2 > 0.25 ? "move" : "idle";
+        const moving = state !== "idle";
+        let dir = 2;
+        if (fighting && en) dir = spriteDir(en.x - u.x, en.y - u.y);
+        else if (speed2 > 0.04) dir = spriteDir(u.vx, u.vy);
+        else if (u.face != null) dir = u.face > 0 ? 3 : 1;
         const sheet = UNIT_SHEET[u.type];
         const drew =
           sheet &&
-          drawSpriteChar(ctx, sheet, s.x, s.y, { scale: 1.25, state, now, seed: u.id, ring });
+          drawSpriteChar(ctx, sheet, s.x, s.y, { scale: 1.25, state, dir, now, seed: u.id, ring });
         if (!drew) {
           drawCharacter(ctx, s.x, s.y, {
             color: u.color ?? UNIT_COLOR[u.type] ?? "#aaa",
@@ -755,9 +761,20 @@ export function renderWorld(
         const look = world.heroLook;
         const heroState =
           world.hero.state === "fight" ? "attack" : world.hero.state === "move" ? "move" : "idle";
+        const hddx = world.hero.tx - world.hero.x;
+        const hddy = world.hero.ty - world.hero.y;
+        const hdir =
+          Math.abs(hddx) + Math.abs(hddy) > 0.05
+            ? spriteDir(hddx, hddy)
+            : heroState === "idle"
+              ? 2
+              : world.hero.facing > 0
+                ? 3
+                : 1;
         const drewHero = drawSpriteChar(ctx, "royal-guard", hsx.x, hsx.y, {
           scale: 1.75,
           state: heroState,
+          dir: hdir,
           now,
           seed: 0,
           ring: "rgba(244,221,143,0.7)",

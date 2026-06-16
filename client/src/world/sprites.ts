@@ -15,13 +15,23 @@ const FRAME = 64;
 export type SheetKey = "royal-guard" | "knight" | "gold-knight" | "king" | "captain" | "king2";
 export type AnimState = "idle" | "move" | "attack";
 
-// Direction order within each animation group is [up, left, down, right], so
-// the front-facing (toward camera) row is the group base + 2.
-const ANIM: Record<AnimState, { row: number; frames: number; fps: number }> = {
-  idle: { row: 18, frames: 13, fps: 6 },
-  move: { row: 2, frames: 7, fps: 11 },
-  attack: { row: 10, frames: 9, fps: 14 },
+// Group base row + frame count + speed. Direction order within each group is
+// [up, left, down, right], so the actual row is base + dir (front = base + 2).
+const ANIM: Record<AnimState, { base: number; frames: number; fps: number }> = {
+  idle: { base: 16, frames: 13, fps: 6 },
+  move: { base: 0, frames: 7, fps: 11 },
+  attack: { base: 8, frames: 9, fps: 14 },
 };
+
+// Map a world-space movement vector to a sprite direction (0=up,1=left,2=down,
+// 3=right) using the isometric projection. Defaults to front (down) when still.
+export function spriteDir(dx: number, dy: number): number {
+  const sx = dx - dy; // screen-x component
+  const sy = (dx + dy) * 0.5; // screen-y component (2:1 iso → halve)
+  if (Math.abs(sx) < 0.02 && Math.abs(sy) < 0.02) return 2;
+  if (Math.abs(sy) >= Math.abs(sx)) return sy > 0 ? 2 : 0;
+  return sx > 0 ? 3 : 1;
+}
 
 const KEYS: SheetKey[] = ["royal-guard", "knight", "gold-knight", "king", "captain", "king2"];
 const sheets: Partial<Record<SheetKey, HTMLImageElement>> = {};
@@ -49,6 +59,7 @@ export const UNIT_SHEET: Record<string, SheetKey> = {
 export interface SpriteOpts {
   scale: number; // overall size (1 ≈ 64px tall)
   state: AnimState; // idle / move / attack
+  dir: number; // facing: 0=up, 1=left, 2=down, 3=right
   now: number; // current time (ms) for animation
   seed: number; // per-entity offset so they don't animate in lockstep
   ring?: string; // selection / team ring under the feet
@@ -65,6 +76,7 @@ export function drawSpriteChar(
   if (!img || !ready[key]) return false;
 
   const a = ANIM[o.state];
+  const row = a.base + (o.dir & 3);
   const size = FRAME * o.scale;
   const frame = Math.floor((o.now + o.seed * 53) / (1000 / a.fps)) % a.frames;
   const moving = o.state !== "idle";
@@ -90,7 +102,7 @@ export function drawSpriteChar(
   const prevSmooth = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
   // anchor the feet (~86% down the frame) at (sx, sy)
-  ctx.drawImage(img, frame * FRAME, a.row * FRAME, FRAME, FRAME, sx - size / 2, sy - size * 0.86 - bob, size, size);
+  ctx.drawImage(img, frame * FRAME, row * FRAME, FRAME, FRAME, sx - size / 2, sy - size * 0.86 - bob, size, size);
   ctx.imageSmoothingEnabled = prevSmooth;
   return true;
 }

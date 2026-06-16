@@ -58,6 +58,10 @@ export interface Unit {
   downUntil: number; // knocked out until ms
   ox: number; // formation offset
   oy: number;
+  px: number; // previous position, for per-frame velocity
+  py: number;
+  vx: number; // velocity — drives the walk animation's facing & move state
+  vy: number;
   // optional overrides used by the battle spectate (two opposing armies)
   color?: string;
   ring?: string;
@@ -478,23 +482,27 @@ export class World {
         else next.push(this.makeUnit(t));
       }
     }
-    // assign formation offsets in a ring behind the hero
+    // assign loose formation offsets in rings around the hero, with a little
+    // jitter so the retinue looks natural rather than a perfect circle
     next.forEach((u, i) => {
-      const ring = Math.floor(i / 8) + 1;
-      const a = (i % 8) * (Math.PI / 4) + ring * 0.6;
-      u.ox = Math.cos(a) * (0.9 + ring * 0.7);
-      u.oy = Math.sin(a) * (0.9 + ring * 0.7);
+      const ring = Math.floor(i / 7) + 1;
+      const a = (i % 7) * ((Math.PI * 2) / 7) + ring * 0.7;
+      const r = 1.2 + ring * 0.9;
+      u.ox = Math.cos(a) * r + (this.rng() - 0.5) * 0.5;
+      u.oy = Math.sin(a) * r + (this.rng() - 0.5) * 0.5;
     });
     this.units = next;
   }
 
   private makeUnit(type: UnitType): Unit {
     const s = UNIT_COMBAT[type];
+    const x = this.hero.x + (this.rng() - 0.5) * 2;
+    const y = this.hero.y + (this.rng() - 0.5) * 2;
     return {
       id: this.id(),
       type,
-      x: LOCAL_WORLD.centerX + (this.rng() - 0.5) * 2,
-      y: LOCAL_WORLD.centerY + (this.rng() - 0.5) * 2,
+      x,
+      y,
       hp: s.hp,
       maxHp: s.hp,
       speed: s.speed,
@@ -505,6 +513,10 @@ export class World {
       downUntil: 0,
       ox: 0,
       oy: 0,
+      px: x,
+      py: y,
+      vx: 0,
+      vy: 0,
     };
   }
 
@@ -767,13 +779,19 @@ export class World {
   }
 
   private updateUnits(dt: number, now: number) {
+    const h = this.hero;
     for (const u of this.units) {
+      // per-frame velocity (from last frame's movement) drives the walk anim
+      u.vx = dt > 0 ? (u.x - u.px) / dt : 0;
+      u.vy = dt > 0 ? (u.y - u.py) / dt : 0;
+      u.px = u.x;
+      u.py = u.y;
       if (u.downUntil > 0) {
         if (now >= u.downUntil) {
           u.downUntil = 0;
           u.hp = u.maxHp;
-          u.x = LOCAL_WORLD.centerX + u.ox;
-          u.y = LOCAL_WORLD.centerY + u.oy;
+          u.x = h.x + u.ox;
+          u.y = h.y + u.oy;
         }
         continue;
       }
@@ -813,10 +831,11 @@ export class World {
           if (target.hp <= 0) this.killEnemy(target, now);
         }
       } else {
-        // garrison the base in formation, independent of the roaming hero
-        const fx = LOCAL_WORLD.centerX + u.ox;
-        const fy = LOCAL_WORLD.centerY + u.oy;
-        if (dist(u.x, u.y, fx, fy) > 0.4) this.moveToward(u, fx, fy, u.speed, dt, 0.1);
+        // loose retinue: trail the hero, only closing the gap when it opens up
+        // (so they read as a band moving with you, not glued in lockstep)
+        const fx = h.x + u.ox;
+        const fy = h.y + u.oy;
+        if (dist(u.x, u.y, fx, fy) > 0.8) this.moveToward(u, fx, fy, u.speed * 0.95, dt, 0.35);
       }
     }
   }
