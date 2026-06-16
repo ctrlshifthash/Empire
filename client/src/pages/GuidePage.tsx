@@ -36,8 +36,8 @@ export default function GuidePage() {
 
         <Section title="The world & the project" icon="🌍">
           <p>
-            Realm Rumble is a persistent online strategy game inspired by the classic{" "}
-            <em>Age of Empires</em>. Every player rules an empire placed on one shared world map.
+            Realm Rumble is a persistent online strategy game played on one shared world map, where
+            every player rules an empire of their own.
             Unlike a match that ends, this world is <strong>always running</strong> — your buildings
             keep producing resources and your armies keep marching 24/7, whether you are online or
             not. Come back any time to find your realm has grown and your rivals have made their
@@ -48,7 +48,7 @@ export default function GuidePage() {
         <Section title="Getting in: wallet, email or demo" icon="🔑">
           <p>There are no passwords — choose how you sign in:</p>
           <ul className="ml-5 list-disc space-y-2">
-            <li><strong>Solana wallet</strong> (Phantom &amp; friends) — your empire is tied to your address, and your token holdings unlock real SOL rewards.</li>
+            <li><strong>Solana wallet</strong> (Phantom &amp; friends) — your empire is tied to your address, and your token holdings unlock SOL rewards.</li>
             <li><strong>Email</strong> — get a full empire now, connect a wallet later from the dashboard to start earning.</li>
             <li><strong>Demo mode</strong> — one click, no wallet, worthless in-game coins. Perfect for learning the ropes.</li>
           </ul>
@@ -249,7 +249,7 @@ export default function GuidePage() {
           <p>
             A pool of <strong className="text-gold-light">1 SOL per day</strong> (one pool for everyone) is split{" "}
             <strong>pro-rata</strong> among token holders, then boosted by your <strong>holder tier</strong>. Holdings are
-            read live on-chain; rewards accrue continuously and pay out in <strong>real SOL on Solana mainnet</strong>.
+            read live on-chain; rewards accrue continuously and pay out in <strong>SOL on Solana mainnet</strong>.
             Your first claim is available any time, then once every 6 hours.
           </p>
           <div className="overflow-x-auto">

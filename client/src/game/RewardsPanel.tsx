@@ -176,7 +176,7 @@ export default function RewardsPanel() {
       {!address ? (
         <div className="panel p-5">
           <div className="mb-3 text-sm text-parchment-300/75">
-            Connect your Solana wallet to track holdings and claim real SOL rewards.
+            Connect your Solana wallet to track holdings and claim SOL rewards.
           </div>
           {privyConfigured ? <PrivyConnect /> : <ManualConnect />}
         </div>

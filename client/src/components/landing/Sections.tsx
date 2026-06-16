@@ -23,8 +23,8 @@ const FEATURES = [
   },
   {
     icon: "💰",
-    title: "Earn Real Solana",
-    body: "Hold the game token and a daily 1 SOL pool accrues to your wallet, split pro-rata with a bigger multiplier for bigger holders. Claim real SOL — or play free in demo mode.",
+    title: "Earn Solana",
+    body: "Hold the game token and a daily 1 SOL pool accrues to your wallet, split pro-rata with a bigger multiplier for bigger holders. Claim SOL — or play free in demo mode.",
   },
   {
     icon: "🎖️",
@@ -81,11 +81,11 @@ export function PlayAndEarn() {
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="kicker">💰 Play &amp; earn</span>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
-            Hold the token, earn <span className="text-gold-gradient">real Solana</span>
+            Hold the token, earn <span className="text-gold-gradient">Solana</span>
           </h2>
           <p className="mt-4 text-parchment-300/70">
             A single pool of <b className="text-gold-light">1 SOL every day</b> is shared among all token holders — split
-            pro-rata to how much you hold, then boosted by your holder tier. Claim real SOL straight to your wallet.
+            pro-rata to how much you hold, then boosted by your holder tier. Claim SOL straight to your wallet.
           </p>
         </Reveal>
 
@@ -115,7 +115,7 @@ export function PlayAndEarn() {
               <div className="text-2xl">💸</div>
               <h3 className="mt-3 font-semibold text-parchment-100">Claim on your terms</h3>
               <p className="mt-2 text-sm text-parchment-300/70">
-                First claim any time, then once every 6 hours. Paid in real SOL on Solana mainnet. No tokens? Play the
+                First claim any time, then once every 6 hours. Paid in SOL on Solana mainnet. No tokens? Play the
                 full game free in demo mode.
               </p>
             </div>

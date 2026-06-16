@@ -111,7 +111,7 @@ export default function AuthPage(_props: { mode: "login" | "register" }) {
             <h1 className="mt-4 text-2xl font-bold">Enter the World</h1>
             <p className="mt-2 text-sm text-parchment-300/70">
               Sign in with your Solana wallet or email — your empire is created automatically. Hold the token to earn
-              real SOL.
+              SOL.
             </p>
           </div>
 

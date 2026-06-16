@@ -27,7 +27,7 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "armoury", label: "Shop", icon: "🛒", desc: "Buy weapons & armour for your army" },
   { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
   { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
-  { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim real SOL token rewards" },
+  { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim SOL token rewards" },
 ];
 
 export default function Play() {

@@ -39,7 +39,7 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           className="kicker mb-5 rounded-full border border-gold/25 bg-black/30 px-4 py-1.5"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulseGlow" />
-          An always-on strategy game with real Solana rewards
+          An always-on strategy game with Solana rewards
         </motion.div>
 
         <motion.h1
@@ -58,8 +58,8 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-parchment-300/80"
         >
-          An always-on strategy game on Solana — Age of Empires meets Clash Royale. Build your empire,
-          raid real rivals in live battles, and hold the token to earn real SOL — or play free in demo
+          An always-on strategy game on Solana. Build and defend your empire, train armies and raid
+          rival players in live battles, and earn SOL just for holding the token — or play free in demo
           mode.
         </motion.p>
 
@@ -77,7 +77,7 @@ export default function Hero({ stats }: { stats: Stats | null }) {
             "Real-player PvP",
             "Heroes & ranks",
             "Quests & loot",
-            "Real SOL rewards",
+            "SOL rewards",
             "Free demo",
           ].map((f) => (
             <span

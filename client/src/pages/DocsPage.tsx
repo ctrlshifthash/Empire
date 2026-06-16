@@ -43,7 +43,7 @@ export default function DocsPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
             Everything about the project — how the game works, how the economy and combat play out, and exactly how the
-            real Solana token rewards, holder tiers and payouts are calculated.
+            Solana token rewards, holder tiers and payouts are calculated.
           </p>
         </div>
 
@@ -61,13 +61,13 @@ export default function DocsPage() {
 
         <Section id="overview" title="What is Realm Rumble" icon="🌍">
           <p>
-            Realm Rumble is a persistent, browser-based strategy game inspired by <em>Age of Empires</em>. You rule
+            Realm Rumble is a persistent, browser-based strategy game. You rule
             one empire on a single shared world map. Unlike a match that ends, this world is <strong>always running</strong>{" "}
             — your buildings produce resources and your armies march around the clock, whether you are online or not.
           </p>
           <p>
             It is also <strong>token-gated with real rewards</strong>. Hold the game token and a slice of a daily{" "}
-            <strong>1 SOL</strong> pool accrues to your wallet, claimable as real Solana. Don’t hold the token? You can
+            <strong>1 SOL</strong> pool accrues to your wallet, claimable as Solana. Don’t hold the token? You can
             still play the full game in <strong>demo mode</strong> with worthless in-game coins.
           </p>
         </Section>
@@ -204,7 +204,7 @@ export default function DocsPage() {
             <li>Your <strong>first claim</strong> is available any time.</li>
             <li>After that, you can claim <strong>once every 6 hours</strong> (4× a day). The button shows a live countdown until your next claim unlocks.</li>
             <li>Rewards keep accruing between claims, so there’s no penalty for claiming less often.</li>
-            <li>Claims pay <strong>real SOL on Solana mainnet</strong>, sent straight from the treasury to your wallet.</li>
+            <li>Claims pay <strong>SOL on Solana mainnet</strong>, sent straight from the treasury to your wallet.</li>
           </ul>
         </Section>
 
