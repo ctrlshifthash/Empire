@@ -217,7 +217,9 @@ export function HowItWorks() {
 export function Ages() {
   return (
     <section id="ages" className="relative py-24">
-      <div className="container-x">
+      <img src="/sections/ages.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/55 to-ink" />
+      <div className="container-x relative">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="kicker">⏳ March through time</span>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
@@ -281,7 +283,9 @@ export function LeaderboardPreview({ rows }: { rows: Row[] }) {
   const top = rows.slice(0, 6);
   return (
     <section className="relative py-24">
-      <div className="container-x">
+      <img src="/sections/kingdom.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/55 to-ink" />
+      <div className="container-x relative">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="kicker">👑 The mightiest realms</span>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Live leaderboard</h2>
