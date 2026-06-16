@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="client/public/favicon.svg" width="96" alt="Realm Rumble" />
-
-# ⚔️ Realm Rumble
+<img src="assets/banner.jpg" alt="Realm Rumble" width="820" />
 
 ### Build an empire. Raid real rivals. Earn real Solana.
 
