@@ -17,9 +17,7 @@ const SOCIALS = [
     label: "Pump.fun",
     href: "https://pump.fun",
     icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" className="h-[18px] w-[18px]" aria-hidden="true">
-        <rect x="2" y="9" width="20" height="6" rx="3" transform="rotate(45 12 12)" />
-      </svg>
+      <img src="/pumpfun.png" alt="" className="h-5 w-5 object-contain" />
     ),
   },
   {
