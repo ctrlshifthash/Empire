@@ -4,6 +4,7 @@ import { api, type EmpireRow } from "../lib/api";
 import { useGame } from "../lib/store";
 import { AGE_META, fmt } from "../lib/format";
 import EmpireCanvas from "../game/EmpireCanvas";
+import EmpireCrest from "../components/EmpireCrest";
 import type { Empire } from "@shared/types";
 
 // Browse every empire on the shared map — players and AI — and scout, spectate
@@ -128,7 +129,7 @@ function EmpireCard({ e, onClick }: { e: EmpireRow; onClick: () => void }) {
       onClick={onClick}
       className="group flex items-center gap-3 rounded-xl border border-parchment-300/10 bg-ink-800/60 p-4 text-left shadow-panel transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:shadow-gold"
     >
-      <span className="h-10 w-10 shrink-0 rounded-lg ring-1 ring-black/40" style={{ background: e.banner }} />
+      <EmpireCrest color={e.banner} name={e.name} size={42} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate font-semibold text-parchment-100">{e.name}</span>
@@ -204,7 +205,7 @@ function EmpireDetail({ id, onClose }: { id: string; onClose: () => void }) {
           {empire && (
             <>
               <div className="flex items-center gap-3">
-                <span className="h-12 w-12 rounded-lg ring-1 ring-black/40" style={{ background: empire.banner }} />
+                <EmpireCrest color={empire.banner} name={empire.name} size={50} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-display text-xl font-bold text-parchment-100">{empire.name}</span>

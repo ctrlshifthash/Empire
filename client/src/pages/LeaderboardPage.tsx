@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { api } from "../lib/api";
 import { AGE_META, fmt } from "../lib/format";
 import { rankForPower } from "@shared/gamedata";
+import EmpireCrest from "../components/EmpireCrest";
 
 type Board = Awaited<ReturnType<typeof api.leaderboard>>;
 
@@ -71,10 +72,7 @@ export default function LeaderboardPage() {
                 {i + 1}
               </div>
               <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className="h-7 w-7 shrink-0 rounded-md ring-1 ring-black/40"
-                  style={{ background: r.banner }}
-                />
+                <EmpireCrest color={r.banner} name={r.name} size={30} />
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-parchment-100">
                     {r.name}{" "}

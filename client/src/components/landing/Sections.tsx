@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Reveal from "./Reveal";
 import { AGES, AGE_ORDER, REWARD_TIERS, rankForPower } from "@shared/gamedata";
+import EmpireCrest from "../EmpireCrest";
 import { AGE_META, fmt } from "../../lib/format";
 
 // ── Features ────────────────────────────────────────────────────────────────
@@ -302,10 +303,7 @@ export function LeaderboardPreview({ rows }: { rows: Row[] }) {
                 >
                   {i + 1}
                 </div>
-                <span
-                  className="h-6 w-6 shrink-0 rounded-md ring-1 ring-black/40"
-                  style={{ background: r.banner }}
-                />
+                <EmpireCrest color={r.banner} name={r.name} size={28} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-parchment-100">{r.name}</div>
                   <div className="text-xs text-parchment-300/55">
