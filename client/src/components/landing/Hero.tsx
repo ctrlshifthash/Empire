@@ -24,8 +24,10 @@ export default function Hero({ stats }: { stats: Stats | null }) {
   return (
     <section className="relative overflow-hidden">
       {/* layered backdrop */}
-      <div className="absolute inset-0 bg-hero-radial" />
-      <div className="absolute inset-0 bg-grid opacity-40" />
+      <img src="/sections/sky.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-ink/60" />
+      <div className="absolute inset-0 bg-hero-radial opacity-70" />
+      <div className="absolute inset-0 bg-grid opacity-30" />
       <div className="pointer-events-none absolute inset-0">
         <EmberCanvas />
       </div>

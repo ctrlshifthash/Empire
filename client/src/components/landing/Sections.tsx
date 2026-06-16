@@ -42,7 +42,9 @@ const FEATURES = [
 export function Features() {
   return (
     <section id="features" className="relative py-24">
-      <div className="container-x">
+      <img src="/sections/sky.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/60 to-ink" />
+      <div className="container-x relative">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="kicker">⚜ What awaits you</span>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
@@ -77,6 +79,8 @@ export function Features() {
 export function PlayAndEarn() {
   return (
     <section id="rewards" className="relative py-24">
+      <img src="/sections/town.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/40 to-ink" />
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="container-x relative">
         <Reveal className="mx-auto max-w-2xl text-center">
@@ -180,6 +184,8 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="how" className="relative py-24">
+      <img src="/sections/world.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/45 to-ink" />
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="container-x relative">
         <Reveal className="mx-auto max-w-2xl text-center">
