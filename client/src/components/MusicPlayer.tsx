@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 // with sound until the user interacts, so when music is enabled we start it on
 // the first click/keypress. The on/off choice is remembered.
 const LS = "rr_music";
-const TRACK = "/music/theme.mp3";
+const TRACK = "/music/theme.m4a";
 
 export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,15 +38,14 @@ export default function MusicPlayer() {
       a.pause();
       return;
     }
-    // try to play; if the browser blocks it, start on the first interaction
+    // try to play; if the browser blocks it, start on the very first interaction
     a.play().catch(() => {
+      const events = ["pointerdown", "keydown", "wheel", "touchstart"];
       const start = () => {
         a.play().catch(() => {});
-        window.removeEventListener("pointerdown", start);
-        window.removeEventListener("keydown", start);
+        events.forEach((e) => window.removeEventListener(e, start));
       };
-      window.addEventListener("pointerdown", start, { once: true });
-      window.addEventListener("keydown", start, { once: true });
+      events.forEach((e) => window.addEventListener(e, start, { once: true, passive: true }));
     });
   }, [on]);
 

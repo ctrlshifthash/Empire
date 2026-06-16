@@ -11,6 +11,18 @@ export default function Footer() {
         <span className="text-xs text-parchment-300/50">
           © {new Date().getFullYear()} Realm Rumble. Built for strategists.
         </span>
+        <span className="text-[10px] text-parchment-300/35">
+          Music: “Minstrel Guild” by{" "}
+          <a
+            href="https://incompetech.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-parchment-300/60"
+          >
+            Kevin MacLeod
+          </a>{" "}
+          — CC BY 4.0
+        </span>
       </div>
     </footer>
   );
