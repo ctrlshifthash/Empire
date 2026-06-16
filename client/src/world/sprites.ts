@@ -1,16 +1,28 @@
-// Character sprite sheets (itch.io medieval pack). Each sheet is a 64×64 grid;
-// row 0 is a 7-frame front-facing animation, which we cycle for idle/move. We
-// load the images lazily and draw an animated frame anchored at the feet, with
-// a soft shadow. drawSpriteChar() returns false until the image has loaded so
-// callers can fall back to the procedural character renderer.
+// Character sprite sheets (medieval pack). Each sheet is a 64×64 grid laid out
+// as animation groups of 4 directions (down, left, up, right) plus a death row:
+//   rows 0-3  move     (7 frames)
+//   rows 4-7  shield    (8)
+//   rows 8-11 attack — sword swing (9)
+//   rows 12-15 block    (6)
+//   rows 16-19 idle     (13)
+//   row  20    death    (6)
+// In-game characters only face left/right, so we use the down-facing row of
+// each animation. drawSpriteChar() returns false until the image has loaded so
+// callers can fall back to the procedural renderer.
 
 const FRAME = 64;
-const ROW0_FRAMES = 7;
 
 export type SheetKey = "royal-guard" | "knight" | "gold-knight" | "king" | "captain" | "king2";
+export type AnimState = "idle" | "move" | "attack";
+
+// down-facing row + frame count + playback speed for each state
+const ANIM: Record<AnimState, { row: number; frames: number; fps: number }> = {
+  idle: { row: 16, frames: 13, fps: 6 },
+  move: { row: 0, frames: 7, fps: 11 },
+  attack: { row: 8, frames: 9, fps: 14 },
+};
 
 const KEYS: SheetKey[] = ["royal-guard", "knight", "gold-knight", "king", "captain", "king2"];
-
 const sheets: Partial<Record<SheetKey, HTMLImageElement>> = {};
 const ready: Partial<Record<SheetKey, boolean>> = {};
 
@@ -25,17 +37,17 @@ if (typeof Image !== "undefined") {
   }
 }
 
-// Which sheet represents each in-game unit type.
+// Which sheet represents each in-game unit type (the four 13×21 sheets).
 export const UNIT_SHEET: Record<string, SheetKey> = {
   villager: "king",
-  spearman: "captain",
+  spearman: "king",
   archer: "gold-knight",
   knight: "knight",
 };
 
 export interface SpriteOpts {
   scale: number; // overall size (1 ≈ 64px tall)
-  moving: boolean; // cycle the animation faster while moving
+  state: AnimState; // idle / move / attack
   now: number; // current time (ms) for animation
   seed: number; // per-entity offset so they don't animate in lockstep
   ring?: string; // selection / team ring under the feet
@@ -51,11 +63,11 @@ export function drawSpriteChar(
   const img = sheets[key];
   if (!img || !ready[key]) return false;
 
+  const a = ANIM[o.state];
   const size = FRAME * o.scale;
-  const frameMs = o.moving ? 90 : 220;
-  const frame = Math.floor((o.now + o.seed * 53) / frameMs) % ROW0_FRAMES;
-  const bob =
-    (o.moving ? Math.sin(o.now * 0.02 + o.seed) * 1.5 : Math.sin(o.now * 0.006 + o.seed) * 0.7) * o.scale;
+  const frame = Math.floor((o.now + o.seed * 53) / (1000 / a.fps)) % a.frames;
+  const moving = o.state !== "idle";
+  const bob = (moving ? Math.sin(o.now * 0.02 + o.seed) * 1.4 : Math.sin(o.now * 0.006 + o.seed) * 0.6) * o.scale;
 
   // shadow
   ctx.save();
@@ -77,7 +89,7 @@ export function drawSpriteChar(
   const prevSmooth = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
   // anchor the feet (~86% down the frame) at (sx, sy)
-  ctx.drawImage(img, frame * FRAME, 0, FRAME, FRAME, sx - size / 2, sy - size * 0.86 - bob, size, size);
+  ctx.drawImage(img, frame * FRAME, a.row * FRAME, FRAME, FRAME, sx - size / 2, sy - size * 0.86 - bob, size, size);
   ctx.imageSmoothingEnabled = prevSmooth;
   return true;
 }

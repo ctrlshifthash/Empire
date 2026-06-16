@@ -688,10 +688,11 @@ export function renderWorld(
       draw: () => {
         const ring = u.ring ?? (sel ? "#5fd16a" : undefined);
         const moving = !!u.order || u.attackId != null;
+        const state = u.attackId != null || u.swing > 0.25 ? "attack" : u.order ? "move" : "idle";
         const sheet = UNIT_SHEET[u.type];
         const drew =
           sheet &&
-          drawSpriteChar(ctx, sheet, s.x, s.y, { scale: 1.25, moving, now, seed: u.id, ring });
+          drawSpriteChar(ctx, sheet, s.x, s.y, { scale: 1.25, state, now, seed: u.id, ring });
         if (!drew) {
           drawCharacter(ctx, s.x, s.y, {
             color: u.color ?? UNIT_COLOR[u.type] ?? "#aaa",
@@ -752,10 +753,11 @@ export function renderWorld(
         // replaces the crown once equipped — your bought gear shows on-screen
         const ARMOUR_TINT = ["#d8a52a", "#c9a84a", "#b8b0a0", "#a8b2b8", "#9aa6c0", "#8fb0c8", "#a6c4dc", "#cdddec"];
         const look = world.heroLook;
-        const heroMoving = world.hero.state === "move" || world.hero.state === "fight";
+        const heroState =
+          world.hero.state === "fight" ? "attack" : world.hero.state === "move" ? "move" : "idle";
         const drewHero = drawSpriteChar(ctx, "royal-guard", hsx.x, hsx.y, {
           scale: 1.75,
-          moving: heroMoving,
+          state: heroState,
           now,
           seed: 0,
           ring: "rgba(244,221,143,0.7)",
