@@ -21,6 +21,9 @@ export interface GameState {
   marches: March[];
   tokens: Record<string, string>; // token -> userId
   rewards: Record<string, RewardRecord>; // wallet address -> reward record
+  // hard daily cap: total SOL paid out across ALL holders is limited to the
+  // pool per UTC day. `day` is the UTC day index; `paidLamports` resets each day.
+  rewardPool: { day: number; paidLamports: number };
 }
 
 export const state: GameState = {
@@ -30,6 +33,7 @@ export const state: GameState = {
   marches: [],
   tokens: {},
   rewards: {},
+  rewardPool: { day: 0, paidLamports: 0 },
 };
 
 export function loadState(): boolean {
@@ -42,6 +46,7 @@ export function loadState(): boolean {
       state.marches ??= [];
       state.tokens ??= {};
       state.rewards ??= {};
+      state.rewardPool ??= { day: 0, paidLamports: 0 };
       return true;
     }
   } catch (err) {

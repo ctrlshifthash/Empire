@@ -194,6 +194,25 @@ export default function RewardsPanel() {
             />
           </div>
 
+          {status?.configured && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-[11px] text-parchment-300/60">
+                <span>Today’s shared pool (everyone)</span>
+                <span>
+                  <b className="text-gold-light">{(status.poolRemaining ?? 0).toFixed(3)}</b> / {status.pool} SOL left
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/40">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-gold/70 to-gold-light"
+                  style={{
+                    width: `${Math.max(0, Math.min(1, (status.poolRemaining ?? 0) / (status.pool || 1))) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {status?.configured && holds && (
             <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-parchment-300/70">
               <span>

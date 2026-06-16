@@ -27,6 +27,8 @@ export interface RewardStatus {
   tierColor: string;
   nextTier: string | null;
   nextTierShare: number | null;
+  poolRemaining: number;
+  poolPaid: number;
 }
 
 interface WalletStore {

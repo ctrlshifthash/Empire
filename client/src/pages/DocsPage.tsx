@@ -171,6 +171,11 @@ export default function DocsPage() {
             your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(your&nbsp;tokens&nbsp;÷&nbsp;total&nbsp;supply)&nbsp;×&nbsp;1&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;multiplier
           </div>
           <p>
+            The total paid out is <strong>hard-capped at 1 SOL per day</strong> across everyone — the tier multiplier
+            sets how fast you accrue (your claim priority), not extra SOL on top of the pool. Once the day’s pool is
+            used up, claims resume the next day.
+          </p>
+          <p>
             Holdings are read directly <strong>on-chain</strong> from the connected wallet (your SPL-token balance vs. the
             circulating supply). Rewards <strong>accrue continuously</strong> from the moment you’re first seen holding —
             you don’t have to be online.

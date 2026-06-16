@@ -95,6 +95,20 @@ export function multiplier(sharePct: number): number {
   return rewardTier(sharePct).multiplier;
 }
 
+// ── daily pool budget ───────────────────────────────────────────────────────
+// Hard cap: the treasury pays out at most DAILY_SOL_POOL across ALL holders per
+// UTC day. The per-wallet multiplier only sets how fast you accrue (your claim
+// priority) — the total emitted is still bounded by the pool.
+const POOL_LAMPORTS = (): number => Math.round(DAILY_SOL_POOL * LAMPORTS_PER_SOL);
+function poolRemainingLamports(): number {
+  const day = Math.floor(now() / DAY_MS);
+  if (state.rewardPool.day !== day) {
+    state.rewardPool.day = day;
+    state.rewardPool.paidLamports = 0;
+  }
+  return Math.max(0, POOL_LAMPORTS() - state.rewardPool.paidLamports);
+}
+
 export interface RewardStatus {
   configured: boolean;
   payouts: boolean;
@@ -113,6 +127,8 @@ export interface RewardStatus {
   tierColor: string; // tier accent colour
   nextTier: string | null; // next tier name, or null at the top
   nextTierShare: number | null; // supply share needed to reach the next tier
+  poolRemaining: number; // SOL left in today's shared pool
+  poolPaid: number; // SOL already paid from today's pool
 }
 
 export async function rewardStatus(address: string): Promise<RewardStatus> {
@@ -123,7 +139,9 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
   const rec = ensureRecord(address, holdings.balance > 0);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  const claimableSol = dailySol * (elapsed / DAY_MS);
+  const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
+  // you can only ever claim what's left in today's shared pool
+  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), poolRemaining);
   const claimCount = rec.claimCount || 0;
   // first claim unlocked immediately; subsequent ones gated to every 6h
   const nextClaimAt = claimCount > 0 ? rec.lastClaimAt + CLAIM_COOLDOWN_MS : 0;
@@ -145,6 +163,8 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     tierColor: tier.color,
     nextTier: next?.name ?? null,
     nextTierShare: next?.minShare ?? null,
+    poolRemaining,
+    poolPaid: state.rewardPool.paidLamports / LAMPORTS_PER_SOL,
   };
 }
 
@@ -192,9 +212,13 @@ export async function claim(address: string): Promise<ClaimResult> {
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 
+  // hard daily cap: never pay more than what's left in today's shared pool
+  const remaining = poolRemainingLamports();
+  if (remaining <= 0) return { ok: false, error: "Today's reward pool is used up — come back tomorrow." };
+  const lamports = Math.min(Math.floor(claimSol * LAMPORTS_PER_SOL), remaining);
+
   const kp = treasuryKeypair();
   if (!kp) return { ok: false, error: "Treasury wallet is misconfigured." };
-  const lamports = Math.floor(claimSol * LAMPORTS_PER_SOL);
   try {
     const tx = new Transaction().add(
       SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(address), lamports }),
@@ -205,8 +229,9 @@ export async function claim(address: string): Promise<ClaimResult> {
     rec.claimCount = claimCount + 1;
     rec.firstSeenAt = rec.firstSeenAt || now();
     state.rewards[address] = rec;
+    state.rewardPool.paidLamports += lamports;
     scheduleSave(0);
-    return { ok: true, signature, claimedSol: claimSol };
+    return { ok: true, signature, claimedSol: lamports / LAMPORTS_PER_SOL };
   } catch (err) {
     console.error("[rewards] payout failed:", err);
     return { ok: false, error: "Payout transaction failed." };
