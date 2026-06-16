@@ -58,10 +58,39 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-parchment-300/80"
         >
-          Realm Rumble is an always-on strategy game on Solana. Build your settlement, train armies and
-          raid real rivals across a living world that keeps running 24/7 — even while you’re offline.
-          Hold the token to earn a daily share of a real SOL reward pool, or play free in demo mode.
+          Realm Rumble is an always-on strategy game on Solana — Age of Empires meets Clash Royale.
+          Build and fortify your settlement, advance through four ages, and raise armies to raid real
+          rivals — then watch the battle play out live in their world. Scout other rulers, kit out your
+          hero, climb the ranks and complete quests as your realm grows 24/7, even while you’re offline.
+          Hold the token to earn a daily share of a real SOL pool — bigger holders, bigger rewards — or
+          jump in free with demo mode.
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="mt-7 flex max-w-2xl flex-wrap justify-center gap-2"
+        >
+          {[
+            "Build & fortify",
+            "Four ages",
+            "Train armies",
+            "Live raids",
+            "Real-player PvP",
+            "Heroes & ranks",
+            "Quests & loot",
+            "Real SOL rewards",
+            "Free demo",
+          ].map((f) => (
+            <span
+              key={f}
+              className="rounded-full border border-parchment-300/15 bg-black/30 px-3 py-1 text-xs text-parchment-200/90"
+            >
+              {f}
+            </span>
+          ))}
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
