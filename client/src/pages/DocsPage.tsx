@@ -168,12 +168,18 @@ export default function DocsPage() {
             supply you hold, then boosted by your holder tier:
           </p>
           <div className="rounded-xl border border-gold/25 bg-black/30 p-4 text-center font-mono text-sm text-parchment-100">
-            your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(your&nbsp;tokens&nbsp;÷&nbsp;total&nbsp;supply)&nbsp;×&nbsp;1&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;multiplier
+            your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(tokens&nbsp;÷&nbsp;supply)&nbsp;×&nbsp;1&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;multiplier&nbsp;×&nbsp;play&nbsp;bonus
           </div>
           <p>
-            The total paid out is <strong>hard-capped at 1 SOL per day</strong> across everyone — the tier multiplier
-            sets how fast you accrue (your claim priority), not extra SOL on top of the pool. Once the day’s pool is
-            used up, claims resume the next day.
+            <strong>Reward for playing, not just holding.</strong> Your accrual is also boosted by a{" "}
+            <strong>play bonus</strong> equal to your empire’s renown rank — the same ladder you climb by building,
+            winning and conquering (1× as a Peasant up to 2.5× as an Emperor). So the harder you play, the bigger your
+            slice of the pool.
+          </p>
+          <p>
+            The total paid out is still <strong>hard-capped at 1 SOL per day</strong> across everyone — the tier and
+            play multipliers only set how fast you accrue (your claim priority), never extra SOL on top of the pool.
+            Once the day’s pool is used up, claims resume the next day.
           </p>
           <p>
             Holdings are read directly <strong>on-chain</strong> from the connected wallet (your SPL-token balance vs. the

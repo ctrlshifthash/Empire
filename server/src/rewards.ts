@@ -21,7 +21,7 @@ import {
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
-import { rewardTier, nextRewardTier } from "../../shared/gamedata.ts";
+import { rewardTier, nextRewardTier, rankForPower } from "../../shared/gamedata.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
@@ -95,6 +95,19 @@ export function multiplier(sharePct: number): number {
   return rewardTier(sharePct).multiplier;
 }
 
+// Reward playing hard, not just holding. A wallet's accrual is boosted by its
+// empire's renown rank — the same ladder that rewards building, winning and
+// conquering in-game. So climbing ranks earns you a bigger slice of the daily
+// pool (within the same fixed cap). A wallet with no empire (or a Peasant) gets
+// 1×. The empire is matched to the wallet via its external sign-in id.
+function playBonus(address: string): { mult: number; rank: string } {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  if (!empire) return { mult: 1, rank: "Unranked" };
+  const r = rankForPower(empire.power);
+  return { mult: r.gatherMult, rank: r.name };
+}
+
 // ── daily pool budget ───────────────────────────────────────────────────────
 // Hard cap: the treasury pays out at most DAILY_SOL_POOL across ALL holders per
 // UTC day. The per-wallet multiplier only sets how fast you accrue (your claim
@@ -116,6 +129,8 @@ export interface RewardStatus {
   pool: number;
   holdings: Holdings;
   multiplier: number;
+  playBonus: number; // accrual multiplier from in-game rank (playing hard)
+  playRank: string; // the linked empire's renown rank
   dailySol: number; // estimated SOL/day for this wallet
   claimableSol: number; // accrued since the last claim
   totalClaimedSol: number;
@@ -136,7 +151,8 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const tier = rewardTier(holdings.sharePct);
   const next = nextRewardTier(holdings.sharePct);
   const m = multiplier(holdings.sharePct);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
+  const play = playBonus(address);
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult;
   const rec = ensureRecord(address, holdings.balance > 0);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
@@ -152,6 +168,8 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     pool: DAILY_SOL_POOL,
     holdings,
     multiplier: m,
+    playBonus: play.mult,
+    playRank: play.rank,
     dailySol,
     claimableSol,
     totalClaimedSol: (rec.totalClaimed || 0) / LAMPORTS_PER_SOL,
@@ -206,7 +224,7 @@ export async function claim(address: string): Promise<ClaimResult> {
   }
 
   const m = multiplier(holdings.sharePct);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m;
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult;
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const claimSol = dailySol * (elapsed / DAY_MS);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };

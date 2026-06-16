@@ -222,6 +222,11 @@ export default function RewardsPanel() {
                 Share of supply: <b className="text-parchment-100">{(status.holdings.sharePct * 100).toFixed(3)}%</b>
               </span>
               <span>
+                Play bonus:{" "}
+                <b className="text-gold-light">{(status.playBonus ?? 1).toFixed(2)}×</b>{" "}
+                <span className="text-parchment-300/55">({status.playRank})</span>
+              </span>
+              <span>
                 Claims made: <b className="text-parchment-100">{status.claimCount}</b>
               </span>
             </div>

@@ -16,6 +16,8 @@ export interface RewardStatus {
   pool: number;
   holdings: { balance: number; supply: number; sharePct: number };
   multiplier: number;
+  playBonus: number;
+  playRank: string;
   dailySol: number;
   claimableSol: number;
   totalClaimedSol: number;
