@@ -15,7 +15,7 @@ const LINKS = [
 const SOCIALS = [
   {
     label: "Pump.fun",
-    href: "https://pump.fun",
+    href: "https://pump.fun/coin/qYc4gQ9xVq48XmeBBUh7GMfTYycoLS1m3VTT9tapump",
     icon: (
       <img src="/pumpfun.png" alt="" className="h-5 w-5 object-contain" />
     ),
