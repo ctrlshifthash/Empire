@@ -77,16 +77,27 @@ export interface Holdings {
 // Read a wallet's balance of the configured token + circulating supply.
 export async function getHoldings(address: string): Promise<Holdings> {
   if (!rewardsConfigured()) return { balance: 0, supply: 0, sharePct: 0 };
-  const mint = new PublicKey(MINT);
-  const owner = new PublicKey(address);
-  const accts = await rpc().getParsedTokenAccountsByOwner(owner, { mint });
-  let balance = 0;
-  for (const a of accts.value) {
-    balance += a.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+  try {
+    const mint = new PublicKey(MINT);
+    const owner = new PublicKey(address);
+    const accts = await rpc().getParsedTokenAccountsByOwner(owner, { mint });
+    let balance = 0;
+    for (const a of accts.value) {
+      balance += a.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+    }
+    const supplyInfo = await rpc().getTokenSupply(mint);
+    const supply = supplyInfo.value.uiAmount || 0;
+    return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
+  } catch (err) {
+    // Before the token mint exists on-chain (pre-launch), the RPC throws
+    // "could not find mint". Degrade gracefully to zero holdings so dashboards
+    // still render instead of erroring. Real reads resume once the mint is live.
+    const msg = String((err as Error)?.message || err);
+    if (/could not find mint|could not find account|Invalid param/i.test(msg)) {
+      return { balance: 0, supply: 0, sharePct: 0 };
+    }
+    throw err; // genuine RPC failures (429, network) still surface
   }
-  const supplyInfo = await rpc().getTokenSupply(mint);
-  const supply = supplyInfo.value.uiAmount || 0;
-  return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
 }
 
 // Bigger holders earn a bigger multiplier on their pro-rata share. The exact
