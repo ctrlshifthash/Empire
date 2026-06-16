@@ -1,196 +1,193 @@
-# ⚔ Empires Eternal
+<div align="center">
 
-A persistent, **24/7 Age of Empires–style strategy game** with an award‑winning landing page.
-Found your own empire on a shared world map, gather resources, advance through four ages,
-raise armies and raid rival players **and** AI empires — in a world that keeps running even
-while you're offline.
+<img src="client/public/favicon.svg" width="96" alt="Realm Rumble" />
 
-> Built as a TypeScript monorepo: a Node + Socket.IO game server with a live simulation tick,
-> and a Vite + React + Tailwind client with a canvas‑rendered world.
+# ⚔️ Realm Rumble
 
----
+### Build an empire. Raid real rivals. Earn real Solana.
 
-## ✨ What's inside
+An **always-on, on-chain medieval strategy game** where your realm keeps producing, marching and fighting **24/7 — even while you sleep.** Raise armies, raid other real players, climb the ranks, and earn a daily share of a real **SOL** reward pool just for holding the token.
 
-- **Award‑winning landing page** — animated ember hero, live world stats, feature grid, the four
-  ages, a live leaderboard preview, and clear calls to action.
-- **Easy navigation** — a sticky, responsive navbar links every page (Home · Play · Leaderboard ·
-  Guide) plus account controls, with a mobile menu.
-- **A living world** — the server simulates every empire on a tick loop. Resources accrue, buildings
-  finish, armies march and battles resolve **whether you're watching or not**. State is persisted to
-  disk, so the world survives restarts.
-- **Full game loop**
-  - Gather **wood, food, gold, stone** from buildings that produce over time.
-  - **Build & upgrade** 11 building types (town center, houses, lumber camp, farm, mines, barracks,
-    archery range, stable, walls, market…).
-  - **Advance four ages** — Dark → Feudal → Castle → Imperial, each unlocking new buildings & units.
-  - **Train & command** villagers, spearmen, archers and knights.
-  - **Raid** other empires for plunder; **defend** with troops and walls. Combat is a deterministic
-    power‑ratio model with a home/wall advantage.
-  - **Quests & coins** — complete quests for coins + resources; spend coins to *rush* construction,
-    training and research.
-- **Players vs. bots** — AI empires grow, advance ages, build armies and launch their own raids, so
-  the world is always full of rivals.
-- **Sprite‑ready** — ships with clean procedural art; drop in your tile map + sprite sheet later
-  (see [Adding your art](#-adding-your-tile-map--sprite-sheet)).
+<br/>
+
+[![Play Now](https://img.shields.io/badge/▶_Play_Now-playrealmrumble.com-e8c75a?style=for-the-badge&logoColor=white)](https://playrealmrumble.com)
+[![Follow on X](https://img.shields.io/badge/Follow-@playRealmRumble-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/playRealmRumble)
+
+<br/>
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+![Solana](https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white)
+![Privy](https://img.shields.io/badge/Auth-Privy-6A5BFF?style=for-the-badge&logoColor=white)
+
+</div>
 
 ---
 
-## 🚀 Quick start
+## 🏰 What is Realm Rumble?
 
-Requires **Node.js 18+** (tested on Node 24).
+Realm Rumble is a persistent, browser-based real-time strategy game played on **one shared world map**. Unlike a match that ends, the world is **always running** — your buildings produce resources and your armies march around the clock, whether you're online or not.
+
+It's also **token-gated with real rewards.** Hold the game token and a slice of a **daily 1 SOL pool** accrues to your wallet, claimable as real Solana. Don't hold the token? Play the full game for free in **demo mode** with worthless in-game coins.
+
+> **One settlement. Four ages. A living world of rivals — and real SOL on the line.**
+
+---
+
+## ✨ Features
+
+| | |
+|---|---|
+| 🌍 **Always-on world** | Economy and armies run 24/7; log off and your realm keeps growing. |
+| 🏗️ **Build & fortify** | Lumber camps, farms, mines, barracks — then barricade with walls, towers & gates. |
+| ⚔️ **Raid & spectate live** | March on rivals and watch the battle play out **live** in the isometric world as buildings are razed. |
+| 🤝 **Real-player PvP** | Every ruler shares one map. Scout rival empires, spectate their base, and invade them. |
+| 🎖️ **Ranks, heroes & gear** | Climb the renown ladder for permanent harvest bonuses; kit out your hero in the shop. |
+| 🏛️ **Four ages of history** | Advance Dark → Feudal → Castle → Imperial, unlocking stronger buildings and units. |
+| 💰 **Real SOL rewards** | A daily 1 SOL pool, split pro-rata by holdings, with a bigger multiplier for bigger holders. |
+| 🎮 **Free demo mode** | No wallet? Jump straight in with worthless in-game coins and learn the ropes. |
+
+---
+
+## 🎮 How It Works
+
+### The core loop
+
+```
+Gather  →  Build  →  Advance Ages  →  Train  →  Raid  →  Climb the Ranks
+```
+
+1. **Gather** — raise economy buildings that produce wood, food, gold and stone every second.
+2. **Build & fortify** — spend resources on buildings, then wall off your territory.
+3. **Advance** — research through four ages to unlock archers, knights and mightier structures.
+4. **Train** — field spearmen, archers and knights, and gear them in the shop.
+5. **Raid** — march on rival empires for loot and **spectate the battle live**.
+6. **Climb** — earn renown ranks (and harvest multipliers) and complete quests for coins.
+
+### Sign in your way
+
+| Method | What you get |
+|---|---|
+| 🔗 **Solana wallet** | Empire tied to your address; holdings unlock real SOL rewards. |
+| ✉️ **Email** | A full empire now; connect a wallet later from the dashboard. |
+| 🎮 **Demo mode** | One click, no wallet, worthless coins — perfect for learning. |
+
+No passwords — the same wallet or email always returns to the same empire.
+
+---
+
+## 💰 Token Rewards — the on-chain economy
+
+A single pool of **1 SOL per day** is shared among **all** token holders. Your slice is **pro-rata** to your share of supply, then boosted by your **holder tier**:
+
+```
+your daily SOL  =  (your tokens ÷ total supply)  ×  1 SOL  ×  tier multiplier
+```
+
+> 🔒 **Hard-capped.** The treasury emits **at most 1 SOL per day total** across everyone. The multiplier only sets how fast you accrue (your claim priority) — never extra SOL on top of the pool.
+
+### Holder tiers
+
+| Tier | Supply share | Multiplier |
+|---|---|---|
+| 🥉 **Bronze** | any holder | `1.00×` |
+| 🥈 **Silver** | ≥ 0.1% | `1.25×` |
+| 🥇 **Gold** | ≥ 0.5% | `1.50×` |
+| 🔷 **Sapphire** | ≥ 2% | `2.00×` |
+| 💎 **Diamond** | ≥ 5% | `3.00×` |
+
+- Holdings are read **live on-chain** (SPL-token balance vs. circulating supply).
+- Rewards **accrue continuously** from the moment you're first seen holding — no need to be online.
+- **First claim any time, then once every 6 hours.** Payouts are **real SOL on Solana mainnet**, sent straight from the treasury to your wallet.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Tech |
+|---|---|
+| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS · Zustand · React Router · HTML5 Canvas (custom isometric renderer) |
+| **Realtime** | Socket.IO — live world snapshots & actions |
+| **Backend** | Node.js · Express · `tsx` (runtime TypeScript) · JSON persistence |
+| **Web3** | Solana Web3.js · SPL-Token · Privy (wallet + email auth) |
+| **Tooling** | npm workspaces monorepo · shared types package |
+
+---
+
+## 📁 Project Structure
+
+```
+realm-rumble/
+├── client/        # React + Vite front-end (isometric game, dashboard, site)
+│   ├── src/
+│   │   ├── world/     # isometric engine + renderer + character sprites
+│   │   ├── game/      # in-game panels (hero, army, shop, rewards, spectate…)
+│   │   ├── pages/     # landing, play, empires, dashboard, docs, guide
+│   │   └── lib/       # store (Zustand), api, web3, Privy bridge
+│   └── public/        # sprites, tiles, favicon
+├── server/        # Node + Express + Socket.IO game server
+│   └── src/           # engine, AI, combat, auth, rewards (Solana payouts)
+└── shared/        # types + game data shared by client & server
+```
+
+---
+
+## 🚀 Getting Started (local dev)
+
+**Prerequisites:** Node.js 18+
 
 ```bash
-# from the project root
-npm install        # installs the server + client workspaces
-npm run dev        # starts the game server AND the client (hot reload)
+# install
+npm install
+
+# run client (5173) + server (4000) together
+npm run dev
 ```
 
-Then open **http://localhost:5173** and click **Play Free** to found your empire.
+Then open **http://localhost:5173**.
 
-> The server runs on **http://localhost:4000** and the Vite client on **http://localhost:5173**.
-> In development the client talks to the server cross‑origin automatically.
+### Environment
 
-### One‑port production preview
+Rewards are **off by default** — the game runs fully in demo mode until configured. To enable token rewards, set these (see `server/.env.example` and `client/.env.example`):
 
-```bash
-npm run build      # builds the client to client/dist
-npm start          # server serves the built client at http://localhost:4000
-```
+| Where | Variable | Purpose |
+|---|---|---|
+| `server/.env` | `TOKEN_MINT` | SPL token mint address |
+| | `SOLANA_RPC` | Solana RPC endpoint |
+| | `DAILY_SOL_POOL` | total SOL distributed per day (e.g. `1`) |
+| | `TREASURY_SECRET_KEY` | payout wallet key (base58 or JSON array) |
+| | `PRIVY_APP_SECRET` | Privy app secret |
+| `client/.env` | `VITE_PRIVY_APP_ID` | Privy app id |
+| | `VITE_SOLANA_RPC` | **public** RPC (baked into the browser bundle) |
 
-(`npm run preview` does both in one step.)
+> ⚠️ Never put a private RPC key in any `VITE_*` variable — those are compiled into the public client bundle.
 
 ---
 
-## 🎮 How to play
+## ☁️ Deployment
 
-There are two ways to play, and they share the same empire:
+Realm Rumble deploys as a **single service** — the server builds and serves the client from the same origin.
 
-### 🌍 Adventure mode (the **Adventure** tab — you, in the world)
-
-You control a **hero** inside a live, walkable isometric world:
-
-| Action | How |
-| --- | --- |
-| **Move your hero** | Left‑click the ground, or use **WASD** |
-| **Look around (camera)** | Move the mouse to the **screen edges**, use **arrow keys**, or **middle‑drag**. Press **Space** (or ⌖) to re‑center on your hero |
-| **Zoom** | **Mouse wheel** (or the **+ / −** buttons) |
-| **Fullscreen** | The **⛶** button (top of the zoom controls) |
-| **Harvest** | Left‑click a 🌲 tree, 🪨 rock, 💎 gold vein or 🌿 bush; your hero walks over and gathers it |
-| **Build in the world** | Pick a building from the **Build** bar, then click a spot — the camera flies to your new building as it rises |
-| **Fight** | Left‑click an enemy (bandits 🗡️, wolves 🐺); your trained army assists, and you get loot |
-| **Command your army (RTS)** | **Drag a box** to select your units, then **right‑click** to move them or attack an enemy |
-| **Cancel placing / deselect** | Right‑click or press **Esc** |
-
-> 🆕 **First‑time tutorial:** a guided, step‑by‑step tour pops up the first time you enter the game
-> (replay it any time via the **❔ Tutorial** button). It walks you through moving, harvesting, building,
-> leveling up and invading.
-
-Your hero respawns at the town if defeated, and resource nodes regrow over time.
-
-**Level up your hero (the 🦸 Hero tab):** everything you do earns XP across five skills —
-**Combat** (slaying enemies & beating rival empires), **Woodcutting**, **Mining**, **Foraging**
-and **Construction**. Higher skill levels gather more per swing and make your hero hit harder.
-You also carry four **tools** — Sword, Axe, Pickaxe, Sickle — which you upgrade through five tiers
-(Crude → Bronze → Iron → Steel → Mythril) with resources and coins for bigger yields and more
-damage. The Hero tab shows every skill's XP bar, your tools, and your current gather rates.
-
-### 🏰 Command mode (the dashboard tabs)
-
-Prefer to manage from above? The dashboard is still here:
-
-1. **Empire** — build & upgrade from a menu, advance through the four ages.
-2. **Map** — the wider world of rival empires; **zoom (wheel) and drag to pan**, click a rival and launch a **raid**. Winning plunders resources, earns Combat XP + coins, and a **decisive victory razes one of their buildings** — cutting their power so you climb the leaderboard. Every battle is saved as a report you can **watch as an animated replay** in the **📖 Chronicle** tab.
-3. **Military** — train villagers, spearmen, archers and knights.
-4. **Quests** — claim coin & resource rewards; spend coins to *rush* anything building.
-
-Everything is shared: a building you place in Adventure mode shows up in the dashboard, and an army
-you train in the dashboard marches beside you in the world. The full handbook (every building, unit,
-age and combat rule) is on the **Guide** page in‑app.
+- **Build:** `npm install --include=dev && npm run build`
+- **Start:** `npm run start`
+- Listens on `process.env.PORT`; serves `client/dist` + the API + Socket.IO.
+- Mount a persistent volume at `server/data` so the world survives redeploys.
 
 ---
 
-## 🗂 Project structure
+## 🔗 Links
 
-```
-Empires Eternal/
-├─ package.json            # workspaces + root scripts (dev / build / start)
-├─ shared/                 # types + game data shared by client and server
-│  ├─ types.ts             # all game model types + socket payloads
-│  ├─ gamedata.ts          # buildings, units, ages, quests, balance formulas
-│  ├─ progression.ts       # hero skills, tools, XP curve, yield/damage formulas
-│  └─ combat.ts            # deterministic battle resolution
-├─ server/                 # Node + Express + Socket.IO game server
-│  └─ src/
-│     ├─ index.ts          # bootstrap, REST API, sockets, world tick + AI timers
-│     ├─ engine.ts         # the simulation: production, build/train, ages, raids, quests
-│     ├─ ai.ts             # bot behaviour
-│     ├─ world.ts          # world gen + empire creation
-│     ├─ auth.ts           # register / login (scrypt, no native deps)
-│     └─ store.ts          # JSON persistence
-└─ client/                 # Vite + React + Tailwind app
-   └─ src/
-      ├─ pages/            # Landing, AuthPage, Play, Leaderboard, Guide
-      ├─ components/       # Navbar, Footer, Toaster, landing sections
-      ├─ world/            # the live Adventure world: engine.ts (real-time sim),
-      │                    #   draw.ts (isometric renderer), iso.ts (projection)
-      ├─ game/             # LiveWorld + dashboard views + canvas HUD
-      └─ lib/              # api client, socket store (zustand), helpers
-```
-
-There are **no native dependencies**, so it runs cleanly on Windows/macOS/Linux. The persistent
-world is stored in `server/data/state.json` (created on first run, git‑ignored).
+[![Website](https://img.shields.io/badge/Website-playrealmrumble.com-e8c75a?style=for-the-badge&logo=googlechrome&logoColor=white)](https://playrealmrumble.com)
+[![X](https://img.shields.io/badge/X-@playRealmRumble-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/playRealmRumble)
 
 ---
 
-## 🎨 Adding your tile map & sprite sheet
+<div align="center">
 
-The game renders with procedural art out of the box and is built to accept real art with no code
-changes elsewhere.
+© 2026 Realm Rumble — **Built for strategists.** ⚔️
 
-1. Drop your images into `client/public/` (e.g. `tiles.png`, `buildings.png`).
-2. In `client/src/pages/Play.tsx`, call `configureAssets(...)` once on mount, mapping each tile /
-   building to its index in the sheet. A ready‑to‑edit example lives at the bottom of
-   `client/src/game/assets.ts`:
-
-```ts
-import { configureAssets } from "../game/assets";
-
-configureAssets({
-  terrain:   { url: "/tiles.png",     tileSize: 64, columns: 8,
-               index: { grass: 0, forest: 1, hills: 2, water: 3, sand: 4 } },
-  buildings: { url: "/buildings.png", tileSize: 64, columns: 8,
-               index: { town_center: 0, house: 1, lumber_camp: 2, farm: 3,
-                        gold_mine: 4, quarry: 5, barracks: 6, archery_range: 7,
-                        stable: 8, wall: 9, market: 10 } },
-});
-```
-
-The renderer automatically uses sprites when they're loaded and falls back to procedural drawing
-otherwise — so the game always looks good, even mid‑integration.
-
----
-
-## 🧪 Smoke test
-
-Two scripted checks are included:
-
-```bash
-# 1) deterministic engine test — drives a full raid to resolution (combat,
-#    plunder, return march) plus age advancement. No server needed:
-node --import tsx server/sim-test.mjs
-
-# 2) live end-to-end loop (register → build → rush → quest → train → raid)
-#    against a running server (start it first with npm start or npm run dev):
-node test-flow.mjs
-```
-
----
-
-## 🛠 Tech
-
-- **Server:** Node, Express, Socket.IO, TypeScript (run with `tsx`), JSON persistence.
-- **Client:** Vite, React 18, TypeScript, Tailwind CSS, Framer Motion, Zustand, React Router.
-- **Rendering:** HTML5 Canvas (procedural, sprite‑ready).
-
-Enjoy your reign. 👑
+</div>
