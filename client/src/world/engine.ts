@@ -493,8 +493,8 @@ export class World {
     return {
       id: this.id(),
       type,
-      x: this.hero.x + (this.rng() - 0.5) * 2,
-      y: this.hero.y + (this.rng() - 0.5) * 2,
+      x: LOCAL_WORLD.centerX + (this.rng() - 0.5) * 2,
+      y: LOCAL_WORLD.centerY + (this.rng() - 0.5) * 2,
       hp: s.hp,
       maxHp: s.hp,
       speed: s.speed,
@@ -767,14 +767,13 @@ export class World {
   }
 
   private updateUnits(dt: number, now: number) {
-    const h = this.hero;
     for (const u of this.units) {
       if (u.downUntil > 0) {
         if (now >= u.downUntil) {
           u.downUntil = 0;
           u.hp = u.maxHp;
-          u.x = h.x + u.ox;
-          u.y = h.y + u.oy;
+          u.x = LOCAL_WORLD.centerX + u.ox;
+          u.y = LOCAL_WORLD.centerY + u.oy;
         }
         continue;
       }
@@ -814,9 +813,9 @@ export class World {
           if (target.hp <= 0) this.killEnemy(target, now);
         }
       } else {
-        // follow the hero in formation
-        const fx = h.x + u.ox;
-        const fy = h.y + u.oy;
+        // garrison the base in formation, independent of the roaming hero
+        const fx = LOCAL_WORLD.centerX + u.ox;
+        const fy = LOCAL_WORLD.centerY + u.oy;
         if (dist(u.x, u.y, fx, fy) > 0.4) this.moveToward(u, fx, fy, u.speed, dt, 0.1);
       }
     }

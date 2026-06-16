@@ -15,11 +15,12 @@ const FRAME = 64;
 export type SheetKey = "royal-guard" | "knight" | "gold-knight" | "king" | "captain" | "king2";
 export type AnimState = "idle" | "move" | "attack";
 
-// down-facing row + frame count + playback speed for each state
+// Direction order within each animation group is [up, left, down, right], so
+// the front-facing (toward camera) row is the group base + 2.
 const ANIM: Record<AnimState, { row: number; frames: number; fps: number }> = {
-  idle: { row: 16, frames: 13, fps: 6 },
-  move: { row: 0, frames: 7, fps: 11 },
-  attack: { row: 8, frames: 9, fps: 14 },
+  idle: { row: 18, frames: 13, fps: 6 },
+  move: { row: 2, frames: 7, fps: 11 },
+  attack: { row: 10, frames: 9, fps: 14 },
 };
 
 const KEYS: SheetKey[] = ["royal-guard", "knight", "gold-knight", "king", "captain", "king2"];
