@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Toaster from "./components/Toaster";
 import SplashScreen from "./components/SplashScreen";
+import MusicPlayer from "./components/MusicPlayer";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import Play from "./pages/Play";
@@ -36,6 +37,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col">
       <SplashScreen />
+      <MusicPlayer />
       <Navbar />
       <main className="flex-1">
         <Routes>
