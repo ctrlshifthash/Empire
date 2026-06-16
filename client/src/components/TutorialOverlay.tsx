@@ -95,7 +95,7 @@ const STEPS: Step[] = [
     body: (
       <>
         That's the loop: <strong>gather → build → advance ages → train → invade → level up</strong>. Your empire
-        grows even while you're away. Go forge a realm that never sleeps!
+        grows even while you're away. Go build a realm that never sleeps!
       </>
     ),
   },

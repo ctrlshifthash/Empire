@@ -92,7 +92,7 @@ export default function Navbar() {
           <span className="flex flex-col leading-none">
             <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
             <span className="hidden text-[10px] uppercase tracking-[0.25em] text-parchment-300/60 sm:block">
-              Forge · Conquer · Endure
+              Build · Conquer · Endure
             </span>
           </span>
         </Link>

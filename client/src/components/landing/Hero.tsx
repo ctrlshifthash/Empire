@@ -39,7 +39,7 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           className="kicker mb-5 rounded-full border border-gold/25 bg-black/30 px-4 py-1.5"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulseGlow" />
-          A living, always-on strategy world
+          An always-on strategy game with real Solana rewards
         </motion.div>
 
         <motion.h1
@@ -48,7 +48,7 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.05 }}
           className="max-w-4xl text-balance text-4xl font-extrabold leading-[1.05] sm:text-6xl md:text-7xl"
         >
-          Forge an Empire <br className="hidden sm:block" />
+          Build an Empire <br className="hidden sm:block" />
           That <span className="text-gold-gradient">Never Sleeps</span>
         </motion.h1>
 
@@ -58,9 +58,9 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-parchment-300/80"
         >
-          Found your settlement, raise mighty armies and march through four ages of history. Battle
-          other players and cunning AI empires, spectate raids live, and climb the ranks — in a world
-          that turns 24/7. Hold the token and earn real Solana from a daily reward pool.
+          Realm Rumble is an always-on strategy game on Solana. Build your settlement, train armies and
+          raid real rivals across a living world that keeps running 24/7 — even while you’re offline.
+          Hold the token to earn a daily share of a real SOL reward pool, or play free in demo mode.
         </motion.p>
 
         <motion.div

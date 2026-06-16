@@ -301,10 +301,10 @@ function GearCard({
       </div>
       <div className="mt-2 text-xs text-emerald-300">{bonus}</div>
       {maxed ? (
-        <div className="mt-3 rounded-lg bg-black/20 py-2 text-center text-xs text-gold-light">★ Fully forged</div>
+        <div className="mt-3 rounded-lg bg-black/20 py-2 text-center text-xs text-gold-light">★ Maxed out</div>
       ) : (
         <button className="btn-gold btn-sm mt-3 w-full" disabled={coins < cost} onClick={onBuy}>
-          ⬆ Forge — 🪙 {cost}
+          ⬆ Upgrade — 🪙 {cost}
         </button>
       )}
     </div>
