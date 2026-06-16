@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Toaster from "./components/Toaster";
+import SplashScreen from "./components/SplashScreen";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import Play from "./pages/Play";
@@ -34,6 +35,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <SplashScreen />
       <Navbar />
       <main className="flex-1">
         <Routes>
