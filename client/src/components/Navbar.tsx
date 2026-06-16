@@ -83,20 +83,22 @@ export default function Navbar() {
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <nav className="relative flex h-16 w-full items-center justify-between gap-4 px-5 sm:px-8">
+      <nav className="flex h-16 w-full items-center gap-4 px-5 sm:px-8">
         {/* left: brand */}
-        <Link to="/" className="group flex items-center gap-2.5 md:ml-6" onClick={() => setOpen(false)}>
-          <Logo />
-          <span className="flex flex-col leading-none">
-            <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
-            <span className="hidden text-[10px] uppercase tracking-[0.25em] text-parchment-300/60 sm:block">
-              Build · Conquer · Endure
+        <div className="flex flex-1 items-center min-w-0">
+          <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
+            <Logo />
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
+              <span className="hidden text-[10px] uppercase tracking-[0.25em] text-parchment-300/60 sm:block">
+                Build · Conquer · Endure
+              </span>
             </span>
-          </span>
-        </Link>
+          </Link>
+        </div>
 
-        {/* center: primary nav — pinned to the exact center of the bar */}
-        <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:-ml-8 md:flex">
+        {/* center: primary nav */}
+        <div className="hidden items-center gap-1 lg:flex">
           {LINKS.map((l) => (
             <NavLink
               key={l.to}
@@ -112,8 +114,8 @@ export default function Navbar() {
         </div>
 
         {/* right: account + social links */}
-        <div className="flex items-center gap-4">
-          <div className="hidden items-center gap-3 md:flex">
+        <div className="flex flex-1 items-center justify-end gap-3">
+          <div className="hidden items-center gap-3 lg:flex">
             {token && user ? (
               <>
                 <NavLink
@@ -145,13 +147,13 @@ export default function Navbar() {
               </Link>
             )}
           </div>
-          <div className="hidden md:block">
+          <div className="hidden xl:block">
             <SocialLinks className="border-l border-parchment-300/15 pl-4" />
           </div>
 
           {/* mobile toggle */}
           <button
-            className="btn-ghost btn-sm md:hidden"
+            className="btn-ghost btn-sm lg:hidden"
             onClick={() => setOpen((o) => !o)}
             aria-label="Toggle menu"
           >
@@ -161,7 +163,7 @@ export default function Navbar() {
       </nav>
 
       {open && (
-        <div className="border-t border-parchment-300/10 bg-ink-800/95 px-5 py-4 md:hidden">
+        <div className="border-t border-parchment-300/10 bg-ink-800/95 px-5 py-4 lg:hidden">
           <div className="flex flex-col gap-1">
             {LINKS.map((l) => (
               <NavLink
