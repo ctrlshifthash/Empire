@@ -58,12 +58,9 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-parchment-300/80"
         >
-          Realm Rumble is an always-on strategy game on Solana — Age of Empires meets Clash Royale.
-          Build and fortify your settlement, advance through four ages, and raise armies to raid real
-          rivals — then watch the battle play out live in their world. Scout other rulers, kit out your
-          hero, climb the ranks and complete quests as your realm grows 24/7, even while you’re offline.
-          Hold the token to earn a daily share of a real SOL pool — bigger holders, bigger rewards — or
-          jump in free with demo mode.
+          An always-on strategy game on Solana — Age of Empires meets Clash Royale. Build your empire,
+          raid real rivals in live battles, and hold the token to earn real SOL — or play free in demo
+          mode.
         </motion.p>
 
         <motion.div
