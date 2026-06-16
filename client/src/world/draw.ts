@@ -6,6 +6,7 @@ import { BUILDINGS } from "@shared/gamedata";
 import { LOCAL_WORLD } from "@shared/types";
 import { TILE_H, TILE_W, screenToWorld, worldToScreen } from "./iso";
 import type { BuildingView, Compound, Enemy, ResNode, Unit, World } from "./engine";
+import { drawSpriteChar, UNIT_SHEET } from "./sprites";
 import {
   CANNON_COLS,
   CANNON_ROWS,
@@ -685,19 +686,27 @@ export function renderWorld(
     objs.push({
       key: u.x + u.y,
       draw: () => {
-        drawCharacter(ctx, s.x, s.y, {
-          color: u.color ?? UNIT_COLOR[u.type] ?? "#aaa",
-          facing: u.face != null ? u.face : tx >= u.x ? 1 : -1,
-          scale: 1.5,
-          weapon: gear.weapon,
-          hat: gear.hat,
-          cape: gear.cape,
-          skin: gear.skin,
-          moving: !!u.order || u.attackId != null,
-          attacking: u.swing > 0.25,
-          ring: u.ring ?? (sel ? "#5fd16a" : undefined),
-          phase: now * 0.012 + u.id,
-        });
+        const ring = u.ring ?? (sel ? "#5fd16a" : undefined);
+        const moving = !!u.order || u.attackId != null;
+        const sheet = UNIT_SHEET[u.type];
+        const drew =
+          sheet &&
+          drawSpriteChar(ctx, sheet, s.x, s.y, { scale: 1.25, moving, now, seed: u.id, ring });
+        if (!drew) {
+          drawCharacter(ctx, s.x, s.y, {
+            color: u.color ?? UNIT_COLOR[u.type] ?? "#aaa",
+            facing: u.face != null ? u.face : tx >= u.x ? 1 : -1,
+            scale: 1.5,
+            weapon: gear.weapon,
+            hat: gear.hat,
+            cape: gear.cape,
+            skin: gear.skin,
+            moving,
+            attacking: u.swing > 0.25,
+            ring,
+            phase: now * 0.012 + u.id,
+          });
+        }
         hpBar(ctx, s.x, s.y - 48, u.hp / u.maxHp, 32);
       },
     });
@@ -743,18 +752,28 @@ export function renderWorld(
         // replaces the crown once equipped — your bought gear shows on-screen
         const ARMOUR_TINT = ["#d8a52a", "#c9a84a", "#b8b0a0", "#a8b2b8", "#9aa6c0", "#8fb0c8", "#a6c4dc", "#cdddec"];
         const look = world.heroLook;
-        drawCharacter(ctx, hsx.x, hsx.y, {
-          color: ARMOUR_TINT[Math.min(look.armour, ARMOUR_TINT.length - 1)],
-          facing: world.hero.facing,
-          scale: 1.95,
-          weapon: "sword",
-          hat: look.helmet > 0 ? "helmet" : "crown",
-          cape: true,
-          moving: world.hero.state === "move",
-          attacking: world.hero.state === "fight",
+        const heroMoving = world.hero.state === "move" || world.hero.state === "fight";
+        const drewHero = drawSpriteChar(ctx, "royal-guard", hsx.x, hsx.y, {
+          scale: 1.75,
+          moving: heroMoving,
+          now,
+          seed: 0,
           ring: "rgba(244,221,143,0.7)",
-          phase: now * 0.012,
         });
+        if (!drewHero) {
+          drawCharacter(ctx, hsx.x, hsx.y, {
+            color: ARMOUR_TINT[Math.min(look.armour, ARMOUR_TINT.length - 1)],
+            facing: world.hero.facing,
+            scale: 1.95,
+            weapon: "sword",
+            hat: look.helmet > 0 ? "helmet" : "crown",
+            cape: true,
+            moving: world.hero.state === "move",
+            attacking: world.hero.state === "fight",
+            ring: "rgba(244,221,143,0.7)",
+            phase: now * 0.012,
+          });
+        }
         hpBar(ctx, hsx.x, hsx.y - 64, world.hero.hp / world.hero.maxHp, 44);
         if (world.hero.state === "harvest") {
           ctx.strokeStyle = "#7CFC8A";
