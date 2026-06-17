@@ -11,6 +11,7 @@ export default function AdminBugsPage() {
   const [bugs, setBugs] = useState<BugReport[] | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<"all" | "bug" | "feedback">("all");
 
   const load = async (k: string) => {
     if (!k) return;
@@ -59,13 +60,39 @@ export default function AdminBugsPage() {
 
       {bugs && (
         <div className="mt-8">
-          <div className="mb-3 text-xs uppercase tracking-wider text-parchment-300/55">{bugs.length} reports</div>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-xs uppercase tracking-wider text-parchment-300/55">
+              {bugs.filter((b) => filter === "all" || b.kind === filter).length} of {bugs.length}
+            </div>
+            <div className="inline-flex rounded-lg border border-parchment-300/15 bg-black/30 p-0.5 text-xs">
+              {(["all", "bug", "feedback"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-md px-3 py-1 font-medium capitalize transition-colors ${
+                    filter === f ? "bg-gold/15 text-gold-light" : "text-parchment-300/60 hover:text-parchment-100"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-3">
             {bugs.length === 0 && <div className="panel p-8 text-center text-sm text-parchment-300/60">No reports yet.</div>}
-            {bugs.map((b) => (
+            {bugs.filter((b) => filter === "all" || b.kind === filter).map((b) => (
               <div key={b.id} className="panel p-4">
                 <div className="flex items-center justify-between text-xs text-parchment-300/55">
-                  <span>{new Date(b.at).toLocaleString()}</span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                        b.kind === "feedback" ? "bg-gold/15 text-gold-light" : "bg-blood/20 text-blood-light"
+                      }`}
+                    >
+                      {b.kind === "feedback" ? "💬 Feedback" : "🐞 Bug"}
+                    </span>
+                    {new Date(b.at).toLocaleString()}
+                  </span>
                   <span className="font-mono">{b.page ?? "—"}</span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-parchment-100">{b.message}</p>

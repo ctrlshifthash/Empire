@@ -216,9 +216,10 @@ app.post("/api/governance/poll", (req, res) => {
 
 // ── Bug reports ─────────────────────────────────────────────────────────────
 app.post("/api/bugs", (req, res) => {
-  const { message, page, contact } = (req.body ?? {}) as Record<string, unknown>;
+  const { kind, message, page, contact } = (req.body ?? {}) as Record<string, unknown>;
   res.json(
     submitBug({
+      kind: typeof kind === "string" ? kind : "bug",
       message: typeof message === "string" ? message : "",
       page: typeof page === "string" ? page : undefined,
       contact: typeof contact === "string" ? contact : undefined,

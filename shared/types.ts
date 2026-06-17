@@ -378,9 +378,10 @@ export interface PollResult {
   yourVote: string | null;
 }
 
-// ── Bug reports ──────────────────────────────────────────────────────────────
+// ── Bug reports & feedback ───────────────────────────────────────────────────
 export interface BugReport {
   id: string;
+  kind: "bug" | "feedback"; // both land in the same admin inbox
   message: string;
   page?: string; // route the user was on
   contact?: string; // optional handle/email so you can follow up
