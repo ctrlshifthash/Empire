@@ -27,6 +27,7 @@ export default function EmpireView({ empire }: { empire: Empire }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const build = useGame((s) => s.build);
   const upgrade = useGame((s) => s.upgrade);
+  const demolish = useGame((s) => s.demolish);
   const rush = useGame((s) => s.rush);
   const advanceAge = useGame((s) => s.advanceAge);
 
@@ -68,6 +69,12 @@ export default function EmpireView({ empire }: { empire: Empire }) {
             buildingId={selected.id}
             onUpgrade={() => upgrade(selected.id)}
             onRush={() => rush("building", selected.id)}
+            onDemolish={() => {
+              if (confirm("Demolish this building? You'll recover half of what you spent.")) {
+                demolish(selected.id);
+                setSelectedId(null);
+              }
+            }}
           />
         ) : (
           <div className="panel p-5 text-sm text-parchment-300/70">
@@ -193,11 +200,13 @@ function SelectedBuilding({
   buildingId,
   onUpgrade,
   onRush,
+  onDemolish,
 }: {
   empire: Empire;
   buildingId: string;
   onUpgrade: () => void;
   onRush: () => void;
+  onDemolish: () => void;
 }) {
   const b = empire.buildings.find((x) => x.id === buildingId);
   if (!b) return null;
@@ -274,6 +283,17 @@ function SelectedBuilding({
             ⬆ Upgrade ({fmtTime(buildSecondsFor(b.type, b.level))})
           </button>
         </div>
+      )}
+
+      {/* demolish — the Town Centre is the empire's core and can't be torn down.
+          Works mid-construction too, so a mis-placed build can be cancelled. */}
+      {b.type !== "town_center" && (
+        <button
+          className="mt-3 w-full rounded-lg border border-blood/30 py-1.5 text-xs font-semibold text-blood-light transition-colors hover:border-blood/60 hover:bg-blood/10"
+          onClick={onDemolish}
+        >
+          🔨 {busy ? "Cancel & demolish" : "Demolish"} · recover 50%
+        </button>
       )}
     </div>
   );

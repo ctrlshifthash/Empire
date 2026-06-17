@@ -34,6 +34,7 @@ import {
   actAdvanceAge,
   actAttack,
   actBuild,
+  actDemolish,
   actClaimQuest,
   actGather,
   actRush,
@@ -321,6 +322,9 @@ io.on("connection", (socket) => {
 
   socket.on("build", (p: { type: any; wx?: number; wy?: number }) =>
     withEmpire((id) => handle(actBuild(state.empires[id], p?.type, { wx: p?.wx, wy: p?.wy }))),
+  );
+  socket.on("demolish", (p: { buildingId: string }) =>
+    withEmpire((id) => handle(actDemolish(state.empires[id], p?.buildingId), "Building demolished.")),
   );
   socket.on("upgrade", (p: { buildingId: string }) =>
     withEmpire((id) => handle(actUpgrade(state.empires[id], p?.buildingId))),

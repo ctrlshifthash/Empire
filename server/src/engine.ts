@@ -346,6 +346,33 @@ export function actBuild(
   return { ok: true };
 }
 
+// Demolish a building the player placed. The Town Centre is the empire's core
+// and can't be torn down. Half of everything invested (the build + every
+// upgrade) is recovered to your stores.
+const DEMOLISH_REFUND = 0.5;
+export function actDemolish(e: Empire, buildingId: string): ActionResult {
+  const idx = e.buildings.findIndex((b) => b.id === buildingId);
+  if (idx < 0) return { ok: false, error: "Building not found." };
+  const b = e.buildings[idx];
+  if (b.type === "town_center") return { ok: false, error: "You can't demolish your Town Centre." };
+  const def = BUILDINGS[b.type];
+
+  // refund 50% of the cumulative cost (build at level 0 → its current level)
+  const levels = Math.max(1, b.level);
+  const refund: Partial<Resources> = {};
+  for (let i = 0; i < levels; i++) {
+    const c = nextLevelCost(b.type, i);
+    for (const k of RESOURCE_KEYS) refund[k] = (refund[k] ?? 0) + Math.floor((c[k] ?? 0) * DEMOLISH_REFUND);
+  }
+
+  e.buildings.splice(idx, 1);
+  grant(e.resources, refund, warehouseCapacity(e));
+  recomputePower(e);
+  const parts = RESOURCE_KEYS.filter((k) => refund[k]).map((k) => `${refund[k]} ${k}`);
+  log(e, "build", `Demolished the ${def.name}${parts.length ? ` — recovered ${parts.join(", ")}` : ""}.`);
+  return { ok: true };
+}
+
 // Harvesting a resource node in the live world. The yield and XP are computed
 // from the hero's skill level and tool tier (authoritative), so the client
 // can't inflate the amount — it only reports *which* node was struck.

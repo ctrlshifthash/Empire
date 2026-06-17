@@ -44,6 +44,7 @@ interface GameStore {
 
   build: (type: BuildingType, wx?: number, wy?: number) => void;
   upgrade: (buildingId: string) => void;
+  demolish: (buildingId: string) => void;
   train: (building: BuildingType, unit: UnitType, quantity: number) => void;
   advanceAge: () => void;
   attack: (targetEmpireId: string, units: Partial<Record<UnitType, number>>) => void;
@@ -176,6 +177,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   build: (type, wx, wy) => socket?.emit("build", { type, wx, wy }),
   upgrade: (buildingId) => socket?.emit("upgrade", { buildingId }),
+  demolish: (buildingId) => socket?.emit("demolish", { buildingId }),
   train: (building, unit, quantity) => socket?.emit("train", { building, unit, quantity }),
   advanceAge: () => socket?.emit("advanceAge"),
   attack: (targetEmpireId, units) => socket?.emit("attack", { targetEmpireId, units }),
