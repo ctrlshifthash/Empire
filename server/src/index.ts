@@ -16,6 +16,7 @@ import { Server as SocketServer } from "socket.io";
 import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.ts";
+import { shopConfig, buyShopItem } from "./shop.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -218,6 +219,28 @@ app.get("/api/rewards/:address", async (req, res) => {
 app.post("/api/rewards/:address/claim", async (req, res) => {
   try {
     res.json(await claim(req.params.address));
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+
+// ── Token shop (pay for items with the SPL token) ───────────────────────────
+app.get("/api/shop/config", async (_req, res) => {
+  try {
+    res.json(await shopConfig());
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+app.post("/api/shop/buy", async (req, res) => {
+  try {
+    const { address, signature, itemId } = (req.body ?? {}) as Record<string, unknown>;
+    if (!address || !signature || !itemId)
+      return res.status(400).json({ ok: false, error: "Missing address, signature or itemId." });
+    const result = await buyShopItem(String(address), String(signature), String(itemId));
+    // push fresh empire state to the player's live game so the item shows at once
+    if (result.ok && result.empireId) pushSnapshot(result.empireId);
+    res.json(result);
   } catch (e) {
     res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
   }

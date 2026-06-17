@@ -8,6 +8,7 @@ import HeroView from "../game/HeroView";
 import WorldView from "../game/WorldView";
 import MilitaryView from "../game/MilitaryView";
 import ArmouryView from "../game/ArmouryView";
+import TokenShop from "../game/TokenShop";
 import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
 import LogView from "../game/LogView";
@@ -16,7 +17,17 @@ import BattleSpectate from "../game/BattleSpectate";
 import TutorialOverlay from "../components/TutorialOverlay";
 import { armyTotal } from "../game/derive";
 
-type Tab = "live" | "hero" | "empire" | "world" | "military" | "armoury" | "quests" | "log" | "rewards";
+type Tab =
+  | "live"
+  | "hero"
+  | "empire"
+  | "world"
+  | "military"
+  | "armoury"
+  | "tokenshop"
+  | "quests"
+  | "log"
+  | "rewards";
 
 const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "live", label: "Play", icon: "🌍", desc: "Your live world — walk around, harvest and fight" },
@@ -24,7 +35,8 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "empire", label: "Buildings", icon: "🏰", desc: "Build & upgrade your settlement, advance ages" },
   { id: "world", label: "Attack", icon: "🗡️", desc: "Pick a rival empire and invade it" },
   { id: "military", label: "Army", icon: "⚔️", desc: "Train soldiers for your army" },
-  { id: "armoury", label: "Shop", icon: "🛒", desc: "Buy weapons & armour for your army" },
+  { id: "armoury", label: "Armoury", icon: "🛒", desc: "Buy weapons & armour for your army with coins" },
+  { id: "tokenshop", label: "Token Shop", icon: "💎", desc: "Spend the project token on packs, boosts, armies & traits" },
   { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
   { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
   { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim SOL token rewards" },
@@ -216,6 +228,7 @@ export default function Play() {
                 {tab === "world" && <WorldView snapshot={snapshot} />}
                 {tab === "military" && <MilitaryView empire={empire} />}
                 {tab === "armoury" && <ArmouryView empire={empire} />}
+                {tab === "tokenshop" && <TokenShop />}
                 {tab === "quests" && <QuestsView empire={empire} />}
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}

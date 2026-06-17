@@ -684,6 +684,7 @@ export interface Trait {
   dmgPct?: number; // % hero damage
   gatherPct?: number; // % harvest yield
   speedPct?: number; // % move speed
+  premium?: boolean; // token-shop only — hidden from the coin trait list
 }
 export const TRAITS: Trait[] = [
   // free starter perks
@@ -698,6 +699,9 @@ export const TRAITS: Trait[] = [
   { id: "warlord", name: "Warlord", desc: "+40 HP & +15% damage", icon: "🎖️", cost: 320, hp: 40, dmgPct: 0.15 },
   { id: "juggernaut", name: "Juggernaut", desc: "+120 max HP", icon: "🗿", cost: 420, hp: 120 },
   { id: "duelist", name: "Duelist", desc: "+45% hero damage", icon: "⚔️", cost: 480, dmgPct: 0.45 },
+  // premium — only purchasable in the token shop (see SHOP_ITEMS)
+  { id: "conqueror", name: "Conqueror", desc: "+200 max HP & +30% hero damage", icon: "👑", cost: 0, premium: true, hp: 200, dmgPct: 0.3 },
+  { id: "warmaster", name: "Warmaster", desc: "+50% harvest & +25% move speed", icon: "🏆", cost: 0, premium: true, gatherPct: 0.5, speedPct: 0.25 },
 ];
 export interface TraitBonuses {
   hp: number;
@@ -771,3 +775,74 @@ export const COLORS_BANNER = [
   "#c0392b", "#2980b9", "#27ae60", "#8e44ad",
   "#d35400", "#16a085", "#2c3e50", "#c0a020",
 ];
+
+// ── Token shop ───────────────────────────────────────────────────────────────
+// Items players buy with the project's SPL token. Payment is a real on-chain
+// transfer of `price` whole tokens to the treasury (verified server-side before
+// the effect is granted). Prices are in WHOLE tokens (converted to raw using the
+// mint's decimals at purchase time).
+export type ShopCategory = "pack" | "boost" | "army" | "trait" | "cosmetic";
+
+export type ShopEffect =
+  | { kind: "resources"; coins?: number; resources?: Partial<Resources> }
+  | { kind: "finishAll" } // instantly complete builds, training & age research
+  | { kind: "gatherBuff"; mult: number; hours: number } // temporary harvest multiplier
+  | { kind: "army"; units: Partial<Record<UnitType, number>> }
+  | { kind: "trait"; traitId: string }
+  | { kind: "banner"; color: string };
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  category: ShopCategory;
+  price: number; // whole tokens
+  effect: ShopEffect;
+}
+
+export const SHOP_ITEMS: ShopItem[] = [
+  // resource & coin packs
+  { id: "pack_supplies", name: "Supply Crate", icon: "📦", category: "pack", price: 1000,
+    desc: "+20,000 of every resource (wood, food, gold, stone).",
+    effect: { kind: "resources", resources: { wood: 20000, food: 20000, gold: 20000, stone: 20000 } } },
+  { id: "pack_coins", name: "Coin Chest", icon: "🪙", category: "pack", price: 1500,
+    desc: "+5,000 coins to spend on upgrades, gear and traits.",
+    effect: { kind: "resources", coins: 5000 } },
+  { id: "pack_war", name: "War Chest", icon: "🎁", category: "pack", price: 5000,
+    desc: "+50,000 of every resource and +10,000 coins.",
+    effect: { kind: "resources", coins: 10000, resources: { wood: 50000, food: 50000, gold: 50000, stone: 50000 } } },
+  // boosts
+  { id: "boost_finish", name: "Master Builder", icon: "⚡", category: "boost", price: 2500,
+    desc: "Instantly finish all builds, training and age research in progress.",
+    effect: { kind: "finishAll" } },
+  { id: "boost_gather", name: "Harvest Surge", icon: "🌾", category: "boost", price: 2000,
+    desc: "Double your harvest yield for the next 2 hours.",
+    effect: { kind: "gatherBuff", mult: 2, hours: 2 } },
+  // army
+  { id: "army_warband", name: "Elite Warband", icon: "🛡️", category: "army", price: 4000,
+    desc: "Instantly muster 25 knights, 25 archers and 25 spearmen.",
+    effect: { kind: "army", units: { knight: 25, archer: 25, spearman: 25 } } },
+  { id: "army_legion", name: "Royal Legion", icon: "⚔️", category: "army", price: 12000,
+    desc: "Instantly muster 100 knights — a devastating standing force.",
+    effect: { kind: "army", units: { knight: 100 } } },
+  // exclusive traits (token-only)
+  { id: "trait_conqueror", name: "Conqueror", icon: "👑", category: "trait", price: 6000,
+    desc: "Permanent hero trait: +200 max HP & +30% hero damage.",
+    effect: { kind: "trait", traitId: "conqueror" } },
+  { id: "trait_warmaster", name: "Warmaster", icon: "🏆", category: "trait", price: 6000,
+    desc: "Permanent hero trait: +50% harvest & +25% move speed.",
+    effect: { kind: "trait", traitId: "warmaster" } },
+  // cosmetic crests (banner heraldry)
+  { id: "crest_gold", name: "Gilded Banner", icon: "🟡", category: "cosmetic", price: 1500,
+    desc: "A gleaming gold banner for your empire's heraldry.",
+    effect: { kind: "banner", color: "#e8c75a" } },
+  { id: "crest_crimson", name: "Crimson Royal", icon: "🔴", category: "cosmetic", price: 1500,
+    desc: "A deep crimson royal banner.",
+    effect: { kind: "banner", color: "#9b1b1b" } },
+  { id: "crest_amethyst", name: "Amethyst Crown", icon: "🟣", category: "cosmetic", price: 1500,
+    desc: "A regal amethyst-purple banner.",
+    effect: { kind: "banner", color: "#7d3cc0" } },
+];
+
+export const shopItem = (id: string): ShopItem | undefined => SHOP_ITEMS.find((i) => i.id === id);

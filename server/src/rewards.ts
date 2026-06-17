@@ -197,6 +197,19 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   };
 }
 
+// Shared accessors so other modules (e.g. the token shop) reuse the same RPC
+// connection, mint and treasury without re-reading env or re-deriving the key.
+export function sharedRpc(): Connection {
+  return rpc();
+}
+export function tokenMint(): string {
+  return MINT;
+}
+export function treasuryPubkey(): string | null {
+  const kp = treasuryKeypair();
+  return kp ? kp.publicKey.toBase58() : null;
+}
+
 function treasuryKeypair(): Keypair | null {
   if (!TREASURY_SECRET) return null;
   try {

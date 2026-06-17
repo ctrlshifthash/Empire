@@ -24,6 +24,9 @@ export interface GameState {
   // hard daily cap: total SOL paid out across ALL holders is limited to the
   // pool per UTC day. `day` is the UTC day index; `paidLamports` resets each day.
   rewardPool: { day: number; paidLamports: number };
+  // token-shop purchases keyed by the payment tx signature (idempotency — a
+  // signature can only ever be redeemed once).
+  shopPurchases: Record<string, { address: string; itemId: string; at: number }>;
 }
 
 export const state: GameState = {
@@ -34,6 +37,7 @@ export const state: GameState = {
   tokens: {},
   rewards: {},
   rewardPool: { day: 0, paidLamports: 0 },
+  shopPurchases: {},
 };
 
 export function loadState(): boolean {
@@ -47,6 +51,7 @@ export function loadState(): boolean {
       state.tokens ??= {};
       state.rewards ??= {};
       state.rewardPool ??= { day: 0, paidLamports: 0 };
+      state.shopPurchases ??= {};
       return true;
     }
   } catch (err) {

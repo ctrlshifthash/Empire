@@ -104,7 +104,7 @@ export default function HeroView({ empire }: { empire: Empire }) {
           Permanent perks for your champion. Some are free to learn; stronger ones cost coins.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {TRAITS.map((t) => {
+          {TRAITS.filter((t) => !t.premium).map((t) => {
             const have = owned.has(t.id);
             const free = t.cost === 0;
             const afford = empire.coins >= t.cost;

@@ -155,6 +155,8 @@ export interface Empire {
   };
   // learned hero traits/perks (ids from gamedata TRAITS)
   traits?: string[];
+  // temporary buffs bought in the token shop (e.g. a timed harvest multiplier)
+  boosts?: { gatherMult?: number; gatherUntil?: number };
 }
 
 // Public, trimmed view of an empire shown on the world map / to opponents.

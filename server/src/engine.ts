@@ -26,6 +26,7 @@ import {
   rankForPower,
   rushCost,
   ageAtLeast,
+  type ShopItem,
 } from "../../shared/gamedata.ts";
 import { armySize, resolveBattle, type Army } from "../../shared/combat.ts";
 import type {
@@ -353,8 +354,10 @@ export function actGather(e: Empire, resource: ResourceKind): ActionResult {
   const tool = resourceTool(resource);
   const level = levelForXp(e.hero.skills[skill] ?? 0);
   const tier = e.hero.tools[tool] ?? 1;
-  // higher ranks + gather traits harvest more
-  const mult = rankForPower(e.power).gatherMult * (1 + traitBonuses(e.traits).gatherPct);
+  // higher ranks + gather traits harvest more; a purchased Harvest Surge stacks
+  // a temporary multiplier on top while it lasts.
+  const surge = e.boosts?.gatherUntil && e.boosts.gatherUntil > now() ? e.boosts.gatherMult ?? 1 : 1;
+  const mult = rankForPower(e.power).gatherMult * (1 + traitBonuses(e.traits).gatherPct) * surge;
   const amt = Math.round(gatherYield(level, tier) * mult);
   const cap = warehouseCapacity(e);
   e.resources[resource] = clamp(e.resources[resource] + amt, 0, cap);
@@ -432,6 +435,50 @@ export function actBuyTrait(e: Empire, traitId: string): ActionResult {
   e.coins -= t.cost;
   e.traits.push(traitId);
   log(e, "system", `Learned the ${t.name} trait — ${t.desc}.`);
+  return { ok: true };
+}
+
+// Grant the effect of a token-shop item. Called ONLY after the on-chain payment
+// has been verified server-side (see shop.ts). Never trust the client here.
+export function applyShopItem(e: Empire, item: ShopItem): ActionResult {
+  const fx = item.effect;
+  switch (fx.kind) {
+    case "resources": {
+      if (fx.coins) e.coins += fx.coins;
+      // purchased packs are premium: deposited straight to stores, above the
+      // passive warehouse cap so big crates aren't wasted.
+      if (fx.resources) for (const k of RESOURCE_KEYS) if (fx.resources[k]) e.resources[k] += fx.resources[k]!;
+      break;
+    }
+    case "finishAll": {
+      for (const b of e.buildings) if (b.completesAt != null) b.completesAt = now();
+      for (const o of e.trainQueue) o.completesAt = now();
+      if (e.ageUpCompletesAt != null) e.ageUpCompletesAt = now();
+      break;
+    }
+    case "gatherBuff": {
+      e.boosts = { gatherMult: fx.mult, gatherUntil: now() + fx.hours * 3_600_000 };
+      break;
+    }
+    case "army": {
+      for (const u of UNIT_TYPES) if (fx.units[u]) e.army[u] = (e.army[u] ?? 0) + fx.units[u]!;
+      recomputePower(e);
+      break;
+    }
+    case "trait": {
+      if (!e.traits) e.traits = [];
+      if (!e.traits.includes(fx.traitId)) e.traits.push(fx.traitId);
+      recomputePower(e);
+      break;
+    }
+    case "banner": {
+      e.banner = fx.color;
+      break;
+    }
+    default:
+      return { ok: false, error: "Unknown shop item." };
+  }
+  log(e, "system", `Token shop: ${item.name} — ${item.desc}`);
   return { ok: true };
 }
 
