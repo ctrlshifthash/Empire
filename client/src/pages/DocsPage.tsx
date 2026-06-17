@@ -45,6 +45,66 @@ const TOC = [
   ["claim", "Claiming your SOL"],
   ["dashboard", "Your dashboard"],
   ["trust", "Mainnet, treasury & fairness"],
+  ["roadmap", "Roadmap"],
+];
+
+const ROADMAP: { phase: string; name: string; tagline: string; status: "complete" | "upcoming"; items: string[] }[] = [
+  {
+    phase: "Phase 1",
+    name: "Foundation",
+    tagline: "The realm rises — a complete strategy game with real token rewards.",
+    status: "complete",
+    items: [
+      "Persistent world: build, gather, four ages, hero, army, quests",
+      "Fair-bracket raiding, new-player shield, armour tiers, demolish",
+      "SOL holder rewards — 1 SOL/day pool, holder tiers, play bonus",
+      "Token shop — spend the token on packs, boosts, armies, traits, crests",
+      "Alliances with war-room chat, ally protection & alliance leaderboard",
+      "World Boss co-op events",
+      "Achievements & token-holder governance",
+    ],
+  },
+  {
+    phase: "Phase 2",
+    name: "The Living World",
+    tagline: "Make the realm a place people return to every day.",
+    status: "upcoming",
+    items: [
+      "Seasons + prize ladders — competitive resets with rewards",
+      "Daily login streaks & milestone rewards",
+      "Notifications — raided alerts, march landed, boss rising",
+      "Global live feed + world chat",
+      "Public treasury & payouts dashboard — live on-chain transparency",
+    ],
+  },
+  {
+    phase: "Phase 3",
+    name: "The Token Economy",
+    tagline: "Give the token more jobs than holding.",
+    status: "upcoming",
+    items: [
+      "Staking — lock tokens for reward multipliers & in-game boosts",
+      "Battle pass / season pass reward tracks",
+      "Expanded sinks + optional burn for deflationary pressure",
+      "Token-hired mercenaries — elite units summoned with the token",
+      "Governance-funded content — holders vote budgets toward features",
+    ],
+  },
+  {
+    phase: "Phase 4",
+    name: "Conquest & Legacy",
+    tagline: "Endgame depth, rivalries, and growth.",
+    status: "upcoming",
+    items: [
+      "Wonders + domination victory — a contested objective and a clear win",
+      "Alliance wars & coordinated sieges",
+      "Territory / land control for regional bonuses",
+      "Referrals & recruitment — invite friends, both earn",
+      "Player-to-player marketplace",
+      "Native mobile app (iOS & Android)",
+      "Soulbound achievement badges & spectator clip sharing",
+    ],
+  },
 ];
 
 export default function DocsPage() {
@@ -382,6 +442,53 @@ export default function DocsPage() {
             <li>The pool is fixed at 1 SOL/day total and split pro-rata, so rewards scale fairly with real on-chain holdings.</li>
             <li>Non-holders and demo players earn no SOL — the in-game economy stays separate from real rewards.</li>
           </ul>
+        </Section>
+
+        <Section id="roadmap" title="Roadmap" icon="🗺️">
+          <p>
+            Phase 1 is live — a complete game with real rewards. From here the realm grows toward retention, deeper
+            token utility, and endgame conquest. And because of <Link to="/governance" className="text-gold-light hover:underline">governance</Link>,
+            holders can reorder what comes next — the roadmap is the community’s to steer.
+          </p>
+          <div className="mt-4 space-y-4">
+            {ROADMAP.map((p) => (
+              <div
+                key={p.phase}
+                className={`rounded-2xl border p-5 ${
+                  p.status === "complete" ? "border-emerald-500/30 bg-emerald-500/5" : "border-parchment-300/12 bg-black/20"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-bold text-parchment-100">
+                    <span className="text-parchment-300/55">{p.phase}:</span> {p.name}
+                  </h3>
+                  <span
+                    className={`rounded-full px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
+                      p.status === "complete"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-gold/15 text-gold-light"
+                    }`}
+                  >
+                    {p.status === "complete" ? "✓ Complete" : "Upcoming"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-parchment-300/70">{p.tagline}</p>
+                <ul className="mt-3 space-y-1.5">
+                  {p.items.map((it) => (
+                    <li key={it} className="flex gap-2 text-sm text-parchment-300/85">
+                      <span className={p.status === "complete" ? "text-emerald-400" : "text-gold-light/70"}>
+                        {p.status === "complete" ? "✓" : "▸"}
+                      </span>
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-parchment-300/60">
+            Timelines aren’t fixed — features ship as they’re ready, and holder votes can reprioritise the order.
+          </p>
         </Section>
 
         <div className="mt-14 rounded-2xl border border-gold/25 bg-gradient-to-br from-ink-700 to-ink-800 p-8 text-center shadow-deep">
