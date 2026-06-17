@@ -27,7 +27,15 @@ import {
   allianceLeaderboard,
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
-import { createDuel, acceptDuel, cancelDuel } from "./arena.ts";
+import {
+  createDuel,
+  acceptDuel,
+  cancelDuel,
+  joinTournament,
+  leaveTournament,
+  ensureTournament,
+  arenaRankings,
+} from "./arena.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
@@ -96,6 +104,7 @@ function bootstrap(): void {
   }
   ensureBots(TARGET_BOTS);
   seedGovernance(); // ensure there's always a community poll to vote on
+  ensureTournament(); // ensure the rolling arena tournament is open
   // bring everyone current after any downtime
   for (const e of Object.values(state.empires)) refreshEmpire(e);
   save();
@@ -188,6 +197,11 @@ app.get("/api/leaderboard", (_req, res) => {
 app.get("/api/alliances", (_req, res) => {
   const alliances = allianceLeaderboard().map(({ chat: _chat, ...rest }) => rest);
   res.json({ ok: true, alliances });
+});
+
+// Public arena rankings (top duelists by wins / streak).
+app.get("/api/arena/rankings", (_req, res) => {
+  res.json({ ok: true, rankings: arenaRankings() });
 });
 
 // ── Token-weighted governance (community polls) ─────────────────────────────
@@ -405,6 +419,12 @@ io.on("connection", (socket) => {
   );
   socket.on("duel:cancel", (p: { duelId: string }) =>
     withEmpire((id) => handleArena(cancelDuel(state.empires[id], String(p?.duelId || "")), "Wager withdrawn — stake refunded.")),
+  );
+  socket.on("tournament:join", () =>
+    withEmpire((id) => handleArena(joinTournament(state.empires[id]), "Entered the tournament!")),
+  );
+  socket.on("tournament:leave", () =>
+    withEmpire((id) => handleArena(leaveTournament(state.empires[id]), "Left the tournament — entry refunded.")),
   );
   socket.on("duel:accept", (p: { duelId: string; units: Army }) =>
     withEmpire((id) => {

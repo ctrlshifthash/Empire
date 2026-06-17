@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Alliance, BugReport, Duel, Empire, March, Poll, User, WorldBoss, WorldMeta } from "../../shared/types.ts";
+import type { Alliance, BugReport, Duel, Empire, March, Poll, Tournament, User, WorldBoss, WorldMeta } from "../../shared/types.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -41,6 +41,8 @@ export interface GameState {
   bugReports: BugReport[];
   // open + recently-resolved wagered-arena duels keyed by id
   duels: Record<string, Duel>;
+  // the current rolling arena tournament (null until seeded)
+  tournament: Tournament | null;
 }
 
 export const state: GameState = {
@@ -57,6 +59,7 @@ export const state: GameState = {
   polls: {},
   bugReports: [],
   duels: {},
+  tournament: null,
 };
 
 export function loadState(): boolean {
@@ -76,6 +79,7 @@ export function loadState(): boolean {
       state.polls ??= {};
       state.bugReports ??= [];
       state.duels ??= {};
+      state.tournament ??= null;
       return true;
     }
   } catch (err) {

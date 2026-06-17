@@ -169,6 +169,9 @@ export interface Empire {
   // wagered-arena record
   duelsWon?: number;
   duelsLost?: number;
+  duelStreak?: number; // current arena win streak
+  bestStreak?: number; // best arena win streak
+  lastArenaBonusDay?: number; // UTC day index of the last daily-win bonus claimed
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────
@@ -420,6 +423,39 @@ export interface DuelPublic {
   createdAt: number;
 }
 
+// A rolling single-elimination tournament. Players pay a coin entry fee; when it
+// fills it auto-runs and the champion takes the pot (minus rake), then it resets.
+export interface TournamentEntrant {
+  empireId: string;
+  name: string;
+  banner: string;
+  power: number; // battle-power snapshot at entry
+}
+export interface TournamentChampion {
+  name: string;
+  banner: string;
+  prize: number;
+  size: number;
+  at: number;
+}
+export interface Tournament {
+  id: string;
+  entryFee: number;
+  size: number;
+  entrants: TournamentEntrant[];
+  createdAt: number;
+  lastChampion?: TournamentChampion;
+}
+export interface TournamentPublic {
+  id: string;
+  entryFee: number;
+  size: number;
+  count: number;
+  entrants: { name: string; banner: string }[];
+  joined: boolean;
+  lastChampion: TournamentChampion | null;
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;
@@ -433,6 +469,8 @@ export interface GameSnapshot {
   boss: BossPublic | null;
   // open wagered-arena duels anyone can accept
   duels: DuelPublic[];
+  // the current rolling arena tournament
+  tournament: TournamentPublic | null;
 }
 
 // Server -> client realtime events

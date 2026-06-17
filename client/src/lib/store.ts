@@ -52,6 +52,8 @@ interface GameStore {
   createDuel: (stake: number, units: Partial<Record<UnitType, number>>) => void;
   acceptDuel: (duelId: string, units: Partial<Record<UnitType, number>>) => void;
   cancelDuel: (duelId: string) => void;
+  joinTournament: () => void;
+  leaveTournament: () => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -189,6 +191,8 @@ export const useGame = create<GameStore>((set, get) => ({
   createDuel: (stake, units) => socket?.emit("duel:create", { stake, units }),
   acceptDuel: (duelId, units) => socket?.emit("duel:accept", { duelId, units }),
   cancelDuel: (duelId) => socket?.emit("duel:cancel", { duelId }),
+  joinTournament: () => socket?.emit("tournament:join"),
+  leaveTournament: () => socket?.emit("tournament:leave"),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

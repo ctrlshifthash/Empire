@@ -909,6 +909,9 @@ export const ARENA_MIN_STAKE = 100; // minimum coins per side
 export const ARENA_RAKE = 0.05; // 5% of the pot is burned (coin sink)
 export const ARENA_WINNER_LOSS = 0.15; // winner loses 15% of committed army
 export const ARENA_LOSER_LOSS = 0.55; // loser loses 55% of committed army
+export const ARENA_DAILY_BONUS = 2000; // coins for your first arena win each day
+export const TOURNEY_ENTRY_FEE = 1000; // coins to enter the rolling tournament
+export const TOURNEY_SIZE = 8; // entrants before it auto-runs
 
 // ── World Boss ───────────────────────────────────────────────────────────────
 // A server-wide PvE event. Everyone sends armies to damage a shared boss; when

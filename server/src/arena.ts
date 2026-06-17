@@ -13,13 +13,38 @@ import {
   ARENA_RAKE,
   ARENA_WINNER_LOSS,
   ARENA_LOSER_LOSS,
+  ARENA_DAILY_BONUS,
+  TOURNEY_ENTRY_FEE,
+  TOURNEY_SIZE,
 } from "../../shared/gamedata.ts";
-import type { Duel, DuelPublic, Empire, UnitType } from "../../shared/types.ts";
+import type {
+  Duel,
+  DuelPublic,
+  Empire,
+  Tournament,
+  TournamentPublic,
+  UnitType,
+} from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
 import { recomputePower } from "./engine.ts";
 import { now, uid } from "./util.ts";
 
 type Army = Partial<Record<UnitType, number>>;
+const DAY_MS = 86_400_000;
+
+// Award win-streak + the once-daily win bonus to a duel/tournament winner.
+function recordWin(e: Empire): number {
+  e.duelsWon = (e.duelsWon ?? 0) + 1;
+  e.duelStreak = (e.duelStreak ?? 0) + 1;
+  e.bestStreak = Math.max(e.bestStreak ?? 0, e.duelStreak);
+  const day = Math.floor(now() / DAY_MS);
+  if (e.lastArenaBonusDay !== day) {
+    e.lastArenaBonusDay = day;
+    e.coins += ARENA_DAILY_BONUS;
+    return ARENA_DAILY_BONUS;
+  }
+  return 0;
+}
 
 export interface ArenaResult {
   ok: boolean;
@@ -131,11 +156,15 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
 
   const winner = challengerWins ? challenger : e;
   const loser = challengerWins ? e : challenger;
+  let bonus = 0;
   if (winner) {
     winner.coins += prize;
-    winner.duelsWon = (winner.duelsWon ?? 0) + 1;
+    bonus = recordWin(winner); // streak + once-daily win bonus
   }
-  if (loser) loser.duelsLost = (loser.duelsLost ?? 0) + 1;
+  if (loser) {
+    loser.duelsLost = (loser.duelsLost ?? 0) + 1;
+    loser.duelStreak = 0;
+  }
 
   // logs
   if (challenger) {
@@ -161,6 +190,11 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
   if (e.log.length > 60) e.log.length = 60;
   recomputePower(e);
 
+  if (bonus > 0 && winner) {
+    winner.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Arena: first win of the day — +${bonus} bonus coins!` });
+    if (winner.log.length > 60) winner.log.length = 60;
+  }
+
   delete state.duels[duelId];
   scheduleSave(0);
   return {
@@ -168,6 +202,117 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
     members: [e.id, duel.challengerId],
     outcome: { won: !challengerWins, prize, opponentName: duel.challengerName },
   };
+}
+
+// ── Rolling tournament ───────────────────────────────────────────────────────
+export function ensureTournament(): Tournament {
+  if (!state.tournament) {
+    state.tournament = { id: uid("tny_"), entryFee: TOURNEY_ENTRY_FEE, size: TOURNEY_SIZE, entrants: [], createdAt: now() };
+  }
+  return state.tournament;
+}
+
+export function joinTournament(e: Empire): ArenaResult {
+  const t = ensureTournament();
+  if (t.entrants.some((x) => x.empireId === e.id)) return { ok: false, error: "You're already entered." };
+  if (e.coins < t.entryFee) return { ok: false, error: `Entry is ${t.entryFee} coins.` };
+  e.coins -= t.entryFee; // escrow the entry fee
+  t.entrants.push({ empireId: e.id, name: e.name, banner: e.banner, power: battlePower(e.army, e.armoury) });
+  const affected = t.entrants.map((x) => x.empireId);
+  if (t.entrants.length >= t.size) runTournament(t);
+  scheduleSave(0);
+  return { ok: true, members: affected };
+}
+
+export function leaveTournament(e: Empire): ArenaResult {
+  const t = state.tournament;
+  if (!t) return { ok: false, error: "No tournament running." };
+  const idx = t.entrants.findIndex((x) => x.empireId === e.id);
+  if (idx < 0) return { ok: false, error: "You're not entered." };
+  t.entrants.splice(idx, 1);
+  e.coins += t.entryFee; // refund
+  scheduleSave(0);
+  return { ok: true, members: [e.id] };
+}
+
+// Single-elimination by battle-power with variance; champion takes the pot.
+function runTournament(t: Tournament): void {
+  const field = [...t.entrants];
+  const pot = t.entryFee * field.length;
+  const prize = pot - Math.floor(pot * ARENA_RAKE);
+  let round = field.slice();
+  while (round.length > 1) {
+    const next: typeof round = [];
+    for (let i = 0; i < round.length; i += 2) {
+      const a = round[i];
+      const b = round[i + 1];
+      if (!b) {
+        next.push(a); // bye
+        continue;
+      }
+      const rng = () => 0.8 + Math.random() * 0.4;
+      next.push(a.power * rng() >= b.power * rng() ? a : b);
+    }
+    round = next;
+  }
+  const champ = round[0];
+  const champEmpire = champ ? state.empires[champ.empireId] : undefined;
+  if (champEmpire) {
+    champEmpire.coins += prize;
+    recordWin(champEmpire);
+    champEmpire.log.unshift({
+      id: uid("log_"),
+      at: now(),
+      kind: "battle",
+      text: `🏆 Tournament champion! You won ${prize} coins (${field.length}-player bracket).`,
+    });
+    if (champEmpire.log.length > 60) champEmpire.log.length = 60;
+  }
+  // notify the rest
+  for (const ent of field) {
+    if (champ && ent.empireId === champ.empireId) continue;
+    const emp = state.empires[ent.empireId];
+    if (!emp) continue;
+    emp.log.unshift({
+      id: uid("log_"),
+      at: now(),
+      kind: "battle",
+      text: `Tournament over — ${champ?.name ?? "someone"} took the crown.`,
+    });
+    if (emp.log.length > 60) emp.log.length = 60;
+  }
+  // reset for the next one, keeping the champion banner
+  state.tournament = {
+    id: uid("tny_"),
+    entryFee: t.entryFee,
+    size: t.size,
+    entrants: [],
+    createdAt: now(),
+    lastChampion: champ ? { name: champ.name, banner: champ.banner, prize, size: field.length, at: now() } : t.lastChampion,
+  };
+}
+
+export function tournamentPublic(empireId?: string): TournamentPublic | null {
+  const t = state.tournament;
+  if (!t) return null;
+  return {
+    id: t.id,
+    entryFee: t.entryFee,
+    size: t.size,
+    count: t.entrants.length,
+    entrants: t.entrants.map((x) => ({ name: x.name, banner: x.banner })),
+    joined: !!empireId && t.entrants.some((x) => x.empireId === empireId),
+    lastChampion: t.lastChampion ?? null,
+  };
+}
+
+// Top duelists by wins (then best streak). Humans only.
+export function arenaRankings(): { name: string; banner: string; duelsWon: number; bestStreak: number; power: number }[] {
+  return Object.values(state.empires)
+    .filter((e) => !e.isBot && (e.duelsWon ?? 0) > 0)
+    .map((e) => ({ name: e.name, banner: e.banner, duelsWon: e.duelsWon ?? 0, bestStreak: e.bestStreak ?? 0, power: e.power }))
+    .sort((a, b) => b.duelsWon - a.duelsWon || b.bestStreak - a.bestStreak)
+    .slice(0, 25);
 }
 
 export function openDuelsPublic(): DuelPublic[] {

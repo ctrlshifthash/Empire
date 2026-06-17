@@ -10,6 +10,14 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 18, 2026",
+    items: [
+      { tag: "Feature", title: "Arena tournaments", desc: "A rolling single-elimination tournament — pay a coin entry fee; when it fills, a bracket runs instantly and the champion takes the pot." },
+      { tag: "Feature", title: "Daily win bonus", desc: "Your first Arena win each day pays a bonus coin reward." },
+      { tag: "Feature", title: "Arena rankings", desc: "A leaderboard of top duelists by wins and best win streak." },
+    ],
+  },
+  {
     date: "June 17, 2026",
     items: [
       { tag: "Feature", title: "Wagered Arena (PvP)", desc: "Stake coins and commit an army; anyone can accept and fight you. Winner takes the pot (minus a burned rake). In-game coins only." },

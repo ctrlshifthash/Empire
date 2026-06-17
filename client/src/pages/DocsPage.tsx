@@ -237,10 +237,10 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           anyone can accept by matching your stake and committing their own. The fight resolves instantly.
         </p>
         <ul className="ml-5 list-disc space-y-2">
-          <li><strong>Winner takes the pot</strong> — both stakes, minus a small 5% rake that's burned (a coin sink).</li>
-          <li><strong>Both sides take casualties</strong> — the loser loses more of their committed army, the winner less. Survivors return home.</li>
-          <li><strong>It's a real gamble</strong> — outcome is decided by army strength (units + gear) with some variance, so scout the committed army size before you accept.</li>
-          <li><strong>Withdraw anytime</strong> before someone accepts to get your stake and army back.</li>
+          <li><strong>Duels</strong> — winner takes the pot (both stakes minus a 5% burned rake). Both sides take casualties; survivors return home. Outcome is army strength (units + gear) with variance, so scout before you accept, and withdraw anytime before someone accepts.</li>
+          <li><strong>Tournament</strong> — a rolling single-elimination bracket. Pay the coin entry fee; when it fills it runs instantly and the champion takes the pot.</li>
+          <li><strong>Daily win bonus</strong> — your first Arena win each day pays a bonus coin reward.</li>
+          <li><strong>Rankings</strong> — top duelists ranked by wins and best streak.</li>
         </ul>
         <p className="rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
           Arena wagers are <strong>in-game coins only</strong> — no SOL is staked or paid, so the reward pool is never
