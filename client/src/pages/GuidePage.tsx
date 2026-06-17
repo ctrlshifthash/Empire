@@ -247,7 +247,7 @@ export default function GuidePage() {
 
         <Section title="Token rewards & holder tiers" icon="💰">
           <p>
-            A pool of <strong className="text-gold-light">1 SOL per day</strong> (one pool for everyone) is split{" "}
+            A pool of <strong className="text-gold-light">3 SOL per day</strong> (one pool for everyone) is split{" "}
             <strong>pro-rata</strong> among token holders, then boosted by your <strong>holder tier</strong>. Holdings are
             read live on-chain; rewards accrue continuously and pay out in <strong>SOL on Solana mainnet</strong>.
             Your first claim is available any time, then once every 6 hours.

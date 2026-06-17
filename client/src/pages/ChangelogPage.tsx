@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 17, 2026",
     items: [
+      { tag: "Improvement", title: "Daily reward pool tripled", desc: "The shared daily SOL reward pool increased from 1 SOL to 3 SOL per day." },
       { tag: "Feature", title: "Feedback & bug reporting", desc: "Floating Feedback and Report-a-bug buttons; submissions flow into a private admin inbox." },
       { tag: "Feature", title: "Token-holder governance", desc: "Vote on what gets built next — your weight is your on-chain token balance. New Vote page." },
       { tag: "Feature", title: "Achievements & titles", desc: "Earn milestone titles (First Blood, Boss Slayer, Emperor…) as your empire grows." },

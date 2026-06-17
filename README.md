@@ -59,7 +59,7 @@ An **always-on, on-chain medieval strategy game** where your realm keeps produci
 Realm Rumble is a **persistent, browser-based real-time strategy game** played on **one shared world map**. Think classic base-building and conquest — gather resources, raise a settlement, train armies and crush your rivals — but with two twists that make it different:
 
 1. **The world never stops.** Your economy produces and your armies march around the clock. Log off and your realm keeps growing; come back to find rivals have made their move. There is no "match" — just one continuous world.
-2. **It pays out real Solana.** Hold the game token and a slice of a **fixed daily 1 SOL pool** accrues to your wallet, claimable as real SOL. The bigger your holdings, the bigger your multiplier. No token? Play the entire game for free in **demo mode**.
+2. **It pays out real Solana.** Hold the game token and a slice of a **fixed daily 3 SOL pool** accrues to your wallet, claimable as real SOL. The bigger your holdings, the bigger your multiplier. No token? Play the entire game for free in **demo mode**.
 
 > **One settlement. Four ages. A living world of rivals — and real SOL on the line.**
 
@@ -180,13 +180,13 @@ The world is seeded with AI empires across difficulty tiers, so there's always s
 
 ## 💰 Play-to-Earn: Token Rewards
 
-A single pool of **1 SOL per day** is shared among **all** token holders. Your slice is **pro-rata** to your share of supply, then boosted by your **holder tier**:
+A single pool of **3 SOL per day** is shared among **all** token holders. Your slice is **pro-rata** to your share of supply, then boosted by your **holder tier**:
 
 ```
-your daily SOL  =  (your tokens ÷ total supply)  ×  1 SOL  ×  tier multiplier
+your daily SOL  =  (your tokens ÷ total supply)  ×  3 SOL  ×  tier multiplier
 ```
 
-> 🔒 **Hard-capped.** The treasury emits **at most 1 SOL per day total** across everyone. The tier multiplier only sets how fast you accrue (your claim priority) — never extra SOL on top of the pool. When the day's pool is used up, claims resume tomorrow.
+> 🔒 **Hard-capped.** The treasury emits **at most 3 SOL per day total** across everyone. The tier multiplier only sets how fast you accrue (your claim priority) — never extra SOL on top of the pool. When the day's pool is used up, claims resume tomorrow.
 
 ### Holder tiers
 

@@ -25,7 +25,7 @@ import { rewardTier, nextRewardTier, rankForPower } from "../../shared/gamedata.
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
-const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "1");
+const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "3");
 const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 
 // First claim is allowed anytime; afterwards a wallet may claim every 6 hours
