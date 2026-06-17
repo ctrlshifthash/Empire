@@ -10,6 +10,7 @@ import {
   ALLIANCE_CREATE_COST,
   MAX_ARMOUR,
   RAID_SHIELD_RATIO,
+  HOLDER_PERKS,
 } from "@shared/gamedata";
 
 function Table({ head, children }: { head: string[]; children: React.ReactNode }) {
@@ -360,12 +361,17 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           hold, then boosted by your holder tier:
         </p>
         <div className="rounded-xl border border-gold/25 bg-black/30 p-4 text-center font-mono text-sm text-parchment-100">
-          your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(tokens&nbsp;÷&nbsp;supply)&nbsp;×&nbsp;3&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;multiplier&nbsp;×&nbsp;play&nbsp;bonus
+          your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(tokens&nbsp;÷&nbsp;supply)&nbsp;×&nbsp;3&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;×&nbsp;play&nbsp;bonus&nbsp;×&nbsp;diamond&nbsp;hands
         </div>
         <p>
           <strong>Reward for playing, not just holding.</strong> Your accrual is also boosted by a <strong>play bonus</strong>{" "}
           equal to your empire’s renown rank (1× as a Peasant up to 2.5× as an Emperor). So the harder you play, the
           bigger your slice of the pool.
+        </p>
+        <p>
+          <strong>💎 Diamond Hands.</strong> Holding without selling grows a <strong>loyalty multiplier</strong> on your
+          accrual — about +3% per day, up to 2× at ~33 days. Selling below your streak’s starting balance resets it. So
+          the longer you hold, the bigger your share of the daily pool.
         </p>
         <p>
           The total paid out is still <strong>hard-capped at 3 SOL per day</strong> across everyone — the tier and play
@@ -399,6 +405,23 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
               <td className="py-2 text-parchment-300/70">{t.blurb}</td>
             </tr>
           ))}
+        </Table>
+        <p className="mt-4">
+          <strong>🏰 In-game holder perks.</strong> Your tier isn’t just SOL — it grants a real gameplay edge on your
+          linked empire: bigger harvests and faster construction &amp; training. Refreshed from your on-chain holdings
+          each time you connect.
+        </p>
+        <Table head={["Tier", "Harvest bonus", "Build & train speed"]}>
+          {REWARD_TIERS.map((t) => {
+            const p = HOLDER_PERKS[t.name];
+            return (
+              <tr key={t.name} className="border-b border-parchment-300/5">
+                <td className="py-2 pr-3 font-semibold" style={{ color: t.color }}>● {t.name}</td>
+                <td className="py-2 pr-3 text-emerald-300">+{Math.round((p?.gatherPct ?? 0) * 100)}%</td>
+                <td className="py-2 text-sky-300">+{Math.round((p?.speedPct ?? 0) * 100)}%</td>
+              </tr>
+            );
+          })}
         </Table>
       </>
     ),

@@ -163,6 +163,9 @@ export interface Empire {
   achievements?: string[];
   // number of world-boss kills this empire took part in
   bossKills?: number;
+  // holder-tier name (Bronze…Diamond) from the linked wallet's on-chain holdings,
+  // refreshed on connect/dashboard view. Grants in-game perks; undefined = none.
+  holderTier?: string;
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────

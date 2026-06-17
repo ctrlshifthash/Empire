@@ -694,6 +694,25 @@ export function nextRewardTier(share: number): RewardTier | null {
   return REWARD_TIERS.find((t) => t.minShare > share) ?? null;
 }
 
+// In-game perks granted by your holder tier — a real gameplay edge for holding,
+// on top of the SOL reward multiplier. gatherPct boosts harvest yield; speedPct
+// speeds up construction & training. Applied to the wallet's linked empire.
+export interface HolderPerk {
+  gatherPct: number;
+  speedPct: number;
+}
+export const HOLDER_PERKS: Record<string, HolderPerk> = {
+  Bronze: { gatherPct: 0.05, speedPct: 0.05 },
+  Silver: { gatherPct: 0.1, speedPct: 0.1 },
+  Gold: { gatherPct: 0.18, speedPct: 0.15 },
+  Sapphire: { gatherPct: 0.25, speedPct: 0.22 },
+  Diamond: { gatherPct: 0.35, speedPct: 0.3 },
+};
+export const EMPTY_HOLDER_PERK: HolderPerk = { gatherPct: 0, speedPct: 0 };
+export function holderPerksForTier(tierName: string | undefined): HolderPerk {
+  return (tierName && HOLDER_PERKS[tierName]) || EMPTY_HOLDER_PERK;
+}
+
 // ── Armoury (army equipment) & Hero gear (bought with coins) ────────────────
 export const MAX_GEAR = 8; // max weapon level per army unit type
 // Armour goes higher than weapons so a defender who invests can out-armour an

@@ -12,6 +12,10 @@ export interface RewardRecord {
   lastClaimAt: number; // ms timestamp accrual was last reset (claim or first seen)
   firstSeenAt?: number; // ms timestamp this wallet was first seen (accrual start)
   claimCount?: number; // number of successful claims (gates the 6h cooldown)
+  // Diamond Hands: when the current hold-streak began, and the floor balance
+  // maintained during it. Selling below the floor resets the streak.
+  heldSince?: number;
+  heldBalance?: number;
 }
 
 export interface GameState {

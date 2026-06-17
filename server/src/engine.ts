@@ -29,6 +29,7 @@ import {
   rankForPower,
   rushCost,
   ageAtLeast,
+  holderPerksForTier,
   type ShopItem,
 } from "../../shared/gamedata.ts";
 import { armySize, resolveBattle, type Army } from "../../shared/combat.ts";
@@ -94,6 +95,11 @@ function log(e: Empire, kind: LogEntry["kind"], text: string): void {
   e.log.unshift({ id: uid("log_"), at: now(), kind, text });
   if (e.log.length > 60) e.log.length = 60;
 }
+
+// In-game holder perks (from the linked wallet's token tier): bigger harvests
+// and faster build/train. No tier (non-holders) → 1× (no change).
+const holderGatherMult = (e: Empire): number => 1 + holderPerksForTier(e.holderTier).gatherPct;
+const holderSpeedMult = (e: Empire): number => 1 - holderPerksForTier(e.holderTier).speedPct;
 
 function awardXp(e: Empire, skill: SkillId, amount: number): void {
   if (amount <= 0) return;
@@ -340,7 +346,7 @@ export function actBuild(
     y: cell.y,
     wx: spot.wx,
     wy: spot.wy,
-    completesAt: now() + buildSecondsFor(type, 0) * 1000,
+    completesAt: now() + buildSecondsFor(type, 0) * 1000 * holderSpeedMult(e),
     job: "build",
   };
   e.buildings.push(building);
@@ -389,7 +395,8 @@ export function actGather(e: Empire, resource: ResourceKind): ActionResult {
   // higher ranks + gather traits harvest more; a purchased Harvest Surge stacks
   // a temporary multiplier on top while it lasts.
   const surge = e.boosts?.gatherUntil && e.boosts.gatherUntil > now() ? e.boosts.gatherMult ?? 1 : 1;
-  const mult = rankForPower(e.power).gatherMult * (1 + traitBonuses(e.traits).gatherPct) * surge;
+  const mult =
+    rankForPower(e.power).gatherMult * (1 + traitBonuses(e.traits).gatherPct) * surge * holderGatherMult(e);
   const amt = Math.round(gatherYield(level, tier) * mult);
   const cap = warehouseCapacity(e);
   e.resources[resource] = clamp(e.resources[resource] + amt, 0, cap);
@@ -527,7 +534,7 @@ export function actUpgrade(e: Empire, buildingId: string): ActionResult {
 
   pay(e.resources, cost);
   b.job = "upgrade";
-  b.completesAt = now() + buildSecondsFor(b.type, b.level) * 1000;
+  b.completesAt = now() + buildSecondsFor(b.type, b.level) * 1000 * holderSpeedMult(e);
   log(e, "build", `Upgrading ${def.name} to level ${b.level + 1}.`);
   return { ok: true };
 }
@@ -566,7 +573,7 @@ export function actTrain(
     unit,
     quantity,
     startedAt: now(),
-    completesAt: lastDone + udef.trainSeconds * 1000 * quantity,
+    completesAt: lastDone + udef.trainSeconds * 1000 * quantity * holderSpeedMult(e),
   });
   log(e, "train", `Training ${quantity}× ${udef.name}.`);
   return { ok: true };

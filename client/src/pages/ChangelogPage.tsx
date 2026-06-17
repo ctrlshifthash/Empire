@@ -12,6 +12,8 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 17, 2026",
     items: [
+      { tag: "Feature", title: "Diamond Hands rewards", desc: "Holding without selling grows a loyalty multiplier on your SOL accrual (up to 2×); selling resets it." },
+      { tag: "Feature", title: "In-game holder perks", desc: "Your holder tier now grants real gameplay bonuses — bigger harvests and faster build/train — refreshed from your holdings." },
       { tag: "Fix", title: "Navbar polish", desc: "Tightened the nav so the brand and slogan no longer wrap; the changelog link is now labelled “Changelog”." },
       { tag: "Improvement", title: "Daily reward pool tripled", desc: "The shared daily SOL reward pool increased from 1 SOL to 3 SOL per day." },
       { tag: "Feature", title: "Feedback & bug reporting", desc: "Floating Feedback and Report-a-bug buttons; submissions flow into a private admin inbox." },

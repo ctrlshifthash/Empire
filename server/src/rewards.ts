@@ -119,6 +119,63 @@ function playBonus(address: string): { mult: number; rank: string } {
   return { mult: r.gatherMult, rank: r.name };
 }
 
+// ── Holder perks (in-game) ───────────────────────────────────────────────────
+// Cache the wallet's holder-tier name onto its linked empire so the engine can
+// grant in-game perks. Only actual holders (balance > 0) get a tier.
+function applyHolderTier(address: string, balance: number, sharePct: number): void {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  if (!empire) return;
+  empire.holderTier = balance > 0 ? rewardTier(sharePct).name : undefined;
+}
+
+// Refresh a wallet's holder tier from chain (used on connect, so perks apply in
+// play without needing to open the dashboard). Skips non-wallet ids.
+export async function refreshHolderTier(address: string): Promise<void> {
+  if (!address || address.includes("@") || address.startsWith("did:")) return;
+  try {
+    const h = await getHoldings(address);
+    applyHolderTier(address, h.balance, h.sharePct);
+    scheduleSave();
+  } catch {
+    /* ignore — leave the cached tier as-is */
+  }
+}
+
+// ── Diamond Hands (loyalty) ──────────────────────────────────────────────────
+// Holding without selling grows a loyalty multiplier on your accrual. Selling
+// below the streak's floor balance resets it. Tracked lazily off the live
+// on-chain balance whenever rewards are read or claimed.
+const LOYALTY_RATE_PER_DAY = 0.03; // +3% per day held
+const LOYALTY_MAX = 1.0; // capped at +100% (2.0× at ~33 days)
+
+export function loyaltyMultiplier(days: number): number {
+  return 1 + Math.min(LOYALTY_MAX, Math.max(0, days) * LOYALTY_RATE_PER_DAY);
+}
+
+// Update the hold-streak from the wallet's current balance; returns days held.
+function updateLoyalty(rec: RewardRecord, balance: number): number {
+  const t = now();
+  if (balance <= 0) {
+    rec.heldSince = undefined;
+    rec.heldBalance = 0;
+    return 0;
+  }
+  if (rec.heldSince == null || (rec.heldBalance ?? 0) <= 0) {
+    rec.heldSince = t;
+    rec.heldBalance = balance;
+    return 0;
+  }
+  if (balance < (rec.heldBalance ?? 0) * 0.999) {
+    // sold below the streak floor — reset
+    rec.heldSince = t;
+    rec.heldBalance = balance;
+    return 0;
+  }
+  // held (or bought more) — streak continues; floor stays where it started
+  return Math.max(0, (t - rec.heldSince) / DAY_MS);
+}
+
 // ── daily pool budget ───────────────────────────────────────────────────────
 // Hard cap: the treasury pays out at most DAILY_SOL_POOL across ALL holders per
 // UTC day. The per-wallet multiplier only sets how fast you accrue (your claim
@@ -142,6 +199,8 @@ export interface RewardStatus {
   multiplier: number;
   playBonus: number; // accrual multiplier from in-game rank (playing hard)
   playRank: string; // the linked empire's renown rank
+  loyaltyDays: number; // consecutive days held without selling (Diamond Hands)
+  loyaltyMult: number; // accrual multiplier from the hold streak
   dailySol: number; // estimated SOL/day for this wallet
   claimableSol: number; // accrued since the last claim
   totalClaimedSol: number;
@@ -159,12 +218,15 @@ export interface RewardStatus {
 
 export async function rewardStatus(address: string): Promise<RewardStatus> {
   const holdings = await getHoldings(address);
+  applyHolderTier(address, holdings.balance, holdings.sharePct); // keep in-game perks fresh
   const tier = rewardTier(holdings.sharePct);
   const next = nextRewardTier(holdings.sharePct);
   const m = multiplier(holdings.sharePct);
   const play = playBonus(address);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult;
   const rec = ensureRecord(address, holdings.balance > 0);
+  const loyaltyDays = updateLoyalty(rec, holdings.balance);
+  const loyaltyMult = loyaltyMultiplier(loyaltyDays);
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult * loyaltyMult;
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
   // you can only ever claim what's left in today's shared pool
@@ -181,6 +243,8 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     multiplier: m,
     playBonus: play.mult,
     playRank: play.rank,
+    loyaltyDays,
+    loyaltyMult,
     dailySol,
     claimableSol,
     totalClaimedSol: (rec.totalClaimed || 0) / LAMPORTS_PER_SOL,
@@ -248,7 +312,8 @@ export async function claim(address: string): Promise<ClaimResult> {
   }
 
   const m = multiplier(holdings.sharePct);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult;
+  const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult * loyaltyMult;
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const claimSol = dailySol * (elapsed / DAY_MS);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };

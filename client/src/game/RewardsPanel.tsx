@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { privyConfigured, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
-import { AGES, rankForPower, nextRank, REWARD_TIERS, rewardTier } from "@shared/gamedata";
+import { AGES, rankForPower, nextRank, REWARD_TIERS, rewardTier, holderPerksForTier } from "@shared/gamedata";
 import type { BattleReport } from "@shared/types";
 
 function short(a: string) {
@@ -226,6 +226,22 @@ export default function RewardsPanel() {
                 <b className="text-gold-light">{(status.playBonus ?? 1).toFixed(2)}×</b>{" "}
                 <span className="text-parchment-300/55">({status.playRank})</span>
               </span>
+              <span title="Hold without selling to grow this. Selling resets it.">
+                💎 Diamond hands:{" "}
+                <b className="text-gold-light">{(status.loyaltyMult ?? 1).toFixed(2)}×</b>{" "}
+                <span className="text-parchment-300/55">({Math.floor(status.loyaltyDays ?? 0)}d held)</span>
+              </span>
+              {holds && (
+                <span title="In-game perks from your holder tier, applied to your empire.">
+                  🏰 Holder perks:{" "}
+                  <b className="text-gold-light">
+                    +{Math.round(holderPerksForTier(status.tier).gatherPct * 100)}% gather
+                  </b>
+                  <span className="text-parchment-300/55">
+                    {" "}· +{Math.round(holderPerksForTier(status.tier).speedPct * 100)}% build/train speed
+                  </span>
+                </span>
+              )}
               <span>
                 Claims made: <b className="text-parchment-100">{status.claimCount}</b>
               </span>

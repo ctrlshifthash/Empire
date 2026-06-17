@@ -15,7 +15,7 @@ import { Server as SocketServer } from "socket.io";
 
 import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
-import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier } from "./rewards.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -349,6 +349,11 @@ io.on("connection", (socket) => {
     socket.join(`emp:${empireId}`);
     onlineEmpires.add(empireId);
     pushSnapshot(empireId);
+    // refresh holder-tier perks from chain, then re-push so they apply this session
+    if (user.externalId) {
+      const eid = empireId;
+      void refreshHolderTier(user.externalId).then(() => pushSnapshot(eid));
+    }
   });
 
   function withEmpire(fn: (id: string) => void) {

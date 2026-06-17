@@ -18,6 +18,8 @@ export interface RewardStatus {
   multiplier: number;
   playBonus: number;
   playRank: string;
+  loyaltyDays: number;
+  loyaltyMult: number;
   dailySol: number;
   claimableSol: number;
   totalClaimedSol: number;
