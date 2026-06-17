@@ -904,6 +904,40 @@ export function achievementsUnlocked(s: AchievementStats): string[] {
   return out;
 }
 
+// ── Player Marketplace ───────────────────────────────────────────────────────
+// Scarce, tradeable collectibles. Each type has a hard max supply, so the rare
+// ones hold value. Bought & sold player-to-player in SOL or USDC (wallet-to-
+// wallet, verified on-chain). A small fee goes to the treasury.
+export type ItemRarity = "common" | "rare" | "epic" | "legendary";
+export const RARITY_META: Record<ItemRarity, { label: string; color: string }> = {
+  common: { label: "Common", color: "#9aa4ad" },
+  rare: { label: "Rare", color: "#5a8fd8" },
+  epic: { label: "Epic", color: "#9b59b6" },
+  legendary: { label: "Legendary", color: "#e8c75a" },
+};
+export interface MarketItemType {
+  id: string;
+  name: string;
+  icon: string;
+  rarity: ItemRarity;
+  maxSupply: number;
+  banner: string; // cosmetic banner colour granted when equipped
+  desc: string;
+}
+export const MARKET_ITEMS: MarketItemType[] = [
+  { id: "eternal_crown", name: "Eternal Crown", icon: "👑", rarity: "legendary", maxSupply: 10, banner: "#e8c75a", desc: "The crown of the first emperor. Ten will ever exist." },
+  { id: "dragon_sigil", name: "Dragon Sigil", icon: "🐉", rarity: "legendary", maxSupply: 10, banner: "#c0392b", desc: "Mark of the dragon lords." },
+  { id: "obsidian_blade", name: "Obsidian Blade", icon: "🗡️", rarity: "epic", maxSupply: 50, banner: "#2c3e50", desc: "Forged in the heart of a dead volcano." },
+  { id: "phoenix_banner", name: "Phoenix Banner", icon: "🔥", rarity: "epic", maxSupply: 50, banner: "#d35400", desc: "Rises again from every defeat." },
+  { id: "wolf_totem", name: "Wolf Totem", icon: "🐺", rarity: "rare", maxSupply: 250, banner: "#7f8c8d", desc: "Token of the pack-bound clans." },
+  { id: "ivory_horn", name: "Ivory Horn", icon: "📯", rarity: "rare", maxSupply: 250, banner: "#ecf0f1", desc: "Its call rallies a thousand spears." },
+  { id: "iron_chalice", name: "Iron Chalice", icon: "🏆", rarity: "common", maxSupply: 1000, banner: "#16a085", desc: "A victor's cup, passed hand to hand." },
+];
+export const marketItem = (id: string): MarketItemType | undefined => MARKET_ITEMS.find((m) => m.id === id);
+export const MARKET_FEE = 0.025; // 2.5% of the sale, to the treasury
+// USDC mint on Solana mainnet.
+export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
 // ── Wagered Arena (PvP coin duels) ───────────────────────────────────────────
 export const ARENA_MIN_STAKE = 100; // minimum coins per side
 export const ARENA_RAKE = 0.05; // 5% of the pot is burned (coin sink)

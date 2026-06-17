@@ -36,6 +36,17 @@ import {
   ensureTournament,
   arenaRankings,
 } from "./arena.ts";
+import {
+  marketConfig,
+  activeListings,
+  listItem,
+  delistItem,
+  equipItem,
+  reserveListing,
+  buyListing,
+  mintItem,
+  expireReservations,
+} from "./market.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
@@ -204,6 +215,37 @@ app.get("/api/arena/rankings", (_req, res) => {
   res.json({ ok: true, rankings: arenaRankings() });
 });
 
+// ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
+app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
+app.get("/api/market/listings", (_req, res) => res.json({ ok: true, listings: activeListings() }));
+app.post("/api/market/:id/reserve", (req, res) => {
+  const { address } = (req.body ?? {}) as Record<string, unknown>;
+  if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
+  res.json(reserveListing(req.params.id, String(address)));
+});
+app.post("/api/market/:id/buy", async (req, res) => {
+  try {
+    const { address, signature } = (req.body ?? {}) as Record<string, unknown>;
+    if (!address || !signature) return res.status(400).json({ ok: false, error: "Missing address or signature." });
+    const r = await buyListing(req.params.id, String(address), String(signature));
+    if (r.ok && r.members) for (const id of r.members) pushSnapshot(id);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+// Admin-only: mint an item to a player (seed circulation). x-admin-key header.
+app.post("/api/market/mint", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  const { empireId, typeId } = (req.body ?? {}) as Record<string, unknown>;
+  const inst = mintItem(String(empireId ?? ""), String(typeId ?? ""));
+  if (!inst) return res.status(400).json({ ok: false, error: "Mint failed (bad type, sold out, or unknown empire)." });
+  pushSnapshot(String(empireId));
+  res.json({ ok: true, instance: inst });
+});
+
 // ── Token-weighted governance (community polls) ─────────────────────────────
 app.get("/api/governance", (req, res) => {
   const address = typeof req.query.address === "string" ? req.query.address : undefined;
@@ -350,6 +392,7 @@ function pushSnapshot(empireId: string): void {
 
 io.on("connection", (socket) => {
   let empireId: string | null = null;
+  let externalId: string | undefined; // the player's wallet/email id (for selling)
 
   socket.on("hello", (tok: string) => {
     const user = userByToken(tok);
@@ -360,6 +403,7 @@ io.on("connection", (socket) => {
       return;
     }
     empireId = user.empireId;
+    externalId = user.externalId;
     socket.data.empireId = empireId;
     socket.join(`emp:${empireId}`);
     onlineEmpires.add(empireId);
@@ -425,6 +469,17 @@ io.on("connection", (socket) => {
   );
   socket.on("tournament:leave", () =>
     withEmpire((id) => handleArena(leaveTournament(state.empires[id]), "Left the tournament — entry refunded.")),
+  );
+
+  // ── Marketplace (sell side; buying is HTTP + on-chain) ──────────────────────
+  socket.on("market:list", (p: { instanceId: string; price: number; currency: any }) =>
+    withEmpire((id) => handleArena(listItem(id, externalId, String(p?.instanceId || ""), Number(p?.price), p?.currency), "Item listed!")),
+  );
+  socket.on("market:delist", (p: { instanceId: string }) =>
+    withEmpire((id) => handleArena(delistItem(id, String(p?.instanceId || "")), "Listing removed.")),
+  );
+  socket.on("market:equip", (p: { instanceId: string }) =>
+    withEmpire((id) => handleArena(equipItem(id, String(p?.instanceId || "")))),
   );
   socket.on("duel:accept", (p: { duelId: string; units: Army }) =>
     withEmpire((id) => {
@@ -520,6 +575,7 @@ setInterval(() => {
   try {
     tick();
     tickBoss(); // spawn / respawn the world boss
+    expireReservations(); // free up stale marketplace reservations
     // push fresh snapshots to everyone connected
     for (const id of onlineEmpires) pushSnapshot(id);
   } catch (err) {

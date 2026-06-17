@@ -17,6 +17,7 @@ import EmpiresPage from "./pages/EmpiresPage";
 import GovernancePage from "./pages/GovernancePage";
 import AdminBugsPage from "./pages/AdminBugsPage";
 import ChangelogPage from "./pages/ChangelogPage";
+import MarketPage from "./pages/MarketPage";
 import { useGame } from "./lib/store";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/governance" element={<GovernancePage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/market" element={<MarketPage />} />
           <Route path="/admin" element={<AdminBugsPage />} />
           <Route
             path="/play"

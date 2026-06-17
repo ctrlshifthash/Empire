@@ -7,6 +7,7 @@ const LINKS = [
   { to: "/", label: "Home", end: true },
   { to: "/play", label: "Play" },
   { to: "/empires", label: "Empires" },
+  { to: "/market", label: "Market" },
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/governance", label: "Vote" },
   { to: "/guide", label: "Guide" },

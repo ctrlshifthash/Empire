@@ -172,6 +172,8 @@ export interface Empire {
   duelStreak?: number; // current arena win streak
   bestStreak?: number; // best arena win streak
   lastArenaBonusDay?: number; // UTC day index of the last daily-win bonus claimed
+  // equipped marketplace item instance id (cosmetic banner)
+  equippedItem?: string;
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────
@@ -456,6 +458,53 @@ export interface TournamentPublic {
   lastChampion: TournamentChampion | null;
 }
 
+// ── Player Marketplace ───────────────────────────────────────────────────────
+export type MarketCurrency = "SOL" | "USDC";
+
+export interface ItemInstance {
+  id: string;
+  typeId: string;
+  ownerId: string; // empire id
+  serial: number; // #N of the type's max supply
+  mintedAt: number;
+}
+export interface Listing {
+  id: string;
+  instanceId: string;
+  typeId: string;
+  sellerId: string; // empire id
+  sellerName: string;
+  sellerWallet: string; // payout address
+  price: number; // human units of the currency
+  currency: MarketCurrency;
+  status: "active" | "sold";
+  reservedBy?: string; // buyer wallet during a pending purchase
+  reservedUntil?: number;
+  createdAt: number;
+}
+export interface ListingPublic {
+  id: string;
+  typeId: string;
+  name: string;
+  icon: string;
+  rarity: string;
+  serial: number;
+  price: number;
+  currency: MarketCurrency;
+  sellerName: string;
+  reserved: boolean;
+}
+export interface InventoryItem {
+  instanceId: string;
+  typeId: string;
+  name: string;
+  icon: string;
+  rarity: string;
+  serial: number;
+  listed: boolean;
+  equipped: boolean;
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;
@@ -471,6 +520,8 @@ export interface GameSnapshot {
   duels: DuelPublic[];
   // the current rolling arena tournament
   tournament: TournamentPublic | null;
+  // the player's owned marketplace items
+  inventory: InventoryItem[];
 }
 
 // Server -> client realtime events

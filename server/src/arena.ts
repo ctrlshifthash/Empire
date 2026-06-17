@@ -27,6 +27,7 @@ import type {
 } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
 import { recomputePower } from "./engine.ts";
+import { mintItem, randomDropType } from "./market.ts";
 import { now, uid } from "./util.ts";
 
 type Army = Partial<Record<UnitType, number>>;
@@ -267,6 +268,15 @@ function runTournament(t: Tournament): void {
       text: `🏆 Tournament champion! You won ${prize} coins (${field.length}-player bracket).`,
     });
     if (champEmpire.log.length > 60) champEmpire.log.length = 60;
+    // champion drop: a random scarce marketplace item (if any supply remains)
+    const dropType = randomDropType();
+    if (dropType) {
+      const inst = mintItem(champEmpire.id, dropType);
+      if (inst) {
+        champEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Champion's drop: a marketplace item landed in your inventory!` });
+        if (champEmpire.log.length > 60) champEmpire.log.length = 60;
+      }
+    }
   }
   // notify the rest
   for (const ent of field) {

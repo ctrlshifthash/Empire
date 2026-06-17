@@ -1,7 +1,20 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Alliance, BugReport, Duel, Empire, March, Poll, Tournament, User, WorldBoss, WorldMeta } from "../../shared/types.ts";
+import type {
+  Alliance,
+  BugReport,
+  Duel,
+  Empire,
+  ItemInstance,
+  Listing,
+  March,
+  Poll,
+  Tournament,
+  User,
+  WorldBoss,
+  WorldMeta,
+} from "../../shared/types.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -43,6 +56,11 @@ export interface GameState {
   duels: Record<string, Duel>;
   // the current rolling arena tournament (null until seeded)
   tournament: Tournament | null;
+  // marketplace: item instances, listings, minted counts per type, used pay sigs
+  itemInstances: Record<string, ItemInstance>;
+  listings: Record<string, Listing>;
+  mintCounts: Record<string, number>; // typeId -> how many minted (for serials/supply)
+  marketSignatures: Record<string, { listingId: string; buyer: string; at: number }>;
 }
 
 export const state: GameState = {
@@ -60,6 +78,10 @@ export const state: GameState = {
   bugReports: [],
   duels: {},
   tournament: null,
+  itemInstances: {},
+  listings: {},
+  mintCounts: {},
+  marketSignatures: {},
 };
 
 export function loadState(): boolean {
@@ -80,6 +102,10 @@ export function loadState(): boolean {
       state.bugReports ??= [];
       state.duels ??= {};
       state.tournament ??= null;
+      state.itemInstances ??= {};
+      state.listings ??= {};
+      state.mintCounts ??= {};
+      state.marketSignatures ??= {};
       return true;
     }
   } catch (err) {

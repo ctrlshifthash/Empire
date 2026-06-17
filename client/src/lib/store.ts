@@ -54,6 +54,9 @@ interface GameStore {
   cancelDuel: (duelId: string) => void;
   joinTournament: () => void;
   leaveTournament: () => void;
+  listItem: (instanceId: string, price: number, currency: "SOL" | "USDC") => void;
+  delistItem: (instanceId: string) => void;
+  equipItem: (instanceId: string) => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -193,6 +196,9 @@ export const useGame = create<GameStore>((set, get) => ({
   cancelDuel: (duelId) => socket?.emit("duel:cancel", { duelId }),
   joinTournament: () => socket?.emit("tournament:join"),
   leaveTournament: () => socket?.emit("tournament:leave"),
+  listItem: (instanceId, price, currency) => socket?.emit("market:list", { instanceId, price, currency }),
+  delistItem: (instanceId) => socket?.emit("market:delist", { instanceId }),
+  equipItem: (instanceId) => socket?.emit("market:equip", { instanceId }),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

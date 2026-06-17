@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "Player marketplace", desc: "Trade scarce, limited-supply relics with other rulers in SOL or USDC — paid wallet-to-wallet, verified on-chain, item to your inventory. Champion drops seed circulation." },
       { tag: "Feature", title: "Arena tournaments", desc: "A rolling single-elimination tournament — pay a coin entry fee; when it fills, a bracket runs instantly and the champion takes the pot." },
       { tag: "Feature", title: "Daily win bonus", desc: "Your first Arena win each day pays a bonus coin reward." },
       { tag: "Feature", title: "Arena rankings", desc: "A leaderboard of top duelists by wins and best win streak." },

@@ -49,6 +49,7 @@ import { isOnline } from "./presence.ts";
 import { areAllies, alliancePublic } from "./alliances.ts";
 import { bossPublic } from "./boss.ts";
 import { openDuelsPublic, tournamentPublic } from "./arena.ts";
+import { inventoryOf } from "./market.ts";
 import { LOCAL_WORLD, type SkillId, type ToolId } from "../../shared/types.ts";
 import {
   MAX_TIER,
@@ -959,5 +960,6 @@ export function snapshotFor(empireId: string): GameSnapshot | null {
     boss: bossPublic(empireId),
     duels: openDuelsPublic(),
     tournament: tournamentPublic(empireId),
+    inventory: inventoryOf(empireId),
   };
 }
