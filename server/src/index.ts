@@ -27,6 +27,7 @@ import {
   allianceLeaderboard,
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
+import { createDuel, acceptDuel, cancelDuel } from "./arena.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
@@ -391,6 +392,38 @@ io.on("connection", (socket) => {
   socket.on("attack", (p: { targetEmpireId: string; units: Army }) =>
     withEmpire((id) => handle(actAttack(state.empires[id], p?.targetEmpireId, p?.units || {}))),
   );
+  // ── Wagered Arena ──────────────────────────────────────────────────────────
+  function handleArena(result: { ok: boolean; error?: string; members?: string[] }, successMsg?: string) {
+    if (!result.ok && result.error) socket.emit("toast", { kind: "warn", text: result.error });
+    else if (successMsg) socket.emit("toast", { kind: "success", text: successMsg });
+    scheduleSave();
+    const ids = result.members ?? (empireId ? [empireId] : []);
+    for (const id of ids) pushSnapshot(id);
+  }
+  socket.on("duel:create", (p: { stake: number; units: Army }) =>
+    withEmpire((id) => handleArena(createDuel(state.empires[id], p?.stake, p?.units || {}), "Wager posted to the Arena!")),
+  );
+  socket.on("duel:cancel", (p: { duelId: string }) =>
+    withEmpire((id) => handleArena(cancelDuel(state.empires[id], String(p?.duelId || "")), "Wager withdrawn — stake refunded.")),
+  );
+  socket.on("duel:accept", (p: { duelId: string; units: Army }) =>
+    withEmpire((id) => {
+      const r = acceptDuel(state.empires[id], String(p?.duelId || ""), p?.units || {});
+      if (r.ok && r.outcome) {
+        socket.emit("toast", {
+          kind: r.outcome.won ? "success" : "warn",
+          text: r.outcome.won
+            ? `You beat ${r.outcome.opponentName} and won ${r.outcome.prize} coins!`
+            : `${r.outcome.opponentName} beat you in the Arena.`,
+        });
+      } else if (r.error) {
+        socket.emit("toast", { kind: "warn", text: r.error });
+      }
+      scheduleSave();
+      for (const eid of r.members ?? [id]) pushSnapshot(eid);
+    }),
+  );
+
   socket.on("attackBoss", (p: { units: Army }) =>
     withEmpire((id) => {
       const r = attackBoss(state.empires[id], p?.units || {});

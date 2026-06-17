@@ -904,6 +904,12 @@ export function achievementsUnlocked(s: AchievementStats): string[] {
   return out;
 }
 
+// ── Wagered Arena (PvP coin duels) ───────────────────────────────────────────
+export const ARENA_MIN_STAKE = 100; // minimum coins per side
+export const ARENA_RAKE = 0.05; // 5% of the pot is burned (coin sink)
+export const ARENA_WINNER_LOSS = 0.15; // winner loses 15% of committed army
+export const ARENA_LOSER_LOSS = 0.55; // loser loses 55% of committed army
+
 // ── World Boss ───────────────────────────────────────────────────────────────
 // A server-wide PvE event. Everyone sends armies to damage a shared boss; when
 // it dies, IN-GAME spoils (coins + resources) are split by damage dealt. No SOL

@@ -227,6 +227,29 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
     ),
   },
   {
+    id: "arena",
+    title: "Wagered Arena (PvP)",
+    icon: "⚔️",
+    body: (
+      <>
+        <p>
+          The <strong>Arena</strong> is consensual PvP for coins. Post a wager — stake coins and commit an army — and
+          anyone can accept by matching your stake and committing their own. The fight resolves instantly.
+        </p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li><strong>Winner takes the pot</strong> — both stakes, minus a small 5% rake that's burned (a coin sink).</li>
+          <li><strong>Both sides take casualties</strong> — the loser loses more of their committed army, the winner less. Survivors return home.</li>
+          <li><strong>It's a real gamble</strong> — outcome is decided by army strength (units + gear) with some variance, so scout the committed army size before you accept.</li>
+          <li><strong>Withdraw anytime</strong> before someone accepts to get your stake and army back.</li>
+        </ul>
+        <p className="rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
+          Arena wagers are <strong>in-game coins only</strong> — no SOL is staked or paid, so the reward pool is never
+          touched.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "alliances",
     title: "Alliances",
     icon: "🤝",

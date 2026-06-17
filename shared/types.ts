@@ -166,6 +166,9 @@ export interface Empire {
   // holder-tier name (Bronze…Diamond) from the linked wallet's on-chain holdings,
   // refreshed on connect/dashboard view. Grants in-game perks; undefined = none.
   holderTier?: string;
+  // wagered-arena record
+  duelsWon?: number;
+  duelsLost?: number;
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────
@@ -392,6 +395,31 @@ export interface BugReport {
   ua?: string; // browser user-agent
 }
 
+// ── Wagered Arena (PvP coin duels) ───────────────────────────────────────────
+export interface Duel {
+  id: string;
+  challengerId: string;
+  challengerName: string;
+  challengerBanner: string;
+  stake: number; // coins staked by each side (winner takes ~both, minus rake)
+  army: Partial<Record<UnitType, number>>; // army the challenger committed
+  status: "open" | "resolved";
+  createdAt: number;
+  opponentId?: string;
+  opponentName?: string;
+  winnerId?: string;
+  resolvedAt?: number;
+}
+export interface DuelPublic {
+  id: string;
+  challengerId: string;
+  challengerName: string;
+  challengerBanner: string;
+  stake: number;
+  armySize: number; // challenger's committed army size (shown so you can decide)
+  createdAt: number;
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;
@@ -403,6 +431,8 @@ export interface GameSnapshot {
   alliance: AlliancePublic | null;
   // the current server-wide world boss (alive or in respawn cooldown)
   boss: BossPublic | null;
+  // open wagered-arena duels anyone can accept
+  duels: DuelPublic[];
 }
 
 // Server -> client realtime events

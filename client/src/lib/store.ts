@@ -49,6 +49,9 @@ interface GameStore {
   advanceAge: () => void;
   attack: (targetEmpireId: string, units: Partial<Record<UnitType, number>>) => void;
   attackBoss: (units: Partial<Record<UnitType, number>>) => void;
+  createDuel: (stake: number, units: Partial<Record<UnitType, number>>) => void;
+  acceptDuel: (duelId: string, units: Partial<Record<UnitType, number>>) => void;
+  cancelDuel: (duelId: string) => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -183,6 +186,9 @@ export const useGame = create<GameStore>((set, get) => ({
   advanceAge: () => socket?.emit("advanceAge"),
   attack: (targetEmpireId, units) => socket?.emit("attack", { targetEmpireId, units }),
   attackBoss: (units) => socket?.emit("attackBoss", { units }),
+  createDuel: (stake, units) => socket?.emit("duel:create", { stake, units }),
+  acceptDuel: (duelId, units) => socket?.emit("duel:accept", { duelId, units }),
+  cancelDuel: (duelId) => socket?.emit("duel:cancel", { duelId }),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

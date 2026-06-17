@@ -11,6 +11,7 @@ import ArmouryView from "../game/ArmouryView";
 import TokenShop from "../game/TokenShop";
 import AllianceView from "../game/AllianceView";
 import WorldBossView from "../game/WorldBossView";
+import ArenaView from "../game/ArenaView";
 import AchievementsView from "../game/AchievementsView";
 import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
@@ -26,6 +27,7 @@ type Tab =
   | "empire"
   | "world"
   | "boss"
+  | "arena"
   | "military"
   | "armoury"
   | "tokenshop"
@@ -41,6 +43,7 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "empire", label: "Buildings", icon: "🏰", desc: "Build & upgrade your settlement, advance ages" },
   { id: "world", label: "Attack", icon: "🗡️", desc: "Pick a rival empire and invade it" },
   { id: "boss", label: "World Boss", icon: "👹", desc: "Team up against a server-wide boss for in-game spoils" },
+  { id: "arena", label: "Arena", icon: "⚔️", desc: "Wager coins in PvP duels — winner takes the pot" },
   { id: "military", label: "Army", icon: "⚔️", desc: "Train soldiers for your army" },
   { id: "armoury", label: "Armoury", icon: "🛒", desc: "Buy weapons & armour for your army with coins" },
   { id: "tokenshop", label: "Token Shop", icon: "💎", desc: "Spend the project token on packs, boosts, armies & traits" },
@@ -236,6 +239,7 @@ export default function Play() {
                 {tab === "empire" && <EmpireView empire={empire} />}
                 {tab === "world" && <WorldView snapshot={snapshot} />}
                 {tab === "boss" && <WorldBossView empire={empire} />}
+                {tab === "arena" && <ArenaView empire={empire} />}
                 {tab === "military" && <MilitaryView empire={empire} />}
                 {tab === "armoury" && <ArmouryView empire={empire} />}
                 {tab === "tokenshop" && <TokenShop />}

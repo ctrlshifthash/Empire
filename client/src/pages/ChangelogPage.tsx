@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 17, 2026",
     items: [
+      { tag: "Feature", title: "Wagered Arena (PvP)", desc: "Stake coins and commit an army; anyone can accept and fight you. Winner takes the pot (minus a burned rake). In-game coins only." },
       { tag: "Feature", title: "Diamond Hands rewards", desc: "Holding without selling grows a loyalty multiplier on your SOL accrual (up to 2×); selling resets it." },
       { tag: "Feature", title: "In-game holder perks", desc: "Your holder tier now grants real gameplay bonuses — bigger harvests and faster build/train — refreshed from your holdings." },
       { tag: "Fix", title: "Navbar polish", desc: "Tightened the nav so the brand and slogan no longer wrap; the changelog link is now labelled “Changelog”." },
