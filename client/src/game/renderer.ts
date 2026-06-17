@@ -232,6 +232,7 @@ export interface WorldMarker {
   rank?: string;
   armySize?: number;
   age?: string;
+  allianceId?: string;
 }
 
 export interface WorldLayout {

@@ -56,6 +56,7 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
       rank: o.rank,
       armySize: o.armySize,
       age: o.age,
+      allianceId: o.allianceId,
     }));
     return [self, ...rest];
   }, [empire, others]);
@@ -96,10 +97,11 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
   const rivals = useMemo(
     () =>
       others
+        .filter((o) => !(empire.allianceId && o.allianceId === empire.allianceId)) // never your allies
         .filter((o) => raidBlock(empire.power, o.power, o.isBot) === null)
         .map((o) => ({ ...o, d: dist(empire.tileX, empire.tileY, o.tileX, o.tileY) }))
         .sort((a, b) => a.d - b.d),
-    [others, empire.power, empire.tileX, empire.tileY],
+    [others, empire.power, empire.allianceId, empire.tileX, empire.tileY],
   );
 
   const selected = selectedId ? coord.get(selectedId) : null;
@@ -229,14 +231,17 @@ function TargetPanel({
   const [units, setUnits] = useState<Partial<Record<UnitType, number>>>({});
   const total = UNIT_TYPES.reduce((s, u) => s + (units[u] ?? 0), 0);
   const eta = travelSeconds(distance);
-  // whether this target is raidable from your bracket (matches the server rule)
+  // whether this target is raidable: allies are off-limits, then the bracket rule
+  const isAlly = !!empire.allianceId && target.allianceId === empire.allianceId;
   const block = raidBlock(empire.power, target.power, target.isBot);
-  const blockMsg =
-    block === "weak"
+  const blockMsg = isAlly
+    ? `${target.name} is your ally — you can't raid them.`
+    : block === "weak"
       ? `${target.name} is under protection — too weak for you to raid.`
       : block === "locked"
         ? `${target.name} is too powerful to raid yet — grow your army and rank to reach them.`
         : null;
+  const blocked = isAlly || block !== null;
 
   const setUnit = (u: UnitType, v: number) =>
     setUnits((prev) => ({ ...prev, [u]: Math.max(0, Math.min(empire.army[u], v)) }));
@@ -348,7 +353,7 @@ function TargetPanel({
 
       <button
         className="btn-blood mt-4 w-full py-2.5"
-        disabled={total === 0 || block !== null}
+        disabled={total === 0 || blocked}
         onClick={() => onAttack(units)}
       >
         ⚔ Invade {target.name} ({total} unit{total === 1 ? "" : "s"})

@@ -157,6 +157,50 @@ export interface Empire {
   traits?: string[];
   // temporary buffs bought in the token shop (e.g. a timed harvest multiplier)
   boosts?: { gatherMult?: number; gatherUntil?: number };
+  // alliance this empire belongs to (id into state.alliances), if any
+  allianceId?: string;
+}
+
+// ── Alliances ───────────────────────────────────────────────────────────────
+export interface AllianceChatMsg {
+  id: string;
+  from: string; // empire id
+  fromName: string;
+  text: string;
+  at: number;
+}
+
+export interface Alliance {
+  id: string;
+  name: string;
+  tag: string; // short 2–5 char badge shown next to members
+  banner: string; // hex colour
+  leaderId: string; // empire id of the leader
+  memberIds: string[]; // empire ids (includes the leader)
+  createdAt: number;
+  chat: AllianceChatMsg[]; // recent messages (trimmed)
+}
+
+export interface AllianceMemberPublic {
+  id: string;
+  name: string;
+  power: number;
+  rank: string;
+  online: boolean;
+  leader: boolean;
+}
+
+export interface AlliancePublic {
+  id: string;
+  name: string;
+  tag: string;
+  banner: string;
+  leaderId: string;
+  members: AllianceMemberPublic[];
+  totalPower: number;
+  memberCount: number;
+  createdAt: number;
+  chat: AllianceChatMsg[];
 }
 
 // Public, trimmed view of an empire shown on the world map / to opponents.
@@ -174,6 +218,9 @@ export interface EmpirePublic {
   // difficulty tier + its label, for bots (so players can pick fair targets)
   tier?: number;
   rank?: string;
+  // alliance membership (so allies can be shown/skipped as raid targets)
+  allianceId?: string;
+  allianceTag?: string;
 }
 
 export interface WorldMeta {
@@ -269,6 +316,8 @@ export interface GameSnapshot {
   incomingMarches: March[];
   outgoingMarches: March[];
   serverTime: number;
+  // the player's alliance (members, chat, total power) or null if not in one
+  alliance: AlliancePublic | null;
 }
 
 // Server -> client realtime events

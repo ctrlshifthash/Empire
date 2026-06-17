@@ -55,6 +55,13 @@ interface GameStore {
   buyArmoury: (kind: "weapon" | "armour" | "helmet" | "heroArmour", unit?: UnitType) => void;
   buyTrait: (traitId: string) => void;
 
+  createAlliance: (name: string, tag: string) => void;
+  joinAlliance: (allianceId: string) => void;
+  leaveAlliance: () => void;
+  kickAllianceMember: (targetId: string) => void;
+  disbandAlliance: () => void;
+  allianceChat: (text: string) => void;
+
   pushToast: (t: Omit<Toast, "id">) => void;
   dismissToast: (id: number) => void;
 }
@@ -179,6 +186,12 @@ export const useGame = create<GameStore>((set, get) => ({
   slay: (kind) => socket?.emit("slay", { kind }),
   buyArmoury: (kind, unit) => socket?.emit("buyArmoury", { kind, unit }),
   buyTrait: (traitId) => socket?.emit("buyTrait", { traitId }),
+  createAlliance: (name, tag) => socket?.emit("alliance:create", { name, tag }),
+  joinAlliance: (allianceId) => socket?.emit("alliance:join", { allianceId }),
+  leaveAlliance: () => socket?.emit("alliance:leave"),
+  kickAllianceMember: (targetId) => socket?.emit("alliance:kick", { targetId }),
+  disbandAlliance: () => socket?.emit("alliance:disband"),
+  allianceChat: (text) => socket?.emit("alliance:chat", { text }),
 
   pushToast: (t) => {
     const id = toastSeq++;

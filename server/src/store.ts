@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Empire, March, User, WorldMeta } from "../../shared/types.ts";
+import type { Alliance, Empire, March, User, WorldMeta } from "../../shared/types.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -27,6 +27,8 @@ export interface GameState {
   // token-shop purchases keyed by the payment tx signature (idempotency — a
   // signature can only ever be redeemed once).
   shopPurchases: Record<string, { address: string; itemId: string; at: number }>;
+  // player alliances keyed by alliance id
+  alliances: Record<string, Alliance>;
 }
 
 export const state: GameState = {
@@ -38,6 +40,7 @@ export const state: GameState = {
   rewards: {},
   rewardPool: { day: 0, paidLamports: 0 },
   shopPurchases: {},
+  alliances: {},
 };
 
 export function loadState(): boolean {
@@ -52,6 +55,7 @@ export function loadState(): boolean {
       state.rewards ??= {};
       state.rewardPool ??= { day: 0, paidLamports: 0 };
       state.shopPurchases ??= {};
+      state.alliances ??= {};
       return true;
     }
   } catch (err) {

@@ -834,6 +834,14 @@ export const COLORS_BANNER = [
   "#d35400", "#16a085", "#2c3e50", "#c0a020",
 ];
 
+// ── Alliances ────────────────────────────────────────────────────────────────
+export const ALLIANCE_MAX_MEMBERS = 12;
+export const ALLIANCE_CREATE_COST = 2000; // coins to found an alliance
+export const ALLIANCE_NAME_MAX = 24;
+export const ALLIANCE_TAG_MAX = 5;
+export const ALLIANCE_CHAT_KEEP = 50; // recent messages retained per alliance
+export const ALLIANCE_MSG_MAX = 240;
+
 // ── Token shop ───────────────────────────────────────────────────────────────
 // Items players buy with the project's SPL token. Payment is a real on-chain
 // transfer of `price` whole tokens to the treasury (verified server-side before

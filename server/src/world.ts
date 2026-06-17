@@ -219,6 +219,8 @@ export function publicView(e: Empire, online: boolean): EmpirePublic {
     online: e.isBot ? true : online,
     tier: e.tier,
     rank: e.isBot ? botTier(e.tier).rank : rankForPower(e.power).name,
+    allianceId: e.allianceId,
+    allianceTag: e.allianceId ? state.alliances[e.allianceId]?.tag : undefined,
   };
 }
 

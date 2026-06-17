@@ -2,18 +2,36 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
+import { SERVER_URL } from "../lib/config";
 import { AGE_META, fmt } from "../lib/format";
 import { rankForPower } from "@shared/gamedata";
 import EmpireCrest from "../components/EmpireCrest";
 
 type Board = Awaited<ReturnType<typeof api.leaderboard>>;
+type AllianceRow = {
+  id: string;
+  name: string;
+  tag: string;
+  banner: string;
+  memberCount: number;
+  totalPower: number;
+};
+type View = "players" | "alliances";
 
 export default function LeaderboardPage() {
+  const [view, setView] = useState<View>("players");
   const [board, setBoard] = useState<Board | null>(null);
+  const [alliances, setAlliances] = useState<AllianceRow[] | null>(null);
 
   useEffect(() => {
     let alive = true;
-    const load = () => api.leaderboard().then((b) => alive && setBoard(b)).catch(() => {});
+    const load = () => {
+      api.leaderboard().then((b) => alive && setBoard(b)).catch(() => {});
+      fetch(`${SERVER_URL}/api/alliances`)
+        .then((r) => r.json())
+        .then((d) => alive && d?.ok && setAlliances(d.alliances))
+        .catch(() => {});
+    };
     load();
     const id = setInterval(load, 8000);
     return () => {
@@ -37,8 +55,54 @@ export default function LeaderboardPage() {
             Empires ranked by power across the living world. Rankings update live as realms rise and
             fall.
           </p>
+          <div className="mt-6 inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
+            {(["players", "alliances"] as View[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`rounded-lg px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                  view === v ? "bg-gold/15 text-gold-light" : "text-parchment-300/60 hover:text-parchment-100"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
 
+        {view === "alliances" ? (
+          <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-parchment-300/10 bg-ink-800/60 shadow-panel">
+            <div className="grid grid-cols-[3rem_1fr_5rem_6rem] gap-4 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55">
+              <div>#</div>
+              <div>Alliance</div>
+              <div className="text-right">Members</div>
+              <div className="text-right">Power</div>
+            </div>
+            {(alliances?.length ?? 0) === 0 && (
+              <div className="p-10 text-center text-sm text-parchment-300/60">
+                No alliances yet — be the first to found one in-game.
+              </div>
+            )}
+            {(alliances ?? []).map((a, i) => (
+              <div
+                key={a.id}
+                className="grid grid-cols-[3rem_1fr_5rem_6rem] items-center gap-4 border-b border-parchment-300/5 px-5 py-3.5 last:border-0"
+              >
+                <div className={`font-display text-lg font-bold ${i === 0 ? "text-gold-light" : i < 3 ? "text-parchment-200" : "text-parchment-300/50"}`}>
+                  {i + 1}
+                </div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md font-display text-[11px] font-bold text-ink ring-1 ring-black/40" style={{ background: a.banner }}>
+                    {a.tag}
+                  </span>
+                  <div className="truncate font-semibold text-parchment-100">{a.name}</div>
+                </div>
+                <div className="text-right text-sm text-parchment-300/70">{a.memberCount}</div>
+                <div className="text-right font-display font-bold text-gold-light">{fmt(a.totalPower)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-parchment-300/10 bg-ink-800/60 shadow-panel">
           <div className="grid grid-cols-[3rem_1fr_auto_auto] gap-4 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55 sm:grid-cols-[3rem_1fr_6rem_5rem_5rem]">
             <div>#</div>
@@ -94,6 +158,7 @@ export default function LeaderboardPage() {
             </motion.div>
           ))}
         </div>
+        )}
 
         <div className="mt-10 text-center">
           <Link to="/register" className="btn-gold">

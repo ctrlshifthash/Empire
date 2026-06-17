@@ -43,6 +43,7 @@ import type {
 } from "../../shared/types.ts";
 import { scheduleSave, state } from "./store.ts";
 import { isOnline } from "./presence.ts";
+import { areAllies, alliancePublic } from "./alliances.ts";
 import { LOCAL_WORLD, type SkillId, type ToolId } from "../../shared/types.ts";
 import {
   MAX_TIER,
@@ -564,6 +565,7 @@ export function actAttack(
   const target = state.empires[targetId];
   if (!target) return { ok: false, error: "Target empire not found." };
   if (target.id === attacker.id) return { ok: false, error: "You cannot attack yourself." };
+  if (areAllies(attacker, target)) return { ok: false, error: `${target.name} is your ally — you can't raid them.` };
   // Bracket matchmaking for real players (bots are always fair game). You can't
   // farm the far-weaker ("weak" — the shield), and the far-stronger are out of
   // reach until you grow ("locked"). Routed through here for bots too, so AI
@@ -893,5 +895,6 @@ export function snapshotFor(empireId: string): GameSnapshot | null {
     incomingMarches,
     outgoingMarches,
     serverTime: now(),
+    alliance: alliancePublic(empire.allianceId),
   };
 }

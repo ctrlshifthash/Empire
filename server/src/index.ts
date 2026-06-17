@@ -17,6 +17,15 @@ import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured } from "./rewards.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
+import {
+  createAlliance,
+  joinAlliance,
+  leaveAlliance,
+  kickMember,
+  disbandAlliance,
+  postChat,
+  allianceLeaderboard,
+} from "./alliances.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -167,6 +176,12 @@ app.get("/api/leaderboard", (_req, res) => {
     .sort((a, b) => b.power - a.power)
     .slice(0, 25);
   res.json({ ok: true, rows });
+});
+
+// Public alliance directory + leaderboard (chat stripped — that stays private).
+app.get("/api/alliances", (_req, res) => {
+  const alliances = allianceLeaderboard().map(({ chat: _chat, ...rest }) => rest);
+  res.json({ ok: true, alliances });
 });
 
 // ── Empires browser (public) ────────────────────────────────────────────────
@@ -337,6 +352,33 @@ io.on("connection", (socket) => {
   );
   socket.on("buyTrait", (p: { traitId: any }) =>
     withEmpire((id) => handle(actBuyTrait(state.empires[id], p?.traitId), "Trait learned!")),
+  );
+
+  // Alliance changes touch every member, so refresh all affected snapshots.
+  function handleAlliance(result: { ok: boolean; error?: string; members?: string[] }, successMsg?: string) {
+    if (!result.ok && result.error) socket.emit("toast", { kind: "warn", text: result.error });
+    else if (successMsg) socket.emit("toast", { kind: "success", text: successMsg });
+    scheduleSave();
+    const ids = result.members ?? (empireId ? [empireId] : []);
+    for (const id of ids) pushSnapshot(id);
+  }
+  socket.on("alliance:create", (p: { name?: string; tag?: string }) =>
+    withEmpire((id) => handleAlliance(createAlliance(state.empires[id], p?.name ?? "", p?.tag ?? ""), "Alliance founded!")),
+  );
+  socket.on("alliance:join", (p: { allianceId?: string }) =>
+    withEmpire((id) => handleAlliance(joinAlliance(state.empires[id], String(p?.allianceId ?? "")), "Joined the alliance!")),
+  );
+  socket.on("alliance:leave", () =>
+    withEmpire((id) => handleAlliance(leaveAlliance(state.empires[id]), "You left the alliance.")),
+  );
+  socket.on("alliance:kick", (p: { targetId?: string }) =>
+    withEmpire((id) => handleAlliance(kickMember(state.empires[id], String(p?.targetId ?? "")), "Member removed.")),
+  );
+  socket.on("alliance:disband", () =>
+    withEmpire((id) => handleAlliance(disbandAlliance(state.empires[id]), "Alliance disbanded.")),
+  );
+  socket.on("alliance:chat", (p: { text?: string }) =>
+    withEmpire((id) => handleAlliance(postChat(state.empires[id], String(p?.text ?? "")))),
   );
 
   socket.on("disconnect", () => {
