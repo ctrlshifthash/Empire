@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSignAndSendTransaction, useWallets } from "@privy-io/react-auth/solana";
 import type { ListingPublic, InventoryItem } from "@shared/types";
-import { RARITY_META, MARKET_ITEMS } from "@shared/gamedata";
+import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, nextRarity } from "@shared/gamedata";
 import { privyConfigured, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
@@ -52,6 +52,9 @@ function Market() {
   const { signAndSendTransaction } = useSignAndSendTransaction();
   const pushToast = useGame((s) => s.pushToast);
   const inventory = useGame((s) => s.snapshot?.inventory ?? []);
+  const coins = useGame((s) => s.snapshot?.empire?.coins ?? 0);
+  const fuseRelics = useGame((s) => s.fuseRelics);
+  const craftRelic = useGame((s) => s.craftRelic);
   const [listings, setListings] = useState<ListingPublic[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -97,7 +100,12 @@ function Market() {
     }
   }
 
+  const spare = inventory.filter((i) => !i.listed && !i.equipped);
+  const spareOf = (r: string) => spare.filter((i) => i.rarity === r).length;
+  const canCraft = coins >= CRAFT_COST.coins;
+
   return (
+   <>
     <div className="mt-10 grid gap-6 lg:grid-cols-3">
       {/* listings */}
       <div className="lg:col-span-2">
@@ -144,6 +152,60 @@ function Market() {
         </div>
       </div>
     </div>
+
+    {/* forge + how-to-collect */}
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="panel p-5">
+        <div className="font-display text-lg font-bold text-gold-gradient">🔨 The Forge</div>
+        <p className="mt-1 text-sm text-parchment-300/65">
+          Combine relics into something greater, or craft one from raw materials. Forging <strong>burns</strong> the inputs —
+          that's what keeps relics scarce and valuable.
+        </p>
+        <div className="mt-4 space-y-2">
+          {(["common", "rare", "epic"] as const).map((r) => {
+            const have = spareOf(r);
+            const cost = FUSE_COINS[r] ?? 0;
+            const up = nextRarity(r as never);
+            const ok = have >= FUSE_COUNT && coins >= cost;
+            return (
+              <div key={r} className="flex items-center justify-between rounded-lg border border-parchment-300/10 bg-black/20 px-3 py-2">
+                <div className="text-sm">
+                  <span className="font-semibold capitalize" style={{ color: rarityColor(r) }}>{r}</span>
+                  <span className="text-parchment-300/55"> → {up} · you have {have} spare</span>
+                  <div className="text-[11px] text-parchment-300/45">Fuse {FUSE_COUNT} · {cost.toLocaleString()} coins</div>
+                </div>
+                <button className="btn-gold btn-sm" disabled={!ok} onClick={() => fuseRelics(r)}>
+                  {have < FUSE_COUNT ? `Need ${FUSE_COUNT}` : coins < cost ? "Need coins" : "Forge"}
+                </button>
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between rounded-lg border border-parchment-300/10 bg-black/20 px-3 py-2">
+            <div className="text-sm">
+              <span className="font-semibold text-parchment-100">Craft from materials</span>
+              <div className="text-[11px] text-parchment-300/45">
+                {CRAFT_COST.wood.toLocaleString()} of each resource + {CRAFT_COST.coins.toLocaleString()} coins → a common relic
+              </div>
+            </div>
+            <button className="btn-gold btn-sm" disabled={!canCraft} onClick={() => craftRelic()}>Craft</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel p-5">
+        <div className="font-display text-lg font-bold text-gold-gradient">🎁 How to collect relics</div>
+        <ul className="mt-3 space-y-2 text-sm text-parchment-300/80">
+          <li>⬆️ <strong>Rank up</strong> — a guaranteed relic every time you reach a new renown rank.</li>
+          <li>📜 <strong>Complete quests</strong> — a chance to drop a relic.</li>
+          <li>👹 <strong>World Boss</strong> — the top damage dealer can score a relic.</li>
+          <li>🏆 <strong>Win tournaments</strong> — the champion gets a relic drop.</li>
+          <li>🔨 <strong>Forge &amp; craft</strong> — fuse spares into rarer relics, or craft from materials.</li>
+          <li>🏛️ <strong>Buy on the market</strong> — purchase from other players in SOL or USDC.</li>
+        </ul>
+        <p className="mt-3 text-xs text-parchment-300/50">Equip up to 3 for stacking power, harvest, speed — and the rarest for a SOL-yield boost.</p>
+      </div>
+    </div>
+   </>
   );
 }
 

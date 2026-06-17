@@ -13,8 +13,12 @@ import {
   USDC_MINT,
   RARITY_META,
   EQUIP_SLOTS,
+  FUSE_COUNT,
+  FUSE_COINS,
+  CRAFT_COST,
   marketItem,
   itemEffectSummary,
+  nextRarity,
 } from "../../shared/gamedata.ts";
 import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic, MarketCurrency } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
@@ -385,6 +389,68 @@ export async function buyListing(listingId: string, buyer: string, signature: st
   }
   scheduleSave(0);
   return { ok: true, buyerEmpireId: buyerEmpire.id, members: [buyerEmpire.id, l.sellerId] };
+}
+
+// ── Forge (crafting sink: burns relics/resources to make something greater) ──
+function randomTypeOfRarity(rarity: string): string | null {
+  const pool = MARKET_ITEMS.filter((m) => m.rarity === rarity && (state.mintCounts[m.id] ?? 0) < m.maxSupply);
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)].id : null;
+}
+
+// Fuse FUSE_COUNT spare relics of one rarity into a random relic one rarity up.
+// The inputs are burned for good (deflationary), so lower relics stay in demand.
+export function fuseRelics(empireId: string, rarity: string): MarketResult {
+  const e = state.empires[empireId];
+  if (!e) return { ok: false, error: "No empire." };
+  const next = nextRarity(rarity as never);
+  if (!next) return { ok: false, error: "Legendaries can't be forged further." };
+  const cost = FUSE_COINS[rarity] ?? 0;
+  const owned = Object.values(state.itemInstances).filter(
+    (it) =>
+      it.ownerId === empireId &&
+      marketItem(it.typeId)?.rarity === rarity &&
+      !isListed(it.id) &&
+      !(e.equipped ?? []).includes(it.id),
+  );
+  if (owned.length < FUSE_COUNT) return { ok: false, error: `Need ${FUSE_COUNT} spare ${rarity} relics (not listed or equipped).` };
+  if (e.coins < cost) return { ok: false, error: `Forging ${rarity} costs ${cost.toLocaleString()} coins.` };
+  const outType = randomTypeOfRarity(next);
+  if (!outType) return { ok: false, error: `No ${next} relics remain to forge — they're all minted out.` };
+
+  e.coins -= cost;
+  for (let i = 0; i < FUSE_COUNT; i++) delete state.itemInstances[owned[i].id]; // burn the inputs
+  const inst = mintItem(empireId, outType);
+  const def = inst ? marketItem(inst.typeId) : undefined;
+  e.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `🔨 Forged ${FUSE_COUNT} ${rarity} relics into ${def?.name ?? next} #${inst?.serial ?? "?"}!` });
+  if (e.log.length > 60) e.log.length = 60;
+  recomputePower(e);
+  scheduleSave(0);
+  return { ok: true, members: [empireId] };
+}
+
+// Craft a fresh common relic from raw materials (a resource sink → a relic path
+// for everyone, not just winners).
+export function craftRelic(empireId: string): MarketResult {
+  const e = state.empires[empireId];
+  if (!e) return { ok: false, error: "No empire." };
+  const c = CRAFT_COST;
+  if (e.coins < c.coins || e.resources.wood < c.wood || e.resources.food < c.food || e.resources.gold < c.gold || e.resources.stone < c.stone)
+    return { ok: false, error: "Not enough materials & coins to craft a relic." };
+  const outType = randomTypeOfRarity("common");
+  if (!outType) return { ok: false, error: "No common relics left to craft." };
+
+  e.coins -= c.coins;
+  e.resources.wood -= c.wood;
+  e.resources.food -= c.food;
+  e.resources.gold -= c.gold;
+  e.resources.stone -= c.stone;
+  const inst = mintItem(empireId, outType);
+  const def = inst ? marketItem(inst.typeId) : undefined;
+  e.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `🔨 Crafted ${def?.name ?? "a relic"} #${inst?.serial ?? "?"} from raw materials!` });
+  if (e.log.length > 60) e.log.length = 60;
+  recomputePower(e);
+  scheduleSave(0);
+  return { ok: true, members: [empireId] };
 }
 
 // clear stale reservations (called from the world tick)

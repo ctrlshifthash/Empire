@@ -293,7 +293,8 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         </p>
         <ul className="ml-5 list-disc space-y-2">
           <li><strong>Relics are gear, not just collectibles</strong> — equip up to 3 at once for stacking boosts: flat power (→ higher rank → bigger SOL share), bonus harvest, faster build/train, and on the rarest relics a <strong>direct SOL-yield boost</strong> (a bigger slice of the daily pool, for token holders). Rarer relics hit much harder — a Legendary can be worth real money.</li>
-          <li><strong>Earn them lots of ways</strong> — tournament-champion drops, World Boss top-damage drops, a chance on every quest you complete, and a guaranteed drop each time you reach a new renown rank.</li>
+          <li><strong>Earn them lots of ways</strong> — a guaranteed drop on every rank-up, a chance on every quest, World Boss top-damage drops, tournament-champion drops, the Forge, or just buy on the market.</li>
+          <li><strong>The Forge</strong> — fuse 3 spare relics of one rarity into a random relic one tier up (the inputs are burned), or craft a common relic from raw materials. Fusing permanently shrinks supply, so lower relics stay in demand and the rare ones keep their value.</li>
           <li><strong>Buy &amp; sell in SOL or USDC</strong> — payment goes <strong>straight from buyer to seller</strong>, wallet-to-wallet, verified on-chain. A small {Math.round(0.025 * 100)}% fee goes to the treasury.</li>
           <li><strong>No custody</strong> — the platform never holds your funds; it only verifies the payment, then transfers the item to your inventory.</li>
           <li><strong>Safe trades</strong> — a listed item is escrow-locked, a pending buy reserves it briefly so it can't be double-sold, and each payment is single-use.</li>

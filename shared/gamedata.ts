@@ -951,8 +951,36 @@ export const MARKET_ITEMS: MarketItemType[] = [
   { id: "iron_chalice", name: "Iron Chalice", icon: "🏆", rarity: "common", maxSupply: 1000, banner: "#16a085", desc: "A victor's cup, passed hand to hand.", gatherPct: 0.06 },
   { id: "bronze_medallion", name: "Bronze Medallion", icon: "🥉", rarity: "common", maxSupply: 1000, banner: "#cd7f32", desc: "Awarded for valour, traded for coin.", powerBonus: 50 },
   { id: "oak_charm", name: "Oak Charm", icon: "🌰", rarity: "common", maxSupply: 1000, banner: "#6b4f2a", desc: "A woodland blessing for the busy.", speedPct: 0.08 },
+  { id: "lucky_coin", name: "Lucky Coin", icon: "🪙", rarity: "common", maxSupply: 1000, banner: "#c0a020", desc: "Heads you win, tails you win.", gatherPct: 0.04, powerBonus: 20 },
+  { id: "swift_boots", name: "Swift Boots", icon: "🥾", rarity: "common", maxSupply: 1000, banner: "#7d5a3c", desc: "Worn smooth by a hundred marches.", speedPct: 0.1 },
+  // more rare — variety of effect archetypes
+  { id: "merchants_seal", name: "Merchant's Seal", icon: "📜", rarity: "rare", maxSupply: 250, banner: "#b8860b", desc: "Opens every gate in the bazaar.", gatherPct: 0.1, speedPct: 0.08 },
+  { id: "blood_ruby", name: "Blood Ruby", icon: "🔴", rarity: "rare", maxSupply: 250, banner: "#a01818", desc: "Glows brighter the more you conquer.", powerBonus: 140, solPct: 0.04 },
+  { id: "ancient_tome", name: "Ancient Tome", icon: "📖", rarity: "rare", maxSupply: 250, banner: "#3b2f6b", desc: "Forgotten knowledge, freely given.", gatherPct: 0.1, speedPct: 0.1 },
+  // more epic
+  { id: "warlords_pennant", name: "Warlord's Pennant", icon: "🚩", rarity: "epic", maxSupply: 50, banner: "#7b241c", desc: "Flown over a hundred sacked cities.", powerBonus: 420, solPct: 0.06 },
+  { id: "harvest_crown", name: "Harvest Crown", icon: "🌾", rarity: "epic", maxSupply: 50, banner: "#b7950b", desc: "Crowned by the gods of plenty.", gatherPct: 0.35, speedPct: 0.1 },
+  // more legendary
+  { id: "kings_ransom", name: "King's Ransom", icon: "💰", rarity: "legendary", maxSupply: 10, banner: "#d4af37", desc: "Wealth enough to buy an empire.", powerBonus: 600, gatherPct: 0.2, speedPct: 0.15, solPct: 0.18 },
 ];
 export const marketItem = (id: string): MarketItemType | undefined => MARKET_ITEMS.find((m) => m.id === id);
+
+// Rarity ladder (for the Forge: fuse 3 of a rarity → 1 of the next up).
+export const RARITY_ORDER: ItemRarity[] = ["common", "rare", "epic", "legendary"];
+export function nextRarity(r: ItemRarity): ItemRarity | null {
+  const i = RARITY_ORDER.indexOf(r);
+  return i >= 0 && i < RARITY_ORDER.length - 1 ? RARITY_ORDER[i + 1] : null;
+}
+// Forge economy (a deflationary sink — fusing burns relics, crafting burns resources).
+export const FUSE_COUNT = 3; // relics consumed per fuse
+export const FUSE_COINS: Record<string, number> = { common: 5000, rare: 25000, epic: 100000 };
+export const CRAFT_COST: { wood: number; food: number; gold: number; stone: number; coins: number } = {
+  wood: 25000,
+  food: 25000,
+  gold: 25000,
+  stone: 25000,
+  coins: 8000,
+};
 // Human summary of an item's equipped effects (for tooltips / inventory).
 export function itemEffectSummary(m: MarketItemType): string {
   const parts: string[] = [];

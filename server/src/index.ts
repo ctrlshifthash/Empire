@@ -47,6 +47,8 @@ import {
   mintItem,
   expireReservations,
   seedMarket,
+  fuseRelics,
+  craftRelic,
 } from "./market.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
@@ -482,6 +484,12 @@ io.on("connection", (socket) => {
   );
   socket.on("market:equip", (p: { instanceId: string }) =>
     withEmpire((id) => handleArena(equipItem(id, String(p?.instanceId || "")))),
+  );
+  socket.on("market:fuse", (p: { rarity: string }) =>
+    withEmpire((id) => handleArena(fuseRelics(id, String(p?.rarity || "")), "Relics forged!")),
+  );
+  socket.on("market:craft", () =>
+    withEmpire((id) => handleArena(craftRelic(id), "Relic crafted!")),
   );
   socket.on("duel:accept", (p: { duelId: string; units: Army }) =>
     withEmpire((id) => {
