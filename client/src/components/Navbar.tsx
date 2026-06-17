@@ -11,7 +11,7 @@ const LINKS = [
   { to: "/governance", label: "Vote" },
   { to: "/guide", label: "Guide" },
   { to: "/docs", label: "Docs" },
-  { to: "/changelog", label: "Updates" },
+  { to: "/changelog", label: "Changelog" },
 ];
 
 const SOCIALS = [
@@ -85,14 +85,14 @@ export default function Navbar() {
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <nav className="flex h-16 w-full items-center gap-4 px-5 sm:px-8">
+      <nav className="flex h-16 w-full items-center gap-3 px-4 sm:px-6">
         {/* left: brand */}
         <div className="flex flex-1 items-center min-w-0">
-          <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
+          <Link to="/" className="group flex shrink-0 items-center gap-2.5" onClick={() => setOpen(false)}>
             <Logo />
             <span className="flex flex-col leading-none">
-              <span className="font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
-              <span className="hidden text-[10px] uppercase tracking-[0.25em] text-parchment-300/60 sm:block">
+              <span className="whitespace-nowrap font-display text-lg font-bold text-gold-gradient">Realm Rumble</span>
+              <span className="hidden whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-parchment-300/60 sm:block">
                 Build · Conquer · Endure
               </span>
             </span>

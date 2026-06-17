@@ -117,7 +117,7 @@
   }
 
   .nav-link {
-    @apply rounded-md px-3 py-2 text-sm font-medium text-parchment-100/80 transition-colors
+    @apply rounded-md px-2.5 py-1.5 text-[13px] font-medium text-parchment-100/80 transition-colors
       hover:text-gold-light hover:bg-white/5;
   }
   .nav-link-active {
