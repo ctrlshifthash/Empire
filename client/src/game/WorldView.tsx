@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { GameSnapshot, UnitType } from "@shared/types";
-import { UNITS, UNIT_TYPES, RAID_SHIELD_RATIO } from "@shared/gamedata";
+import { UNITS, UNIT_TYPES, raidBlock } from "@shared/gamedata";
 import { AGE_META, fmt, fmtTime } from "../lib/format";
 import { useGame } from "../lib/store";
 import WorldCanvas, { type MarchLine } from "./WorldCanvas";
@@ -90,12 +90,16 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
     return lines;
   }, [outgoingMarches, incomingMarches, coord]);
 
+  // Only list empires you can actually raid right now: bots, plus real players
+  // inside your bracket. The far-weaker are shielded and the far-stronger are
+  // locked until you grow — so as your power/rank climbs, new targets appear.
   const rivals = useMemo(
     () =>
       others
+        .filter((o) => raidBlock(empire.power, o.power, o.isBot) === null)
         .map((o) => ({ ...o, d: dist(empire.tileX, empire.tileY, o.tileX, o.tileY) }))
         .sort((a, b) => a.d - b.d),
-    [others, empire.tileX, empire.tileY],
+    [others, empire.power, empire.tileX, empire.tileY],
   );
 
   const selected = selectedId ? coord.get(selectedId) : null;
@@ -168,19 +172,16 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
               🗡️ Pick an empire to invade
             </div>
             <div className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
-              {rivals.map((r) => {
-                // mirror the server shield: a real player far weaker than you
-                // can't be raided (no farming the weak). Bots always raidable.
-                const shielded = !r.isBot && r.power < empire.power * RAID_SHIELD_RATIO;
-                return (
+              {rivals.length === 0 ? (
+                <div className="px-2 py-6 text-center text-sm text-parchment-300/55">
+                  No empires in your reach right now. Grow your army and rank to unlock tougher targets.
+                </div>
+              ) : (
+                rivals.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => !shielded && setSelectedId(r.id)}
-                    disabled={shielded}
-                    title={shielded ? "Protected — too weak for you to raid" : undefined}
-                    className={`flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors ${
-                      shielded ? "cursor-not-allowed opacity-50" : "hover:border-gold/25 hover:bg-white/5"
-                    }`}
+                    onClick={() => setSelectedId(r.id)}
+                    className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-gold/25 hover:bg-white/5"
                   >
                     <span
                       className="h-7 w-7 shrink-0 rounded-md ring-1 ring-black/40"
@@ -198,18 +199,12 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
                       <div className="text-sm font-semibold text-gold-light">{fmt(r.power)}</div>
                       <div className="text-[10px] text-parchment-300/50">⚔ {r.armySize}</div>
                     </div>
-                    {shielded ? (
-                      <span className="shrink-0 rounded-md bg-emerald-500/20 px-2 py-1 text-[11px] font-semibold text-emerald-300">
-                        🛡 Shielded
-                      </span>
-                    ) : (
-                      <span className="shrink-0 rounded-md bg-blood/30 px-2 py-1 text-[11px] font-semibold text-blood-light">
-                        Invade →
-                      </span>
-                    )}
+                    <span className="shrink-0 rounded-md bg-blood/30 px-2 py-1 text-[11px] font-semibold text-blood-light">
+                      Invade →
+                    </span>
                   </button>
-                );
-              })}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -234,6 +229,14 @@ function TargetPanel({
   const [units, setUnits] = useState<Partial<Record<UnitType, number>>>({});
   const total = UNIT_TYPES.reduce((s, u) => s + (units[u] ?? 0), 0);
   const eta = travelSeconds(distance);
+  // whether this target is raidable from your bracket (matches the server rule)
+  const block = raidBlock(empire.power, target.power, target.isBot);
+  const blockMsg =
+    block === "weak"
+      ? `${target.name} is under protection — too weak for you to raid.`
+      : block === "locked"
+        ? `${target.name} is too powerful to raid yet — grow your army and rank to reach them.`
+        : null;
 
   const setUnit = (u: UnitType, v: number) =>
     setUnits((prev) => ({ ...prev, [u]: Math.max(0, Math.min(empire.army[u], v)) }));
@@ -345,13 +348,13 @@ function TargetPanel({
 
       <button
         className="btn-blood mt-4 w-full py-2.5"
-        disabled={total === 0}
+        disabled={total === 0 || block !== null}
         onClick={() => onAttack(units)}
       >
         ⚔ Invade {target.name} ({total} unit{total === 1 ? "" : "s"})
       </button>
       <p className="mt-2 text-center text-[11px] text-parchment-300/45">
-        Survivors return home with any plunder. Villagers fight poorly — send soldiers.
+        {blockMsg ?? "Survivors return home with any plunder. Villagers fight poorly — send soldiers."}
       </p>
     </div>
   );

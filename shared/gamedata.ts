@@ -639,6 +639,32 @@ export function rankForPower(power: number): Rank {
 export function nextRank(power: number): Rank | null {
   return RANKS.find((r) => r.minPower > power) ?? null;
 }
+export function rankIndex(power: number): number {
+  let idx = 0;
+  RANKS.forEach((r, i) => {
+    if (power >= r.minPower) idx = i;
+  });
+  return idx;
+}
+
+// How many times your own power you can reach UP TO when choosing a raid target.
+// It grows as you climb the ranks, so tougher empires unlock as your army & rank
+// grow. (The lower bound is RAID_SHIELD_RATIO, which protects the weak.)
+export function raidReach(power: number): number {
+  return 1.75 + 0.35 * rankIndex(power); // Peasant ≈1.75× up to Emperor ≈4.2×
+}
+
+export type RaidBlock = "weak" | "locked" | null;
+// Why an attacker can't raid a given target — or null if the raid is allowed.
+// Bots are always raidable. A real player is protected when far weaker than the
+// attacker ("weak" — the shield) and out of reach when far stronger ("locked" —
+// unlocks as the attacker grows).
+export function raidBlock(attackerPower: number, targetPower: number, targetIsBot: boolean): RaidBlock {
+  if (targetIsBot) return null;
+  if (targetPower < RAID_PROTECTION_POWER || targetPower < attackerPower * RAID_SHIELD_RATIO) return "weak";
+  if (targetPower > attackerPower * raidReach(attackerPower)) return "locked";
+  return null;
+}
 
 // ── Token-holder reward tiers ───────────────────────────────────────────────
 // Holders of the game token are sorted into tiers by their share of circulating

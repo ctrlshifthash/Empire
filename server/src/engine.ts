@@ -9,8 +9,7 @@ import {
   MAX_GEAR,
   MAX_ARMOUR,
   MAX_HERO_GEAR,
-  RAID_PROTECTION_POWER,
-  RAID_SHIELD_RATIO,
+  raidBlock,
   RESOURCE_KINDS,
   TC_TRICKLE_PER_LEVEL,
   TRAITS,
@@ -565,16 +564,21 @@ export function actAttack(
   const target = state.empires[targetId];
   if (!target) return { ok: false, error: "Target empire not found." };
   if (target.id === attacker.id) return { ok: false, error: "You cannot attack yourself." };
-  // Protect real players: an under-strength empire can't be raided by someone
-  // far stronger (no farming the weak). Bots are always fair game, and weaker
-  // empires may still strike up at stronger ones. Routed through here for bots
-  // too, so AI raiders respect the same shield.
+  // Bracket matchmaking for real players (bots are always fair game). You can't
+  // farm the far-weaker ("weak" — the shield), and the far-stronger are out of
+  // reach until you grow ("locked"). Routed through here for bots too, so AI
+  // raiders respect the same rules.
   if (!target.isBot) {
-    const tooWeak = target.power < RAID_PROTECTION_POWER || target.power < attacker.power * RAID_SHIELD_RATIO;
-    if (tooWeak)
+    const block = raidBlock(attacker.power, target.power, false);
+    if (block === "weak")
       return {
         ok: false,
         error: `${target.name} is too weak to raid — pick an empire closer to your own strength.`,
+      };
+    if (block === "locked")
+      return {
+        ok: false,
+        error: `${target.name} is too powerful to raid yet — grow your army and rank to reach them.`,
       };
   }
 
@@ -682,9 +686,10 @@ function resolveAttack(march: March, at: number): void {
     return;
   }
 
-  // new-ruler protection: a weak human ruler can't be plundered — the raiding
-  // army simply marches home empty-handed (covers raids already in flight).
-  if (!defender.isBot && defender.power < RAID_PROTECTION_POWER) {
+  // protection for the weak: if the defender has dropped too far below this
+  // attacker to be a legal target, the raiding army marches home empty-handed
+  // (covers raids that were already in flight when the gap opened up).
+  if (raidBlock(attacker.power, defender.power, defender.isBot) === "weak") {
     queueReturn(march, march.units, { wood: 0, food: 0, gold: 0, stone: 0 }, at, attacker);
     return;
   }
