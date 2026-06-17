@@ -16,7 +16,8 @@ export const RESOURCE_KINDS = ["wood", "food", "gold", "stone"] as const;
 
 // Empires below this power are under "new-ruler protection" — they can't be
 // raided, so a fresh or freshly-plundered empire gets room to rebuild.
-export const RAID_PROTECTION_POWER = 200;
+// Set to 0 to disable protection entirely (anyone can be invaded).
+export const RAID_PROTECTION_POWER = 0;
 
 // The town centre always yields a small trickle of every resource per level, so
 // an empire can never be fully soft-locked out of rebuilding its economy.
