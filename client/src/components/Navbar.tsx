@@ -11,6 +11,7 @@ const LINKS = [
   { to: "/governance", label: "Vote" },
   { to: "/guide", label: "Guide" },
   { to: "/docs", label: "Docs" },
+  { to: "/changelog", label: "Updates" },
 ];
 
 const SOCIALS = [
