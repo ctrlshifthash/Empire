@@ -146,6 +146,7 @@ function InventoryRow({ it }: { it: InventoryItem }) {
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-parchment-100">{it.name} <span className="text-parchment-300/50">#{it.serial}</span></div>
           <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(it.rarity) }}>{it.rarity}{it.equipped && " · equipped"}</div>
+          <div className="text-[10px] text-parchment-300/60">{it.effect}</div>
         </div>
         {!it.listed && (
           <button className="chip py-0.5 text-[10px]" onClick={() => equipItem(it.instanceId)}>{it.equipped ? "Unequip" : "Equip"}</button>

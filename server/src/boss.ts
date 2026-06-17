@@ -24,6 +24,8 @@ import type { Army } from "../../shared/combat.ts";
 import type { BossPublic, Empire, WorldBoss } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
 import { recomputePower } from "./engine.ts";
+import { mintItem, randomDropType } from "./market.ts";
+import { marketItem } from "../../shared/gamedata.ts";
 import { now, uid } from "./util.ts";
 
 const RESOURCE_KEYS = ["wood", "food", "gold", "stone"] as const;
@@ -155,6 +157,14 @@ function distributeSpoils(b: WorldBoss): void {
       e,
       `${b.name} is slain! Your spoils: ${coins.toLocaleString()} coins + resources${isTop ? " — TOP DAMAGE bonus!" : ""}.`,
     );
+  }
+
+  // top damage dealer has a shot at a rare relic drop
+  const champ = top ? state.empires[top.empireId] : undefined;
+  if (champ && Math.random() < 0.5) {
+    const typeId = randomDropType();
+    const inst = typeId ? mintItem(champ.id, typeId) : null;
+    if (inst) bossLog(champ, `Boss drop: ${marketItem(typeId!)?.name ?? "a relic"} landed in your inventory!`);
   }
 }
 

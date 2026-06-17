@@ -30,6 +30,8 @@ import {
   rushCost,
   ageAtLeast,
   holderPerksForTier,
+  marketItem,
+  rankIndex,
   type ShopItem,
 } from "../../shared/gamedata.ts";
 import { armySize, resolveBattle, type Army } from "../../shared/combat.ts";
@@ -49,7 +51,7 @@ import { isOnline } from "./presence.ts";
 import { areAllies, alliancePublic } from "./alliances.ts";
 import { bossPublic } from "./boss.ts";
 import { openDuelsPublic, tournamentPublic } from "./arena.ts";
-import { inventoryOf } from "./market.ts";
+import { inventoryOf, mintItem, randomDropType } from "./market.ts";
 import { LOCAL_WORLD, type SkillId, type ToolId } from "../../shared/types.ts";
 import {
   MAX_TIER,
@@ -98,10 +100,37 @@ function log(e: Empire, kind: LogEntry["kind"], text: string): void {
   if (e.log.length > 60) e.log.length = 60;
 }
 
-// In-game holder perks (from the linked wallet's token tier): bigger harvests
-// and faster build/train. No tier (non-holders) → 1× (no change).
-const holderGatherMult = (e: Empire): number => 1 + holderPerksForTier(e.holderTier).gatherPct;
-const holderSpeedMult = (e: Empire): number => 1 - holderPerksForTier(e.holderTier).speedPct;
+// Roll for a marketplace relic drop (used by quests, rank-ups, etc.).
+function dropItem(e: Empire, chance: number): void {
+  if (Math.random() >= chance) return;
+  const typeId = randomDropType();
+  if (!typeId) return;
+  const inst = mintItem(e.id, typeId);
+  if (inst) {
+    const def = marketItem(typeId);
+    log(e, "system", `🎁 A relic dropped: ${def?.name ?? "an item"} — find it in your inventory / market.`);
+  }
+}
+
+// Summed passive effects of an empire's equipped marketplace relics.
+function equippedEffect(e: Empire): { powerBonus: number; gatherPct: number; speedPct: number } {
+  const out = { powerBonus: 0, gatherPct: 0, speedPct: 0 };
+  for (const id of e.equipped ?? []) {
+    const def = marketItem(state.itemInstances[id]?.typeId ?? "");
+    if (!def) continue;
+    out.powerBonus += def.powerBonus ?? 0;
+    out.gatherPct += def.gatherPct ?? 0;
+    out.speedPct += def.speedPct ?? 0;
+  }
+  return out;
+}
+
+// Harvest & speed multipliers from holder tier perks + equipped relics. Non-
+// holders with no relics → 1× (no change). Speed is floored so it can't go ≤0.
+const holderGatherMult = (e: Empire): number =>
+  1 + holderPerksForTier(e.holderTier).gatherPct + equippedEffect(e).gatherPct;
+const holderSpeedMult = (e: Empire): number =>
+  Math.max(0.2, 1 - holderPerksForTier(e.holderTier).speedPct - equippedEffect(e).speedPct);
 
 function awardXp(e: Empire, skill: SkillId, amount: number): void {
   if (amount <= 0) return;
@@ -292,6 +321,7 @@ export function recomputePower(e: Empire): void {
     for (const u of UNIT_TYPES) g += ((e.armoury.weapon[u] ?? 0) + (e.armoury.armour[u] ?? 0)) * 8;
     p += g;
   }
+  p += equippedEffect(e).powerBonus; // equipped relics
   e.power = Math.round(p);
 }
 
@@ -711,6 +741,7 @@ export function actClaimQuest(e: Empire, questId: string): ActionResult {
   if (def.reward.coins) parts.push(`${def.reward.coins} coins`);
   for (const k of RESOURCE_KEYS) if (def.reward[k]) parts.push(`${def.reward[k]} ${k}`);
   log(e, "quest", `Reward claimed: ${parts.join(", ")}.`);
+  dropItem(e, 0.2); // 20% chance of a relic drop on quest completion
   return { ok: true };
 }
 
@@ -924,6 +955,14 @@ function checkAchievements(e: Empire): void {
       const def = ACHIEVEMENTS.find((a) => a.id === id);
       if (def) log(e, "system", `🏅 Achievement unlocked: ${def.name} — ${def.desc}.`);
     }
+  }
+
+  // rank-up relic drop: every time the empire reaches a new renown rank
+  const idx = rankIndex(e.power);
+  if (e.lastRankIdx == null) e.lastRankIdx = idx;
+  else if (idx > e.lastRankIdx) {
+    e.lastRankIdx = idx;
+    dropItem(e, 1); // guaranteed drop on rank-up
   }
 }
 

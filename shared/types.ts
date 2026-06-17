@@ -161,6 +161,8 @@ export interface Empire {
   allianceId?: string;
   // unlocked achievement ids (see ACHIEVEMENTS in gamedata)
   achievements?: string[];
+  // highest renown-rank index reached (for rank-up relic drops)
+  lastRankIdx?: number;
   // number of world-boss kills this empire took part in
   bossKills?: number;
   // holder-tier name (Bronze…Diamond) from the linked wallet's on-chain holdings,
@@ -172,8 +174,15 @@ export interface Empire {
   duelStreak?: number; // current arena win streak
   bestStreak?: number; // best arena win streak
   lastArenaBonusDay?: number; // UTC day index of the last daily-win bonus claimed
-  // equipped marketplace item instance id (cosmetic banner)
-  equippedItem?: string;
+  // equipped marketplace relic instance ids (up to EQUIP_SLOTS); their effects stack
+  equipped?: string[];
+  // lifetime marketplace trading record
+  marketStats?: {
+    bought: number;
+    sold: number;
+    earned: { SOL: number; USDC: number };
+    spent: { SOL: number; USDC: number };
+  };
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────
@@ -503,6 +512,7 @@ export interface InventoryItem {
   serial: number;
   listed: boolean;
   equipped: boolean;
+  effect: string; // human summary of its equipped effects
 }
 
 export interface GameSnapshot {

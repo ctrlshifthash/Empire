@@ -12,12 +12,34 @@ import {
   MARKET_FEE,
   USDC_MINT,
   RARITY_META,
+  EQUIP_SLOTS,
   marketItem,
+  itemEffectSummary,
 } from "../../shared/gamedata.ts";
-import type { ItemInstance, InventoryItem, Listing, ListingPublic, MarketCurrency } from "../../shared/types.ts";
+import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic, MarketCurrency } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
+import { recomputePower } from "./engine.ts";
 import { sharedRpc, treasuryPubkey } from "./rewards.ts";
 import { now, uid } from "./util.ts";
+
+const RARITY_RANK: Record<string, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
+// Set the empire's banner to the highest-rarity equipped relic's colour.
+function refreshEquipBanner(e: Empire): void {
+  let best: { rank: number; banner: string } | null = null;
+  for (const id of e.equipped ?? []) {
+    const def = marketItem(state.itemInstances[id]?.typeId ?? "");
+    if (!def) continue;
+    const rank = RARITY_RANK[def.rarity] ?? 0;
+    if (!best || rank > best.rank) best = { rank, banner: def.banner };
+  }
+  if (best) e.banner = best.banner;
+}
+
+function ensureMarketStats(e: Empire): NonNullable<Empire["marketStats"]> {
+  if (!e.marketStats) e.marketStats = { bought: 0, sold: 0, earned: { SOL: 0, USDC: 0 }, spent: { SOL: 0, USDC: 0 } };
+  return e.marketStats;
+}
 
 const RESERVE_MS = 3 * 60 * 1000; // a buyer reserves a listing for 3 minutes
 
@@ -55,7 +77,7 @@ function isListed(instanceId: string): boolean {
 }
 
 export function inventoryOf(empireId: string): InventoryItem[] {
-  const equipped = state.empires[empireId]?.equippedItem;
+  const equipped = state.empires[empireId]?.equipped ?? [];
   return Object.values(state.itemInstances)
     .filter((it) => it.ownerId === empireId)
     .sort((a, b) => a.serial - b.serial)
@@ -69,7 +91,8 @@ export function inventoryOf(empireId: string): InventoryItem[] {
         rarity: def?.rarity ?? "common",
         serial: it.serial,
         listed: isListed(it.id),
-        equipped: equipped === it.id,
+        equipped: equipped.includes(it.id),
+        effect: def ? itemEffectSummary(def) : "Collectible",
       };
     });
 }
@@ -143,7 +166,10 @@ export function listItem(
   };
   state.listings[listing.id] = listing;
   // a listed item can't stay equipped
-  if (seller?.equippedItem === instanceId) seller.equippedItem = undefined;
+  if (seller?.equipped?.includes(instanceId)) {
+    seller.equipped = seller.equipped.filter((x) => x !== instanceId);
+    recomputePower(seller);
+  }
   scheduleSave(0);
   return { ok: true, members: [empireId] };
 }
@@ -162,13 +188,17 @@ export function equipItem(empireId: string, instanceId: string): MarketResult {
   const e = state.empires[empireId];
   const inst = state.itemInstances[instanceId];
   if (!e || !inst || inst.ownerId !== empireId) return { ok: false, error: "You don't own that item." };
-  if (e.equippedItem === instanceId) {
-    e.equippedItem = undefined; // toggle off
+  if (isListed(instanceId)) return { ok: false, error: "Delist it before equipping." };
+  e.equipped = e.equipped ?? [];
+  const i = e.equipped.indexOf(instanceId);
+  if (i >= 0) {
+    e.equipped.splice(i, 1); // toggle off
   } else {
-    e.equippedItem = instanceId;
-    const def = marketItem(inst.typeId);
-    if (def) e.banner = def.banner; // cosmetic flex on the map / leaderboard
+    if (e.equipped.length >= EQUIP_SLOTS) return { ok: false, error: `You can equip at most ${EQUIP_SLOTS} relics.` };
+    e.equipped.push(instanceId);
   }
+  refreshEquipBanner(e);
+  recomputePower(e); // equipped power bonus may have changed
   scheduleSave(0);
   return { ok: true, members: [empireId] };
 }
@@ -282,6 +312,16 @@ export async function buyListing(listingId: string, buyer: string, signature: st
   l.status = "sold";
   delete state.listings[listingId];
   state.marketSignatures[signature] = { listingId, buyer, at: now() };
+
+  // trading record: buyer spent the price; seller earned it minus the fee
+  const bs = ensureMarketStats(buyerEmpire);
+  bs.bought += 1;
+  bs.spent[l.currency] += l.price;
+  if (sellerEmpire) {
+    const ss = ensureMarketStats(sellerEmpire);
+    ss.sold += 1;
+    ss.earned[l.currency] += l.price * (1 - MARKET_FEE);
+  }
 
   const def = marketItem(l.typeId);
   buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for ${l.price} ${l.currency}.` });

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import RewardsPanel from "../game/RewardsPanel";
+import InventoryDashboard from "../game/InventoryDashboard";
 
 // Full-page player dashboard: empire record + Solana token rewards.
 export default function DashboardPage() {
@@ -14,6 +15,7 @@ export default function DashboardPage() {
         className="relative mx-auto w-full max-w-4xl"
       >
         <RewardsPanel />
+        <InventoryDashboard />
       </motion.div>
     </div>
   );
