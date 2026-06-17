@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSignAndSendTransaction, useWallets } from "@privy-io/react-auth/solana";
 import type { ListingPublic, InventoryItem } from "@shared/types";
-import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, nextRarity } from "@shared/gamedata";
+import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, RELIC_CAP, nextRarity } from "@shared/gamedata";
 import { privyConfigured, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
@@ -144,8 +144,12 @@ function Market() {
 
       {/* inventory */}
       <div>
-        <h2 className="font-display text-lg font-semibold">Your inventory</h2>
-        <p className="mb-3 text-xs text-parchment-300/55">Tap <b className="text-parchment-200">Sell</b> on a relic, set a price &amp; currency, and it goes up for sale.</p>
+        <h2 className="font-display text-lg font-semibold">
+          Your inventory <span className={inventory.length >= RELIC_CAP ? "text-blood-light" : "text-parchment-300/45"}>({inventory.length}/{RELIC_CAP})</span>
+        </h2>
+        <p className="mb-3 text-xs text-parchment-300/55">
+          Hold up to {RELIC_CAP}. {inventory.length >= RELIC_CAP ? "Full — sell or forge to make room. " : ""}Tap <b className="text-parchment-200">Sell</b> to list a relic.
+        </p>
         <div className="space-y-2">
           {inventory.length === 0 && <div className="panel p-6 text-center text-sm text-parchment-300/55">No relics yet — win tournaments, bosses &amp; quests, or rank up to earn drops.</div>}
           {inventory.map((it) => <InventoryRow key={it.instanceId} it={it} />)}
@@ -226,9 +230,14 @@ function InventoryRow({ it }: { it: InventoryItem }) {
           <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(it.rarity) }}>{it.rarity}{it.equipped && " · equipped"}</div>
           <div className="text-[10px] text-parchment-300/60">{it.effect}</div>
         </div>
-        {!it.listed && (
-          <button className="chip py-0.5 text-[10px]" onClick={() => equipItem(it.instanceId)}>{it.equipped ? "Unequip" : "Equip"}</button>
-        )}
+        {!it.listed &&
+          (it.equipped ? (
+            <button className="chip py-0.5 text-[10px]" onClick={() => equipItem(it.instanceId)}>Unequip</button>
+          ) : it.canEquip ? (
+            <button className="chip py-0.5 text-[10px]" onClick={() => equipItem(it.instanceId)}>Equip</button>
+          ) : (
+            <button className="chip py-0.5 text-[10px] opacity-50" disabled title={`Reach ${it.reqRank} to equip`}>🔒 {it.reqRank}</button>
+          ))}
       </div>
       {it.listed ? (
         <button className="btn-ghost btn-sm mt-2 w-full" onClick={() => delistItem(it.instanceId)}>Listed — withdraw</button>

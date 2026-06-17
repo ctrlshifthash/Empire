@@ -514,6 +514,8 @@ export interface InventoryItem {
   listed: boolean;
   equipped: boolean;
   effect: string; // human summary of its equipped effects
+  canEquip: boolean; // whether your rank is high enough to equip it
+  reqRank: string; // rank needed to equip this rarity
 }
 
 export interface GameSnapshot {

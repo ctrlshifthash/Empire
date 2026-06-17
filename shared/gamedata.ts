@@ -930,6 +930,14 @@ export interface MarketItemType {
   solPct?: number; // boosts your SOL accrual rate (token holders only)
 }
 export const EQUIP_SLOTS = 3; // how many relics you can equip at once
+export const RELIC_CAP = 15; // max relics an empire can HOLD (forces choices / selling)
+// Minimum renown-rank index needed to EQUIP a relic of each rarity — you unlock
+// the power as you climb (you can own/trade them any time). Rank indices come
+// from RANKS (Peasant 0 … Emperor 7).
+export const EQUIP_MIN_RANK: Record<string, number> = { common: 0, rare: 1, epic: 3, legendary: 5 };
+export function minRankNameForRarity(rarity: string): string {
+  return RANKS[EQUIP_MIN_RANK[rarity] ?? 0]?.name ?? "Peasant";
+}
 
 export const MARKET_ITEMS: MarketItemType[] = [
   // legendary — 10 each, biggest boosts (incl. the rare SOL-yield relics)

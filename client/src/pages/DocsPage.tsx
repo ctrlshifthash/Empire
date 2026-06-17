@@ -298,6 +298,8 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           <li><strong>Buy &amp; sell in SOL or USDC</strong> — payment goes <strong>straight from buyer to seller</strong>, wallet-to-wallet, verified on-chain. A small {Math.round(0.025 * 100)}% fee goes to the treasury.</li>
           <li><strong>No custody</strong> — the platform never holds your funds; it only verifies the payment, then transfers the item to your inventory.</li>
           <li><strong>Safe trades</strong> — a listed item is escrow-locked, a pending buy reserves it briefly so it can't be double-sold, and each payment is single-use.</li>
+          <li><strong>Unlocked by rank</strong> — you can own &amp; trade any relic any time, but you can only <strong>equip</strong> it once you've earned the rank: Common (anyone), Rare (Footman), Epic (Knight), Legendary (Warlord). So power is something you grow into, not buy your way to.</li>
+          <li><strong>Hold up to {15}</strong> — your inventory is capped, so you can't hoard endless power; when it's full you choose what to keep, sell or forge. (Burning relics for SOL is coming.)</li>
           <li>Your inventory, equipped relics and trading P/L (SOL &amp; USDC) all show on your <Link to="/dashboard" className="text-gold-light hover:underline">dashboard</Link>. A connected wallet is needed to trade.</li>
         </ul>
       </>

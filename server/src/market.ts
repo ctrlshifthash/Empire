@@ -16,9 +16,13 @@ import {
   FUSE_COUNT,
   FUSE_COINS,
   CRAFT_COST,
+  RELIC_CAP,
+  EQUIP_MIN_RANK,
   marketItem,
   itemEffectSummary,
   nextRarity,
+  minRankNameForRarity,
+  rankIndex,
 } from "../../shared/gamedata.ts";
 import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic, MarketCurrency } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
@@ -47,10 +51,18 @@ function ensureMarketStats(e: Empire): NonNullable<Empire["marketStats"]> {
 
 const RESERVE_MS = 3 * 60 * 1000; // a buyer reserves a listing for 3 minutes
 
+// number of relics an empire currently holds (counts toward the cap)
+export function inventoryCount(empireId: string): number {
+  let n = 0;
+  for (const it of Object.values(state.itemInstances)) if (it.ownerId === empireId) n++;
+  return n;
+}
+
 // ── minting (items enter circulation via drops / admin) ──────────────────────
 export function mintItem(empireId: string, typeId: string): ItemInstance | null {
   const def = marketItem(typeId);
   if (!def) return null;
+  if (empireId !== "house" && inventoryCount(empireId) >= RELIC_CAP) return null; // inventory full
   const minted = state.mintCounts[typeId] ?? 0;
   if (minted >= def.maxSupply) return null; // sold out forever
   const serial = minted + 1;
@@ -81,22 +93,27 @@ function isListed(instanceId: string): boolean {
 }
 
 export function inventoryOf(empireId: string): InventoryItem[] {
-  const equipped = state.empires[empireId]?.equipped ?? [];
+  const e = state.empires[empireId];
+  const equipped = e?.equipped ?? [];
+  const myRank = rankIndex(e?.power ?? 0);
   return Object.values(state.itemInstances)
     .filter((it) => it.ownerId === empireId)
     .sort((a, b) => a.serial - b.serial)
     .map((it) => {
       const def = marketItem(it.typeId);
+      const rarity = def?.rarity ?? "common";
       return {
         instanceId: it.id,
         typeId: it.typeId,
         name: def?.name ?? it.typeId,
         icon: def?.icon ?? "📦",
-        rarity: def?.rarity ?? "common",
+        rarity,
         serial: it.serial,
         listed: isListed(it.id),
         equipped: equipped.includes(it.id),
         effect: def ? itemEffectSummary(def) : "Collectible",
+        canEquip: myRank >= (EQUIP_MIN_RANK[rarity] ?? 0),
+        reqRank: minRankNameForRarity(rarity),
       };
     });
 }
@@ -252,6 +269,9 @@ export function equipItem(empireId: string, instanceId: string): MarketResult {
     e.equipped.splice(i, 1); // toggle off
   } else {
     if (e.equipped.length >= EQUIP_SLOTS) return { ok: false, error: `You can equip at most ${EQUIP_SLOTS} relics.` };
+    const rarity = marketItem(inst.typeId)?.rarity ?? "common";
+    if (rankIndex(e.power) < (EQUIP_MIN_RANK[rarity] ?? 0))
+      return { ok: false, error: `Reach ${minRankNameForRarity(rarity)} rank to equip ${rarity} relics.` };
     e.equipped.push(instanceId);
   }
   refreshEquipBanner(e);
@@ -287,6 +307,10 @@ export function reserveListing(listingId: string, buyer: string): {
     return { ok: false, error: "Someone is buying this right now — try again in a moment." };
   const treasury = treasuryPubkey();
   if (!treasury) return { ok: false, error: "Marketplace not configured." };
+  // make sure the buyer has room before they pay
+  const buyerUser = Object.values(state.users).find((u) => u.externalId === buyer);
+  if (buyerUser && inventoryCount(buyerUser.empireId) >= RELIC_CAP)
+    return { ok: false, error: `Your inventory is full (${RELIC_CAP}) — sell or forge a relic to make room first.` };
   l.reservedBy = buyer;
   l.reservedUntil = now() + RESERVE_MS;
   scheduleSave();
@@ -433,6 +457,7 @@ export function fuseRelics(empireId: string, rarity: string): MarketResult {
 export function craftRelic(empireId: string): MarketResult {
   const e = state.empires[empireId];
   if (!e) return { ok: false, error: "No empire." };
+  if (inventoryCount(empireId) >= RELIC_CAP) return { ok: false, error: `Inventory full (${RELIC_CAP}) — sell, forge or burn a relic first.` };
   const c = CRAFT_COST;
   if (e.coins < c.coins || e.resources.wood < c.wood || e.resources.food < c.food || e.resources.gold < c.gold || e.resources.stone < c.stone)
     return { ok: false, error: "Not enough materials & coins to craft a relic." };

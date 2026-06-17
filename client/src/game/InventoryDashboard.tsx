@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { RARITY_META, EQUIP_SLOTS } from "@shared/gamedata";
+import { RARITY_META, EQUIP_SLOTS, RELIC_CAP } from "@shared/gamedata";
 import { marketItem } from "@shared/gamedata";
 import { useGame } from "../lib/store";
 
@@ -23,7 +23,7 @@ export default function InventoryDashboard() {
 
       {/* trading stats */}
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Items owned" value={String(inventory.length)} />
+        <Stat label="Relics held" value={`${inventory.length}/${RELIC_CAP}`} />
         <Stat label="Equipped" value={`${equippedCount}/${EQUIP_SLOTS}`} />
         <Stat label="Bought" value={String(stats?.bought ?? 0)} />
         <Stat label="Sold" value={String(stats?.sold ?? 0)} />
@@ -65,7 +65,7 @@ export default function InventoryDashboard() {
                       {it.name} <span className="text-parchment-300/45">#{it.serial}</span>
                     </div>
                     <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(it.rarity) }}>
-                      {it.rarity}{it.equipped && " · equipped"}{it.listed && " · listed"}
+                      {it.rarity}{it.equipped && " · equipped"}{it.listed && " · listed"}{!it.equipped && !it.canEquip && ` · 🔒 ${it.reqRank}`}
                     </div>
                     <div className="text-[11px] text-parchment-300/65">{it.effect}{def && def.maxSupply ? ` · ${def.maxSupply} ever` : ""}</div>
                   </div>
