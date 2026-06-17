@@ -218,7 +218,7 @@ function InventoryRow({ it }: { it: InventoryItem }) {
   const delistItem = useGame((s) => s.delistItem);
   const equipItem = useGame((s) => s.equipItem);
   const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState<"SOL" | "USDC">("SOL");
+  const [currency, setCurrency] = useState<"SOL" | "USDC">("USDC");
   const [selling, setSelling] = useState(false);
 
   return (

@@ -144,7 +144,10 @@ export default function LeaderboardPage() {
                       <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 align-middle" />
                     )}
                   </div>
-                  <div className="text-xs text-parchment-300/55">⚜ {rankForPower(r.power).name}</div>
+                  <div className="text-xs text-parchment-300/55">
+                    ⚜ {rankForPower(r.power).name}
+                    {r.solEarned > 0 && <span className="text-gold-light/80"> · ◎ {r.solEarned.toFixed(3)} SOL earned</span>}
+                  </div>
                 </div>
               </div>
               <div

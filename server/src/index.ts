@@ -193,16 +193,24 @@ app.get("/api/stats", (_req, res) => {
 
 // Public leaderboard.
 app.get("/api/leaderboard", (_req, res) => {
+  // map each empire to its linked wallet so we can show lifetime SOL earned
+  const walletByEmpire: Record<string, string | undefined> = {};
+  for (const u of Object.values(state.users)) walletByEmpire[u.empireId] = u.externalId;
   const rows = Object.values(state.empires)
-    .map((e) => ({
-      name: e.name,
-      banner: e.banner,
-      isBot: e.isBot,
-      age: e.age,
-      power: e.power,
-      raidsWon: e.raidsWon,
-      online: e.isBot ? false : onlineEmpires.has(e.id),
-    }))
+    .map((e) => {
+      const wallet = walletByEmpire[e.id];
+      const claimed = wallet ? state.rewards[wallet]?.totalClaimed ?? 0 : 0;
+      return {
+        name: e.name,
+        banner: e.banner,
+        isBot: e.isBot,
+        age: e.age,
+        power: e.power,
+        raidsWon: e.raidsWon,
+        online: e.isBot ? false : onlineEmpires.has(e.id),
+        solEarned: claimed / 1e9, // lifetime SOL claimed by the linked wallet
+      };
+    })
     .sort((a, b) => b.power - a.power)
     .slice(0, 25);
   res.json({ ok: true, rows });

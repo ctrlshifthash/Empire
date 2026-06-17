@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Improvement", title: "Market in USDC + SOL on leaderboard", desc: "Relics are now priced in dollars (USDC) by default, repriced to match each relic's utility. The leaderboard shows each player's lifetime SOL earned." },
       { tag: "Feature", title: "Rank-gated relics + inventory cap", desc: "You unlock the power to equip rarer relics as you climb the ranks (Common → Rare → Epic → Legendary), and you can hold up to 15 — so you choose what to keep, sell or forge instead of hoarding. (Burn-for-SOL coming.)" },
       { tag: "Feature", title: "The Forge", desc: "Combine 3 relics of a rarity into a random one tier up (inputs burned), or craft a relic from raw materials. A deflationary sink that keeps relics scarce & in demand. Plus 6 new relics for variety and a 'how to collect' guide." },
       { tag: "Feature", title: "Relics that earn SOL", desc: "The rarest relics now grant a direct SOL-yield boost when equipped (bigger slice of the daily pool) — making Legendaries genuinely worth real money. Starter market re-listed in SOL." },

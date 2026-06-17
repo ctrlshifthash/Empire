@@ -76,6 +76,7 @@ export const api = {
         power: number;
         raidsWon: number;
         online: boolean;
+        solEarned: number;
       }>;
     }>("/api/leaderboard"),
 };

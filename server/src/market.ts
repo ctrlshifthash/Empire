@@ -144,7 +144,7 @@ export function activeListings(): ListingPublic[] {
 // Seed the Bazaar with starter "house" listings (proceeds go to the treasury) so
 // it's never empty. Versioned so we can refresh the starter set; re-seeding clears
 // the previous unsold house items/listings and frees their supply back.
-const MARKET_SEED_VERSION = 2;
+const MARKET_SEED_VERSION = 3;
 export function seedMarket(): void {
   if ((state.mintCounts.__seedV ?? 0) === MARKET_SEED_VERSION) return;
   // clear any previous house items + listings (free their supply)
@@ -157,20 +157,24 @@ export function seedMarket(): void {
   for (const l of Object.values(state.listings)) if (l.sellerId === "house") delete state.listings[l.id];
   const treasury = treasuryPubkey();
   if (!treasury) return; // need the treasury wallet to receive payment (retry next boot)
-  // listed in SOL (sellers can list in SOL or USDC; buyers pay the listing currency)
+  // Priced in USDC (dollars), scaled to each relic's utility & scarcity — starter
+  // anchors; players set the real price by supply & demand from here.
   const seeds: { typeId: string; price: number; currency: MarketCurrency }[] = [
-    { typeId: "iron_chalice", price: 0.02, currency: "SOL" },
-    { typeId: "bronze_medallion", price: 0.025, currency: "SOL" },
-    { typeId: "oak_charm", price: 0.018, currency: "SOL" },
-    { typeId: "wolf_totem", price: 0.08, currency: "SOL" },
-    { typeId: "silver_fang", price: 0.07, currency: "SOL" },
-    { typeId: "emerald_idol", price: 0.09, currency: "SOL" },
-    { typeId: "runic_anvil", price: 0.075, currency: "SOL" },
-    { typeId: "frost_aegis", price: 0.3, currency: "SOL" },
-    { typeId: "storm_crown", price: 0.28, currency: "SOL" },
-    { typeId: "obsidian_blade", price: 0.35, currency: "SOL" },
-    { typeId: "titan_heart", price: 1.2, currency: "SOL" },
-    { typeId: "eternal_crown", price: 1.5, currency: "SOL" },
+    { typeId: "iron_chalice", price: 2, currency: "USDC" },
+    { typeId: "lucky_coin", price: 3, currency: "USDC" },
+    { typeId: "oak_charm", price: 2, currency: "USDC" },
+    { typeId: "wolf_totem", price: 8, currency: "USDC" },
+    { typeId: "silver_fang", price: 7, currency: "USDC" },
+    { typeId: "blood_ruby", price: 12, currency: "USDC" },
+    { typeId: "merchants_seal", price: 10, currency: "USDC" },
+    { typeId: "frost_aegis", price: 35, currency: "USDC" },
+    { typeId: "storm_crown", price: 30, currency: "USDC" },
+    { typeId: "warlords_pennant", price: 45, currency: "USDC" },
+    { typeId: "obsidian_blade", price: 40, currency: "USDC" },
+    { typeId: "harvest_crown", price: 38, currency: "USDC" },
+    { typeId: "titan_heart", price: 150, currency: "USDC" },
+    { typeId: "kings_ransom", price: 180, currency: "USDC" },
+    { typeId: "eternal_crown", price: 200, currency: "USDC" },
   ];
   for (const s of seeds) {
     const inst = mintItem("house", s.typeId);
