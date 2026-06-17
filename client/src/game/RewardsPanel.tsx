@@ -231,6 +231,11 @@ export default function RewardsPanel() {
                 <b className="text-gold-light">{(status.loyaltyMult ?? 1).toFixed(2)}×</b>{" "}
                 <span className="text-parchment-300/55">({Math.floor(status.loyaltyDays ?? 0)}d held)</span>
               </span>
+              {(status.relicBoost ?? 1) > 1 && (
+                <span title="Boost from equipped marketplace relics.">
+                  🏺 Relic boost: <b className="text-gold-light">{(status.relicBoost ?? 1).toFixed(2)}×</b>
+                </span>
+              )}
               {holds && (
                 <span title="In-game perks from your holder tier, applied to your empire.">
                   🏰 Holder perks:{" "}

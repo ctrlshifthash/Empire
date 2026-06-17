@@ -927,22 +927,23 @@ export interface MarketItemType {
   powerBonus?: number; // flat power (→ higher rank → bigger SOL share)
   gatherPct?: number; // bonus harvest yield
   speedPct?: number; // faster build & train
+  solPct?: number; // boosts your SOL accrual rate (token holders only)
 }
 export const EQUIP_SLOTS = 3; // how many relics you can equip at once
 
 export const MARKET_ITEMS: MarketItemType[] = [
-  // legendary — 10 each, biggest boosts
-  { id: "eternal_crown", name: "Eternal Crown", icon: "👑", rarity: "legendary", maxSupply: 10, banner: "#e8c75a", desc: "The crown of the first emperor. Ten will ever exist.", powerBonus: 1000, gatherPct: 0.15 },
-  { id: "dragon_sigil", name: "Dragon Sigil", icon: "🐉", rarity: "legendary", maxSupply: 10, banner: "#c0392b", desc: "Mark of the dragon lords.", powerBonus: 1200 },
-  { id: "titan_heart", name: "Titan Heart", icon: "💗", rarity: "legendary", maxSupply: 10, banner: "#8e44ad", desc: "Still beating after a thousand years.", powerBonus: 700, speedPct: 0.3 },
+  // legendary — 10 each, biggest boosts (incl. the rare SOL-yield relics)
+  { id: "eternal_crown", name: "Eternal Crown", icon: "👑", rarity: "legendary", maxSupply: 10, banner: "#e8c75a", desc: "The crown of the first emperor. Ten will ever exist.", powerBonus: 1000, gatherPct: 0.15, solPct: 0.2 },
+  { id: "dragon_sigil", name: "Dragon Sigil", icon: "🐉", rarity: "legendary", maxSupply: 10, banner: "#c0392b", desc: "Mark of the dragon lords.", powerBonus: 1200, solPct: 0.25 },
+  { id: "titan_heart", name: "Titan Heart", icon: "💗", rarity: "legendary", maxSupply: 10, banner: "#8e44ad", desc: "Still beating after a thousand years.", powerBonus: 700, speedPct: 0.3, solPct: 0.15 },
   // epic — 50 each
-  { id: "obsidian_blade", name: "Obsidian Blade", icon: "🗡️", rarity: "epic", maxSupply: 50, banner: "#2c3e50", desc: "Forged in a dead volcano.", powerBonus: 450 },
-  { id: "phoenix_banner", name: "Phoenix Banner", icon: "🔥", rarity: "epic", maxSupply: 50, banner: "#d35400", desc: "Rises again from every defeat.", gatherPct: 0.3 },
-  { id: "storm_crown", name: "Storm Crown", icon: "⚡", rarity: "epic", maxSupply: 50, banner: "#2980b9", desc: "Hums with caged lightning.", powerBonus: 200, speedPct: 0.22 },
-  { id: "frost_aegis", name: "Frost Aegis", icon: "🛡️", rarity: "epic", maxSupply: 50, banner: "#5a8fd8", desc: "Never thaws, never breaks.", powerBonus: 380, gatherPct: 0.08 },
+  { id: "obsidian_blade", name: "Obsidian Blade", icon: "🗡️", rarity: "epic", maxSupply: 50, banner: "#2c3e50", desc: "Forged in a dead volcano.", powerBonus: 450, solPct: 0.1 },
+  { id: "phoenix_banner", name: "Phoenix Banner", icon: "🔥", rarity: "epic", maxSupply: 50, banner: "#d35400", desc: "Rises again from every defeat.", gatherPct: 0.3, solPct: 0.1 },
+  { id: "storm_crown", name: "Storm Crown", icon: "⚡", rarity: "epic", maxSupply: 50, banner: "#2980b9", desc: "Hums with caged lightning.", powerBonus: 200, speedPct: 0.22, solPct: 0.08 },
+  { id: "frost_aegis", name: "Frost Aegis", icon: "🛡️", rarity: "epic", maxSupply: 50, banner: "#5a8fd8", desc: "Never thaws, never breaks.", powerBonus: 380, gatherPct: 0.08, solPct: 0.08 },
   // rare — 250 each
-  { id: "wolf_totem", name: "Wolf Totem", icon: "🐺", rarity: "rare", maxSupply: 250, banner: "#7f8c8d", desc: "Token of the pack-bound clans.", gatherPct: 0.16 },
-  { id: "ivory_horn", name: "Ivory Horn", icon: "📯", rarity: "rare", maxSupply: 250, banner: "#ecf0f1", desc: "Its call rallies a thousand spears.", powerBonus: 160 },
+  { id: "wolf_totem", name: "Wolf Totem", icon: "🐺", rarity: "rare", maxSupply: 250, banner: "#7f8c8d", desc: "Token of the pack-bound clans.", gatherPct: 0.16, solPct: 0.03 },
+  { id: "ivory_horn", name: "Ivory Horn", icon: "📯", rarity: "rare", maxSupply: 250, banner: "#ecf0f1", desc: "Its call rallies a thousand spears.", powerBonus: 160, solPct: 0.03 },
   { id: "silver_fang", name: "Silver Fang", icon: "🦷", rarity: "rare", maxSupply: 250, banner: "#bdc3c7", desc: "A relic blade that never dulls.", powerBonus: 110, gatherPct: 0.06 },
   { id: "emerald_idol", name: "Emerald Idol", icon: "🟢", rarity: "rare", maxSupply: 250, banner: "#27ae60", desc: "The harvest god, palm-sized.", gatherPct: 0.2 },
   { id: "runic_anvil", name: "Runic Anvil", icon: "⚒️", rarity: "rare", maxSupply: 250, banner: "#34495e", desc: "Builds itself while you sleep.", speedPct: 0.18 },
@@ -958,6 +959,7 @@ export function itemEffectSummary(m: MarketItemType): string {
   if (m.powerBonus) parts.push(`+${m.powerBonus} power`);
   if (m.gatherPct) parts.push(`+${Math.round(m.gatherPct * 100)}% gather`);
   if (m.speedPct) parts.push(`+${Math.round(m.speedPct * 100)}% speed`);
+  if (m.solPct) parts.push(`+${Math.round(m.solPct * 100)}% SOL`);
   return parts.join(" · ") || "Collectible";
 }
 export const MARKET_FEE = 0.025; // 2.5% of the sale, to the treasury

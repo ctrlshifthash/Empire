@@ -21,7 +21,7 @@ import {
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
-import { rewardTier, nextRewardTier, rankForPower } from "../../shared/gamedata.ts";
+import { rewardTier, nextRewardTier, rankForPower, marketItem } from "../../shared/gamedata.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
@@ -119,6 +119,17 @@ function playBonus(address: string): { mult: number; rank: string } {
   return { mult: r.gatherMult, rank: r.name };
 }
 
+// Equipped relics with a SOL effect boost the wallet's accrual rate (a bigger
+// slice of the fixed daily pool — never extra emission).
+function relicSolMult(address: string): number {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  if (!empire?.equipped) return 1;
+  let pct = 0;
+  for (const id of empire.equipped) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
+  return 1 + pct;
+}
+
 // ── Holder perks (in-game) ───────────────────────────────────────────────────
 // Cache the wallet's holder-tier name onto its linked empire so the engine can
 // grant in-game perks. Only actual holders (balance > 0) get a tier.
@@ -201,6 +212,7 @@ export interface RewardStatus {
   playRank: string; // the linked empire's renown rank
   loyaltyDays: number; // consecutive days held without selling (Diamond Hands)
   loyaltyMult: number; // accrual multiplier from the hold streak
+  relicBoost: number; // accrual multiplier from equipped relics
   dailySol: number; // estimated SOL/day for this wallet
   claimableSol: number; // accrued since the last claim
   totalClaimedSol: number;
@@ -226,7 +238,8 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const rec = ensureRecord(address, holdings.balance > 0);
   const loyaltyDays = updateLoyalty(rec, holdings.balance);
   const loyaltyMult = loyaltyMultiplier(loyaltyDays);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult * loyaltyMult;
+  const relicMult = relicSolMult(address);
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult * loyaltyMult * relicMult;
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
   // you can only ever claim what's left in today's shared pool
@@ -245,6 +258,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     playRank: play.rank,
     loyaltyDays,
     loyaltyMult,
+    relicBoost: relicMult,
     dailySol,
     claimableSol,
     totalClaimedSol: (rec.totalClaimed || 0) / LAMPORTS_PER_SOL,
@@ -313,7 +327,7 @@ export async function claim(address: string): Promise<ClaimResult> {
 
   const m = multiplier(holdings.sharePct);
   const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult * loyaltyMult;
+  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult * loyaltyMult * relicSolMult(address);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const claimSol = dailySol * (elapsed / DAY_MS);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };

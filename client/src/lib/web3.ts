@@ -20,6 +20,7 @@ export interface RewardStatus {
   playRank: string;
   loyaltyDays: number;
   loyaltyMult: number;
+  relicBoost: number;
   dailySol: number;
   claimableSol: number;
   totalClaimedSol: number;
