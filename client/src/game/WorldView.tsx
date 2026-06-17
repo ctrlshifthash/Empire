@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { GameSnapshot, UnitType } from "@shared/types";
-import { UNITS, UNIT_TYPES } from "@shared/gamedata";
+import { UNITS, UNIT_TYPES, RAID_SHIELD_RATIO } from "@shared/gamedata";
 import { AGE_META, fmt, fmtTime } from "../lib/format";
 import { useGame } from "../lib/store";
 import WorldCanvas, { type MarchLine } from "./WorldCanvas";
@@ -168,33 +168,48 @@ export default function WorldView({ snapshot }: { snapshot: GameSnapshot }) {
               🗡️ Pick an empire to invade
             </div>
             <div className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
-              {rivals.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => setSelectedId(r.id)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-gold/25 hover:bg-white/5"
-                >
-                  <span
-                    className="h-7 w-7 shrink-0 rounded-md ring-1 ring-black/40"
-                    style={{ background: r.banner }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {r.name} {r.online && !r.isBot && <span className="text-emerald-400">●</span>}
+              {rivals.map((r) => {
+                // mirror the server shield: a real player far weaker than you
+                // can't be raided (no farming the weak). Bots always raidable.
+                const shielded = !r.isBot && r.power < empire.power * RAID_SHIELD_RATIO;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => !shielded && setSelectedId(r.id)}
+                    disabled={shielded}
+                    title={shielded ? "Protected — too weak for you to raid" : undefined}
+                    className={`flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors ${
+                      shielded ? "cursor-not-allowed opacity-50" : "hover:border-gold/25 hover:bg-white/5"
+                    }`}
+                  >
+                    <span
+                      className="h-7 w-7 shrink-0 rounded-md ring-1 ring-black/40"
+                      style={{ background: r.banner }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {r.name} {r.online && !r.isBot && <span className="text-emerald-400">●</span>}
+                      </div>
+                      <div className="text-xs text-parchment-300/55">
+                        {AGE_META[r.age].short} · {r.rank ?? "Ruler"} · {r.d} tiles
+                      </div>
                     </div>
-                    <div className="text-xs text-parchment-300/55">
-                      {AGE_META[r.age].short} · {r.rank ?? "Ruler"} · {r.d} tiles
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-gold-light">{fmt(r.power)}</div>
+                      <div className="text-[10px] text-parchment-300/50">⚔ {r.armySize}</div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gold-light">{fmt(r.power)}</div>
-                    <div className="text-[10px] text-parchment-300/50">⚔ {r.armySize}</div>
-                  </div>
-                  <span className="shrink-0 rounded-md bg-blood/30 px-2 py-1 text-[11px] font-semibold text-blood-light">
-                    Invade →
-                  </span>
-                </button>
-              ))}
+                    {shielded ? (
+                      <span className="shrink-0 rounded-md bg-emerald-500/20 px-2 py-1 text-[11px] font-semibold text-emerald-300">
+                        🛡 Shielded
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded-md bg-blood/30 px-2 py-1 text-[11px] font-semibold text-blood-light">
+                        Invade →
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

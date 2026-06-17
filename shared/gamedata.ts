@@ -16,8 +16,17 @@ export const RESOURCE_KINDS = ["wood", "food", "gold", "stone"] as const;
 
 // Empires below this power are under "new-ruler protection" — they can't be
 // raided, so a fresh or freshly-plundered empire gets room to rebuild.
-// Set to 0 to disable protection entirely (anyone can be invaded).
+// Set to 0 to disable the flat floor entirely (the mismatch shield below still
+// applies).
 export const RAID_PROTECTION_POWER = 0;
+
+// Mismatch shield: a real player can only be raided by an empire whose power is
+// at most 1/RAID_SHIELD_RATIO times theirs. In other words a target must be at
+// least this fraction of the attacker's power to be a legal target — so the
+// strong can't farm the weak. Weaker empires may still "punch up" at stronger
+// ones, and bots are always fair game. Raise toward 1 for tighter brackets,
+// lower toward 0 to loosen (0 = no shield).
+export const RAID_SHIELD_RATIO = 0.5;
 
 // The town centre always yields a small trickle of every resource per level, so
 // an empire can never be fully soft-locked out of rebuilding its economy.

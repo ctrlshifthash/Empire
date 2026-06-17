@@ -9,6 +9,7 @@ import {
   MAX_GEAR,
   MAX_HERO_GEAR,
   RAID_PROTECTION_POWER,
+  RAID_SHIELD_RATIO,
   RESOURCE_KINDS,
   TC_TRICKLE_PER_LEVEL,
   TRAITS,
@@ -562,8 +563,18 @@ export function actAttack(
   const target = state.empires[targetId];
   if (!target) return { ok: false, error: "Target empire not found." };
   if (target.id === attacker.id) return { ok: false, error: "You cannot attack yourself." };
-  if (!target.isBot && target.power < RAID_PROTECTION_POWER)
-    return { ok: false, error: `${target.name} is under new-ruler protection.` };
+  // Protect real players: an under-strength empire can't be raided by someone
+  // far stronger (no farming the weak). Bots are always fair game, and weaker
+  // empires may still strike up at stronger ones. Routed through here for bots
+  // too, so AI raiders respect the same shield.
+  if (!target.isBot) {
+    const tooWeak = target.power < RAID_PROTECTION_POWER || target.power < attacker.power * RAID_SHIELD_RATIO;
+    if (tooWeak)
+      return {
+        ok: false,
+        error: `${target.name} is too weak to raid — pick an empire closer to your own strength.`,
+      };
+  }
 
   // Sanitise the payload: only known unit types, integer counts, never more
   // than the attacker actually has. Unknown keys are ignored (not trusted).
