@@ -12,6 +12,8 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "Coin Exchange — cash out to $RUMBLE", desc: "Sell the in-game coins you grind for the project token, P2P, paid straight to your wallet (95%) with the 5% fee burned. Turns playtime into token, on the Market page." },
+      { tag: "Feature", title: "Token shop now burns", desc: "Every token-shop purchase burns the $RUMBLE you spend — removed from supply forever. The shop is purely deflationary." },
       { tag: "Improvement", title: "Market in USDC + SOL on leaderboard", desc: "Relics are now priced in dollars (USDC) by default, repriced to match each relic's utility. The leaderboard shows each player's lifetime SOL earned." },
       { tag: "Feature", title: "Rank-gated relics + inventory cap", desc: "You unlock the power to equip rarer relics as you climb the ranks (Common → Rare → Epic → Legendary), and you can hold up to 15 — so you choose what to keep, sell or forge instead of hoarding. (Burn-for-SOL coming.)" },
       { tag: "Feature", title: "The Forge", desc: "Combine 3 relics of a rarity into a random one tier up (inputs burned), or craft a relic from raw materials. A deflationary sink that keeps relics scarce & in demand. Plus 6 new relics for variety and a 'how to collect' guide." },

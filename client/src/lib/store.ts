@@ -59,6 +59,8 @@ interface GameStore {
   equipItem: (instanceId: string) => void;
   fuseRelics: (rarity: string) => void;
   craftRelic: () => void;
+  listCoins: (coinAmount: number, rumblePrice: number) => void;
+  delistCoins: (listingId: string) => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -203,6 +205,8 @@ export const useGame = create<GameStore>((set, get) => ({
   equipItem: (instanceId) => socket?.emit("market:equip", { instanceId }),
   fuseRelics: (rarity) => socket?.emit("market:fuse", { rarity }),
   craftRelic: () => socket?.emit("market:craft"),
+  listCoins: (coinAmount, rumblePrice) => socket?.emit("exchange:list", { coinAmount, rumblePrice }),
+  delistCoins: (listingId) => socket?.emit("exchange:delist", { listingId }),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

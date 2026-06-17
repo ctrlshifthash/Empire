@@ -3,11 +3,7 @@
 // posts the resulting signature back for the server to verify & grant. The
 // actual signing happens in the component via Privy's useSignAndSendTransaction.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountIdempotentInstruction,
-  createTransferCheckedInstruction,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, createBurnCheckedInstruction } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
 import { SERVER_URL } from "./config";
 
@@ -42,18 +38,17 @@ export async function fetchShopConfig(): Promise<ShopConfig | null> {
 // Build the (unsigned) payment transaction, serialized for Privy to sign+send.
 // Includes an idempotent create of the treasury's token account so the first
 // purchase still works if the treasury has never held the token.
+// Shop purchases BURN the token — the buyer burns the price from their own
+// wallet (deflationary), so the tx is a single burnChecked instruction.
 export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens: number): Promise<Uint8Array> {
   const conn = new Connection(SOLANA_RPC, "confirmed");
   const mint = new PublicKey(cfg.mint);
   const buyerPk = new PublicKey(buyer);
-  const treasuryPk = new PublicKey(cfg.treasury as string);
   const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk);
-  const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPk);
   const amount = BigInt(Math.round(priceTokens)) * 10n ** BigInt(cfg.decimals);
 
   const tx = new Transaction();
-  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, treasuryAta, treasuryPk, mint));
-  tx.add(createTransferCheckedInstruction(buyerAta, mint, treasuryAta, buyerPk, amount, cfg.decimals));
+  tx.add(createBurnCheckedInstruction(buyerAta, mint, buyerPk, amount, cfg.decimals));
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;

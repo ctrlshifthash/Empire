@@ -312,10 +312,10 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
     body: (
       <>
         <p>
-          The <strong>Token Shop</strong> lets you spend the project token on in-game items. Each purchase is a{" "}
-          <strong>real on-chain transfer</strong> of the token to the treasury, verified by the server (correct mint,
-          amount, recipient and signer; each payment is single-use) before the item is granted. You need a connected
-          wallet that holds the token.
+          The <strong>Token Shop</strong> lets you spend the project token on in-game items. Every purchase{" "}
+          <strong>burns the token</strong> — it's removed from circulating supply forever, verified on-chain by the
+          server before the item is granted. So the shop is purely <strong>deflationary</strong>: the more it's used, the
+          scarcer the token. You need a connected wallet that holds the token.
         </p>
         <Table head={["Item", "Category", "What it does"]}>
           {SHOP_ITEMS.map((it) => (
@@ -326,7 +326,26 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
             </tr>
           ))}
         </Table>
-        <p className="text-sm text-parchment-300/70">Spent tokens go to the treasury, creating real buy-and-sink pressure on the token.</p>
+        <p className="text-sm text-parchment-300/70">Burning on every purchase shrinks supply, supporting the token's value.</p>
+      </>
+    ),
+  },
+  {
+    id: "exchange",
+    title: "Coin Exchange",
+    icon: "💱",
+    body: (
+      <>
+        <p>
+          The <strong>Coin Exchange</strong> (on the Market page) is the grind-to-token cash-out: <strong>sell the
+          in-game coins you farm for the $RUMBLE token</strong>, player-to-player. List an amount of coins for a $RUMBLE
+          price; a buyer pays you <strong>straight to your wallet</strong> in $RUMBLE (95%), and the 5% fee is{" "}
+          <strong>burned</strong>. The server verifies the on-chain payment, then delivers the coins. No platform custody.
+        </p>
+        <p className="text-sm text-parchment-300/70">
+          This gives the whole grind a real token price — coins you earn become something you can cash out, and every
+          trade burns a little supply.
+        </p>
       </>
     ),
   },

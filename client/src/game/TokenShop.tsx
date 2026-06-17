@@ -102,8 +102,8 @@ function ShopGrid() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3">
         <p className="text-sm text-parchment-200">
-          Pay with the project token for boosts, packs &amp; upgrades — real on-chain transfers to the treasury, applied
-          instantly. <span className="text-parchment-300/60">(For scarce, tradeable relics, see the Market.)</span>
+          Pay with the project token for boosts, packs &amp; upgrades. Every purchase <strong>burns the token</strong> —
+          removed from supply forever, so the shop is deflationary. <span className="text-parchment-300/60">(For scarce, tradeable relics, see the Market.)</span>
         </p>
         {address ? (
           <span className="chip font-mono text-xs">👛 {address.slice(0, 4)}…{address.slice(-4)}</span>

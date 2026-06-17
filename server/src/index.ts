@@ -50,6 +50,15 @@ import {
   fuseRelics,
   craftRelic,
 } from "./market.ts";
+import {
+  listCoins,
+  delistCoins,
+  reserveCoinListing,
+  buyCoins,
+  activeCoinListings,
+  expireCoinReservations,
+  EXCHANGE_BURN_PCT,
+} from "./exchange.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
@@ -246,6 +255,26 @@ app.post("/api/market/:id/buy", async (req, res) => {
     res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
   }
 });
+// ── Coin Exchange (sell in-game coins for $RUMBLE, P2P, on-chain) ────────────
+app.get("/api/exchange/config", (_req, res) => res.json({ ok: true, burnPct: EXCHANGE_BURN_PCT }));
+app.get("/api/exchange/listings", (_req, res) => res.json({ ok: true, listings: activeCoinListings() }));
+app.post("/api/exchange/:id/reserve", async (req, res) => {
+  const { address } = (req.body ?? {}) as Record<string, unknown>;
+  if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
+  res.json(await reserveCoinListing(req.params.id, String(address)));
+});
+app.post("/api/exchange/:id/buy", async (req, res) => {
+  try {
+    const { address, signature } = (req.body ?? {}) as Record<string, unknown>;
+    if (!address || !signature) return res.status(400).json({ ok: false, error: "Missing address or signature." });
+    const r = await buyCoins(req.params.id, String(address), String(signature));
+    if (r.ok && r.members) for (const id of r.members) pushSnapshot(id);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+
 // Admin-only: mint an item to a player (seed circulation). x-admin-key header.
 app.post("/api/market/mint", (req, res) => {
   const adminKey = (process.env.ADMIN_KEY || "").trim();
@@ -499,6 +528,14 @@ io.on("connection", (socket) => {
   socket.on("market:craft", () =>
     withEmpire((id) => handleArena(craftRelic(id), "Relic crafted!")),
   );
+
+  // ── Coin exchange (sell side; buying is HTTP + on-chain $RUMBLE) ────────────
+  socket.on("exchange:list", (p: { coinAmount: number; rumblePrice: number }) =>
+    withEmpire((id) => handleArena(listCoins(id, externalId, Number(p?.coinAmount), Number(p?.rumblePrice)), "Coins listed for $RUMBLE!")),
+  );
+  socket.on("exchange:delist", (p: { listingId: string }) =>
+    withEmpire((id) => handleArena(delistCoins(id, String(p?.listingId || "")), "Listing removed.")),
+  );
   socket.on("duel:accept", (p: { duelId: string; units: Army }) =>
     withEmpire((id) => {
       const r = acceptDuel(state.empires[id], String(p?.duelId || ""), p?.units || {});
@@ -594,6 +631,7 @@ setInterval(() => {
     tick();
     tickBoss(); // spawn / respawn the world boss
     expireReservations(); // free up stale marketplace reservations
+    expireCoinReservations(); // and stale coin-exchange reservations
     // push fresh snapshots to everyone connected
     for (const id of onlineEmpires) pushSnapshot(id);
   } catch (err) {

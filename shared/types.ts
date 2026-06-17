@@ -518,6 +518,27 @@ export interface InventoryItem {
   reqRank: string; // rank needed to equip this rarity
 }
 
+// ── Coin Exchange (sell in-game coins for the $RUMBLE token, P2P) ─────────────
+export interface CoinListing {
+  id: string;
+  sellerId: string; // empire id
+  sellerName: string;
+  sellerWallet: string; // payout address
+  coinAmount: number; // in-game coins offered
+  rumblePrice: number; // whole $RUMBLE asked
+  status: "active" | "sold";
+  reservedBy?: string;
+  reservedUntil?: number;
+  createdAt: number;
+}
+export interface CoinListingPublic {
+  id: string;
+  sellerName: string;
+  coinAmount: number;
+  rumblePrice: number;
+  reserved: boolean;
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;
