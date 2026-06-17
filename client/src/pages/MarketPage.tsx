@@ -21,9 +21,23 @@ export default function MarketPage() {
             The <span className="text-gold-gradient">Bazaar</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
-            Trade scarce, limited-supply relics with other rulers — paid wallet-to-wallet in SOL or USDC. Items go
-            straight to your inventory; the coins go straight to the seller.
+            Trade scarce, limited-supply <strong className="text-parchment-200">relics</strong> with other rulers — paid
+            wallet-to-wallet in SOL or USDC. Items go straight to your inventory; the coins go straight to the seller.
           </p>
+          <div className="mx-auto mt-5 grid max-w-3xl gap-2 text-left text-sm sm:grid-cols-3">
+            <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
+              <div className="font-semibold text-gold-light">⚔️ Equip for power</div>
+              <div className="mt-0.5 text-xs text-parchment-300/65">Wear up to 3 relics for stacking power (→ rank → more SOL), harvest &amp; speed.</div>
+            </div>
+            <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
+              <div className="font-semibold text-gold-light">💰 Or sell for real money</div>
+              <div className="mt-0.5 text-xs text-parchment-300/65">Scarce relics hold value — list yours below for SOL or USDC, paid straight to your wallet.</div>
+            </div>
+            <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
+              <div className="font-semibold text-gold-light">🎁 Earned, not bought</div>
+              <div className="mt-0.5 text-xs text-parchment-300/65">Relics drop from rank-ups, quests, bosses &amp; tournaments — then trade here. (Boosts &amp; packs are the Token Shop.)</div>
+            </div>
+          </div>
         </div>
         {privyConfigured ? <Market /> : <p className="mt-10 text-center text-sm text-parchment-300/60">Wallet trading isn’t configured on this build.</p>}
       </div>
@@ -107,7 +121,8 @@ function Market() {
                   <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(l.rarity) }}>{l.rarity}</div>
                 </div>
               </div>
-              <div className="mt-2 text-xs text-parchment-300/55">Seller: {l.sellerName}</div>
+              <div className="mt-1.5 text-xs text-emerald-300/80">{l.effect}</div>
+              <div className="mt-1 text-xs text-parchment-300/55">Seller: {l.sellerName}</div>
               <div className="mt-3 flex items-center justify-between">
                 <div className="font-display text-lg font-bold text-gold-light">{l.price} {l.currency}</div>
                 <button className="btn-gold btn-sm" disabled={busy !== null || l.reserved} onClick={() => buy(l)}>
@@ -121,9 +136,10 @@ function Market() {
 
       {/* inventory */}
       <div>
-        <h2 className="mb-3 font-display text-lg font-semibold">Your inventory</h2>
+        <h2 className="font-display text-lg font-semibold">Your inventory</h2>
+        <p className="mb-3 text-xs text-parchment-300/55">Tap <b className="text-parchment-200">Sell</b> on a relic, set a price &amp; currency, and it goes up for sale.</p>
         <div className="space-y-2">
-          {inventory.length === 0 && <div className="panel p-6 text-center text-sm text-parchment-300/55">No items yet. Win tournaments to earn drops.</div>}
+          {inventory.length === 0 && <div className="panel p-6 text-center text-sm text-parchment-300/55">No relics yet — win tournaments, bosses &amp; quests, or rank up to earn drops.</div>}
           {inventory.map((it) => <InventoryRow key={it.instanceId} it={it} />)}
         </div>
       </div>

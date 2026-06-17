@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Improvement", title: "Bazaar stocked & clearer", desc: "Starter relics now listed at fair prices so the market isn't empty, each listing shows its effect, and the page explains equip-vs-sell and how to list." },
       { tag: "Feature", title: "Relics are gear now", desc: "Marketplace items grant real boosts — equip up to 3 for stacking power, harvest and speed. Bigger catalog (15 relics across rarities)." },
       { tag: "Feature", title: "More ways to earn relics", desc: "Drops from quests, World Boss top damage, and a guaranteed drop on every rank-up (plus tournament champions)." },
       { tag: "Improvement", title: "Inventory & trading on dashboard", desc: "Your relics, equipped slots, and SOL/USDC trading profit/loss now show on the dashboard." },

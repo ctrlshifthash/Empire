@@ -501,6 +501,7 @@ export interface ListingPublic {
   price: number;
   currency: MarketCurrency;
   sellerName: string;
+  effect: string; // what the relic does when equipped
   reserved: boolean;
 }
 export interface InventoryItem {

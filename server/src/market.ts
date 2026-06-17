@@ -114,9 +114,50 @@ export function activeListings(): ListingPublic[] {
         price: l.price,
         currency: l.currency,
         sellerName: l.sellerName,
+        effect: def ? itemEffectSummary(def) : "Collectible",
         reserved: !!(l.reservedBy && (l.reservedUntil ?? 0) > now()),
       };
     });
+}
+
+// Seed the Bazaar with starter "house" listings (proceeds go to the treasury) so
+// it's never empty. Runs once — skipped if the house already minted items.
+export function seedMarket(): void {
+  if (Object.values(state.itemInstances).some((i) => i.ownerId === "house")) return;
+  const treasury = treasuryPubkey();
+  if (!treasury) return; // need the treasury wallet to receive payment
+  const seeds: { typeId: string; price: number; currency: MarketCurrency }[] = [
+    { typeId: "iron_chalice", price: 0.02, currency: "SOL" },
+    { typeId: "bronze_medallion", price: 3, currency: "USDC" },
+    { typeId: "oak_charm", price: 0.018, currency: "SOL" },
+    { typeId: "wolf_totem", price: 0.08, currency: "SOL" },
+    { typeId: "silver_fang", price: 12, currency: "USDC" },
+    { typeId: "emerald_idol", price: 0.09, currency: "SOL" },
+    { typeId: "runic_anvil", price: 14, currency: "USDC" },
+    { typeId: "frost_aegis", price: 0.3, currency: "SOL" },
+    { typeId: "storm_crown", price: 45, currency: "USDC" },
+    { typeId: "obsidian_blade", price: 0.35, currency: "SOL" },
+    { typeId: "titan_heart", price: 1.2, currency: "SOL" },
+    { typeId: "eternal_crown", price: 180, currency: "USDC" },
+  ];
+  for (const s of seeds) {
+    const inst = mintItem("house", s.typeId);
+    if (!inst) continue;
+    const id = uid("list_");
+    state.listings[id] = {
+      id,
+      instanceId: inst.id,
+      typeId: s.typeId,
+      sellerId: "house",
+      sellerName: "The Bazaar",
+      sellerWallet: treasury,
+      price: s.price,
+      currency: s.currency,
+      status: "active",
+      createdAt: now(),
+    };
+  }
+  scheduleSave(0);
 }
 
 export function marketConfig() {

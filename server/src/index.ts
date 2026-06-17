@@ -46,6 +46,7 @@ import {
   buyListing,
   mintItem,
   expireReservations,
+  seedMarket,
 } from "./market.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { submitBug, listBugs } from "./bugs.ts";
@@ -116,6 +117,7 @@ function bootstrap(): void {
   ensureBots(TARGET_BOTS);
   seedGovernance(); // ensure there's always a community poll to vote on
   ensureTournament(); // ensure the rolling arena tournament is open
+  seedMarket(); // stock the Bazaar with starter listings so it's never empty
   // bring everyone current after any downtime
   for (const e of Object.values(state.empires)) refreshEmpire(e);
   save();
