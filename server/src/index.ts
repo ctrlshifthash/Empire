@@ -27,6 +27,7 @@ import {
   allianceLeaderboard,
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
+import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -92,6 +93,7 @@ function bootstrap(): void {
     console.log(`[boot] world loaded (tick ${state.world.tick}, ${Object.keys(state.empires).length} empires)`);
   }
   ensureBots(TARGET_BOTS);
+  seedGovernance(); // ensure there's always a community poll to vote on
   // bring everyone current after any downtime
   for (const e of Object.values(state.empires)) refreshEmpire(e);
   save();
@@ -184,6 +186,31 @@ app.get("/api/leaderboard", (_req, res) => {
 app.get("/api/alliances", (_req, res) => {
   const alliances = allianceLeaderboard().map(({ chat: _chat, ...rest }) => rest);
   res.json({ ok: true, alliances });
+});
+
+// ── Token-weighted governance (community polls) ─────────────────────────────
+app.get("/api/governance", (req, res) => {
+  const address = typeof req.query.address === "string" ? req.query.address : undefined;
+  res.json({ ok: true, polls: pollResults(address) });
+});
+app.post("/api/governance/vote", async (req, res) => {
+  try {
+    const { pollId, address, optionId } = (req.body ?? {}) as Record<string, unknown>;
+    if (!pollId || !address || !optionId)
+      return res.status(400).json({ ok: false, error: "Missing pollId, address or optionId." });
+    res.json(await castVote(String(pollId), String(address), String(optionId)));
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+// Admin-only: create a poll (guard with the ADMIN_KEY env var via x-admin-key).
+app.post("/api/governance/poll", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  const { question, options, durationDays } = (req.body ?? {}) as Record<string, unknown>;
+  const days = Number(durationDays) || 7;
+  res.json(createPoll(String(question ?? ""), (options as string[]) ?? [], days * 24 * 60 * 60 * 1000));
 });
 
 // ── Empires browser (public) ────────────────────────────────────────────────

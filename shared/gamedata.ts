@@ -834,6 +834,57 @@ export const COLORS_BANNER = [
   "#d35400", "#16a085", "#2c3e50", "#c0a020",
 ];
 
+// ── Achievements ─────────────────────────────────────────────────────────────
+// Title-style milestones unlocked from your own empire's progress. The unlock
+// check is shared so the client shows the same thing the server awards.
+export interface Achievement {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+}
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: "first_blood", name: "First Blood", desc: "Win your first raid", icon: "🩸" },
+  { id: "raider", name: "Raider", desc: "Win 10 raids", icon: "🗡️" },
+  { id: "warbringer", name: "Warbringer", desc: "Win 50 raids", icon: "⚔️" },
+  { id: "builder", name: "Builder", desc: "Raise 6 buildings", icon: "🧱" },
+  { id: "architect", name: "Architect", desc: "Raise 12 buildings", icon: "🏛️" },
+  { id: "veteran", name: "Veteran", desc: "Reach 1,000 power", icon: "🛡️" },
+  { id: "conqueror", name: "Conqueror", desc: "Reach 6,000 power", icon: "👑" },
+  { id: "emperor", name: "Emperor", desc: "Reach 12,000 power", icon: "🏆" },
+  { id: "boss_slayer", name: "Boss Slayer", desc: "Help slay a World Boss", icon: "👹" },
+  { id: "boss_hunter", name: "Boss Hunter", desc: "Slay 5 World Bosses", icon: "🔥" },
+  { id: "ally", name: "Sworn", desc: "Join or found an alliance", icon: "🤝" },
+  { id: "imperial_age", name: "Golden Age", desc: "Reach the Imperial Age", icon: "🌟" },
+];
+
+// Inputs an achievement check needs from an empire (kept loose so both client &
+// server can call it from a snapshot or live state).
+export interface AchievementStats {
+  raidsWon: number;
+  power: number;
+  age: AgeId;
+  buildingsBuilt: number;
+  bossKills: number;
+  inAlliance: boolean;
+}
+export function achievementsUnlocked(s: AchievementStats): string[] {
+  const out: string[] = [];
+  if (s.raidsWon >= 1) out.push("first_blood");
+  if (s.raidsWon >= 10) out.push("raider");
+  if (s.raidsWon >= 50) out.push("warbringer");
+  if (s.buildingsBuilt >= 6) out.push("builder");
+  if (s.buildingsBuilt >= 12) out.push("architect");
+  if (s.power >= 1000) out.push("veteran");
+  if (s.power >= 6000) out.push("conqueror");
+  if (s.power >= 12000) out.push("emperor");
+  if (s.bossKills >= 1) out.push("boss_slayer");
+  if (s.bossKills >= 5) out.push("boss_hunter");
+  if (s.inAlliance) out.push("ally");
+  if (s.age === "imperial") out.push("imperial_age");
+  return out;
+}
+
 // ── World Boss ───────────────────────────────────────────────────────────────
 // A server-wide PvE event. Everyone sends armies to damage a shared boss; when
 // it dies, IN-GAME spoils (coins + resources) are split by damage dealt. No SOL

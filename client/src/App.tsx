@@ -13,6 +13,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import GuidePage from "./pages/GuidePage";
 import DocsPage from "./pages/DocsPage";
 import EmpiresPage from "./pages/EmpiresPage";
+import GovernancePage from "./pages/GovernancePage";
 import { useGame } from "./lib/store";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/governance" element={<GovernancePage />} />
           <Route
             path="/play"
             element={

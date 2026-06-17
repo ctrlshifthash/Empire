@@ -150,6 +150,7 @@ function distributeSpoils(b: WorldBoss): void {
     const coins = Math.floor(coinPool * share);
     e.coins += coins;
     for (const k of RESOURCE_KEYS) e.resources[k] += Math.floor(resPool * share);
+    e.bossKills = (e.bossKills ?? 0) + 1; // counts toward Boss Slayer/Hunter achievements
     bossLog(
       e,
       `${b.name} is slain! Your spoils: ${coins.toLocaleString()} coins + resources${isTop ? " — TOP DAMAGE bonus!" : ""}.`,

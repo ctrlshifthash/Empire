@@ -159,6 +159,10 @@ export interface Empire {
   boosts?: { gatherMult?: number; gatherUntil?: number };
   // alliance this empire belongs to (id into state.alliances), if any
   allianceId?: string;
+  // unlocked achievement ids (see ACHIEVEMENTS in gamedata)
+  achievements?: string[];
+  // number of world-boss kills this empire took part in
+  bossKills?: number;
 }
 
 // ── Alliances ───────────────────────────────────────────────────────────────
@@ -345,6 +349,33 @@ export interface BossPublic {
   topDamage: { name: string; banner: string; damage: number }[];
   yourDamage: number;
   yourCooldownMs: number; // remaining strike cooldown for the viewing empire
+}
+
+// ── Governance (token-weighted polls) ────────────────────────────────────────
+export interface PollOption {
+  id: string;
+  label: string;
+}
+export interface Poll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  createdAt: number;
+  endsAt: number;
+  status: "open" | "closed";
+  votes: Record<string, string>; // wallet -> optionId (one vote each, changeable)
+  weights: Record<string, number>; // wallet -> token-holding weight at vote time
+}
+export interface PollResult {
+  id: string;
+  question: string;
+  createdAt: number;
+  endsAt: number;
+  status: "open" | "closed";
+  totalVoters: number;
+  totalWeight: number;
+  options: { id: string; label: string; weight: number; pct: number }[];
+  yourVote: string | null;
 }
 
 export interface GameSnapshot {

@@ -11,6 +11,7 @@ import ArmouryView from "../game/ArmouryView";
 import TokenShop from "../game/TokenShop";
 import AllianceView from "../game/AllianceView";
 import WorldBossView from "../game/WorldBossView";
+import AchievementsView from "../game/AchievementsView";
 import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
 import LogView from "../game/LogView";
@@ -29,6 +30,7 @@ type Tab =
   | "armoury"
   | "tokenshop"
   | "alliance"
+  | "titles"
   | "quests"
   | "log"
   | "rewards";
@@ -43,6 +45,7 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "armoury", label: "Armoury", icon: "🛒", desc: "Buy weapons & armour for your army with coins" },
   { id: "tokenshop", label: "Token Shop", icon: "💎", desc: "Spend the project token on packs, boosts, armies & traits" },
   { id: "alliance", label: "Alliance", icon: "🛡️", desc: "Band together — allies can't raid each other & climb the alliance ranks" },
+  { id: "titles", label: "Titles", icon: "🏅", desc: "Achievements & milestones you've unlocked" },
   { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
   { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
   { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim SOL token rewards" },
@@ -237,6 +240,7 @@ export default function Play() {
                 {tab === "armoury" && <ArmouryView empire={empire} />}
                 {tab === "tokenshop" && <TokenShop />}
                 {tab === "alliance" && <AllianceView empire={empire} />}
+                {tab === "titles" && <AchievementsView empire={empire} />}
                 {tab === "quests" && <QuestsView empire={empire} />}
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}

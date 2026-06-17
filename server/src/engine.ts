@@ -10,6 +10,8 @@ import {
   MAX_ARMOUR,
   MAX_HERO_GEAR,
   raidBlock,
+  ACHIEVEMENTS,
+  achievementsUnlocked,
   RESOURCE_KINDS,
   TC_TRICKLE_PER_LEVEL,
   TRAITS,
@@ -892,6 +894,28 @@ export function refreshEmpire(e: Empire, at = now()): void {
   ensureWorldPositions(e);
   updateQuests(e);
   recomputePower(e);
+  checkAchievements(e);
+}
+
+// Award any newly-earned achievements (logged once). Derived from the empire's
+// own progress, so it's self-correcting and matches what the client shows.
+function checkAchievements(e: Empire): void {
+  const unlocked = achievementsUnlocked({
+    raidsWon: e.raidsWon,
+    power: e.power,
+    age: e.age,
+    buildingsBuilt: e.buildings.filter((b) => b.level >= 1).length,
+    bossKills: e.bossKills ?? 0,
+    inAlliance: !!e.allianceId,
+  });
+  if (!e.achievements) e.achievements = [];
+  for (const id of unlocked) {
+    if (!e.achievements.includes(id)) {
+      e.achievements.push(id);
+      const def = ACHIEVEMENTS.find((a) => a.id === id);
+      if (def) log(e, "system", `🏅 Achievement unlocked: ${def.name} — ${def.desc}.`);
+    }
+  }
 }
 
 export function tick(at = now()): void {
