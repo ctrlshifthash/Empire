@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Alliance, Empire, March, Poll, User, WorldBoss, WorldMeta } from "../../shared/types.ts";
+import type { Alliance, BugReport, Empire, March, Poll, User, WorldBoss, WorldMeta } from "../../shared/types.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -33,6 +33,8 @@ export interface GameState {
   boss: WorldBoss | null;
   // token-weighted governance polls keyed by poll id
   polls: Record<string, Poll>;
+  // player-submitted bug reports (newest last; capped)
+  bugReports: BugReport[];
 }
 
 export const state: GameState = {
@@ -47,6 +49,7 @@ export const state: GameState = {
   alliances: {},
   boss: null,
   polls: {},
+  bugReports: [],
 };
 
 export function loadState(): boolean {
@@ -64,6 +67,7 @@ export function loadState(): boolean {
       state.alliances ??= {};
       state.boss ??= null;
       state.polls ??= {};
+      state.bugReports ??= [];
       return true;
     }
   } catch (err) {

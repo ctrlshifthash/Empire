@@ -378,6 +378,16 @@ export interface PollResult {
   yourVote: string | null;
 }
 
+// ── Bug reports ──────────────────────────────────────────────────────────────
+export interface BugReport {
+  id: string;
+  message: string;
+  page?: string; // route the user was on
+  contact?: string; // optional handle/email so you can follow up
+  at: number;
+  ua?: string; // browser user-agent
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;

@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import Toaster from "./components/Toaster";
 import SplashScreen from "./components/SplashScreen";
 import MusicPlayer from "./components/MusicPlayer";
+import ReportBugButton from "./components/ReportBugButton";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import Play from "./pages/Play";
@@ -14,6 +15,7 @@ import GuidePage from "./pages/GuidePage";
 import DocsPage from "./pages/DocsPage";
 import EmpiresPage from "./pages/EmpiresPage";
 import GovernancePage from "./pages/GovernancePage";
+import AdminBugsPage from "./pages/AdminBugsPage";
 import { useGame } from "./lib/store";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -39,6 +41,7 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <SplashScreen />
       <MusicPlayer />
+      <ReportBugButton />
       <Navbar />
       <main className="flex-1">
         <Routes>
@@ -50,6 +53,7 @@ export default function App() {
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/governance" element={<GovernancePage />} />
+          <Route path="/admin" element={<AdminBugsPage />} />
           <Route
             path="/play"
             element={

@@ -28,6 +28,7 @@ import {
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
 import { createPoll, castVote, pollResults, seedGovernance } from "./governance.ts";
+import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -211,6 +212,26 @@ app.post("/api/governance/poll", (req, res) => {
   const { question, options, durationDays } = (req.body ?? {}) as Record<string, unknown>;
   const days = Number(durationDays) || 7;
   res.json(createPoll(String(question ?? ""), (options as string[]) ?? [], days * 24 * 60 * 60 * 1000));
+});
+
+// ── Bug reports ─────────────────────────────────────────────────────────────
+app.post("/api/bugs", (req, res) => {
+  const { message, page, contact } = (req.body ?? {}) as Record<string, unknown>;
+  res.json(
+    submitBug({
+      message: typeof message === "string" ? message : "",
+      page: typeof page === "string" ? page : undefined,
+      contact: typeof contact === "string" ? contact : undefined,
+      ua: req.headers["user-agent"],
+    }),
+  );
+});
+// Admin-only: read submitted bug reports (x-admin-key header).
+app.get("/api/admin/bugs", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  res.json({ ok: true, bugs: listBugs() });
 });
 
 // ── Empires browser (public) ────────────────────────────────────────────────
