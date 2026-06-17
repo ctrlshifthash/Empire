@@ -7,6 +7,7 @@ import {
   AGES,
   BUILDINGS,
   MAX_GEAR,
+  MAX_ARMOUR,
   MAX_HERO_GEAR,
   RAID_PROTECTION_POWER,
   RAID_SHIELD_RATIO,
@@ -416,7 +417,8 @@ export function actBuyArmoury(
   if (!unit || !UNIT_TYPES.includes(unit)) return { ok: false, error: "Unknown unit type." };
   const track = kind === "weapon" ? a.weapon : a.armour;
   const lvl = track[unit] ?? 0;
-  if (lvl >= MAX_GEAR) return { ok: false, error: "Already the finest gear." };
+  const cap = kind === "weapon" ? MAX_GEAR : MAX_ARMOUR;
+  if (lvl >= cap) return { ok: false, error: "Already the finest gear." };
   const cost = gearCost(lvl);
   if (e.coins < cost) return { ok: false, error: `Need ${cost} coins.` };
   e.coins -= cost;

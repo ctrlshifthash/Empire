@@ -669,9 +669,32 @@ export function nextRewardTier(share: number): RewardTier | null {
 }
 
 // ── Armoury (army equipment) & Hero gear (bought with coins) ────────────────
-export const MAX_GEAR = 8; // max weapon / armour level per army unit type
+export const MAX_GEAR = 8; // max weapon level per army unit type
+// Armour goes higher than weapons so a defender who invests can out-armour an
+// attacker's weapons — this is what keeps lower-level players from being farmed.
+export const MAX_ARMOUR = 12; // max armour level per army unit type
 export const MAX_HERO_GEAR = 8; // max hero helmet / armour level
 export const GEAR_BONUS = 0.1; // +10% army attack (weapon) or defense (armour) per level
+
+// Named armour tiers, indexed by level (0 = none). Shown in the Armoury so each
+// upgrade reads as a distinct piece of kit, not just a number.
+export const ARMOUR_TIERS = [
+  "Unarmoured",
+  "Padded",
+  "Leather",
+  "Boiled Leather",
+  "Ringmail",
+  "Chainmail",
+  "Scale",
+  "Brigandine",
+  "Banded",
+  "Plate",
+  "Tempered Plate",
+  "Knightly Plate",
+  "Royal Plate",
+] as const;
+export const armourTier = (level: number): string =>
+  ARMOUR_TIERS[Math.max(0, Math.min(level, ARMOUR_TIERS.length - 1))];
 export const HELMET_HP = 10; // hero max HP per helmet level
 export const HERO_ARMOUR_HP = 16; // hero max HP per armour level
 export function gearCost(level: number): number {

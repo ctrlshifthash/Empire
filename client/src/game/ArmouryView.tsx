@@ -4,8 +4,10 @@ import type { Empire } from "@shared/types";
 import {
   GEAR_BONUS,
   MAX_GEAR,
+  MAX_ARMOUR,
   UNITS,
   UNIT_TYPES,
+  armourTier,
   gearCost,
   nextRank,
   rankForPower,
@@ -108,13 +110,14 @@ export default function ArmouryView({ empire }: { empire: Empire }) {
                     {w > 0 && <span className="text-emerald-300/80"> (+{Math.round(w * GEAR_BONUS * 100)}%)</span>}
                     {" · "}🛡 Defense <b className="text-parchment-100">{Math.round(UNITS[u].defense * (1 + a * GEAR_BONUS) * 10) / 10}</b>
                     {a > 0 && <span className="text-emerald-300/80"> (+{Math.round(a * GEAR_BONUS * 100)}%)</span>}
+                    <span className="text-gold-light/80"> · {armourTier(a)}</span>
                   </div>
                   <div className="text-[10px] text-parchment-300/45">
-                    next weapon → +{Math.round((w + 1) * GEAR_BONUS * 100)}% atk · next armour → +{Math.round((a + 1) * GEAR_BONUS * 100)}% def
+                    next weapon → +{Math.round((w + 1) * GEAR_BONUS * 100)}% atk · next armour → {a >= MAX_ARMOUR ? "maxed" : `${armourTier(a + 1)} (+${Math.round((a + 1) * GEAR_BONUS * 100)}% def)`}
                   </div>
                 </div>
                 <GearBtn label={`⚔ Wpn ${w}/${MAX_GEAR}`} cost={wCost} maxed={w >= MAX_GEAR} afford={coins >= wCost} onClick={() => buy("weapon", u)} />
-                <GearBtn label={`🛡 Arm ${a}/${MAX_GEAR}`} cost={aCost} maxed={a >= MAX_GEAR} afford={coins >= aCost} onClick={() => buy("armour", u)} />
+                <GearBtn label={`🛡 Arm ${a}/${MAX_ARMOUR}`} cost={aCost} maxed={a >= MAX_ARMOUR} afford={coins >= aCost} onClick={() => buy("armour", u)} />
               </div>
             );
           })}
