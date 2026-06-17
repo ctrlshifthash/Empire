@@ -309,6 +309,44 @@ export interface QuestDef {
 
 // ── Socket / API payloads ───────────────────────────────────────────────────
 
+// ── World Boss (server-wide PvE event) ───────────────────────────────────────
+export interface BossContribution {
+  empireId: string;
+  name: string;
+  banner: string;
+  damage: number;
+  lastAt: number; // last time this empire struck (for the per-empire cooldown)
+}
+
+export interface WorldBoss {
+  id: string;
+  name: string;
+  tier: number;
+  maxHp: number;
+  hp: number;
+  spawnedAt: number;
+  status: "alive" | "slain";
+  slainAt?: number;
+  respawnAt?: number;
+  slayerName?: string; // who landed the killing blow
+  contributions: Record<string, BossContribution>;
+}
+
+export interface BossPublic {
+  id: string;
+  name: string;
+  tier: number;
+  maxHp: number;
+  hp: number;
+  status: "alive" | "slain";
+  respawnAt?: number;
+  slayerName?: string;
+  totalContributors: number;
+  topDamage: { name: string; banner: string; damage: number }[];
+  yourDamage: number;
+  yourCooldownMs: number; // remaining strike cooldown for the viewing empire
+}
+
 export interface GameSnapshot {
   empire: Empire;
   world: WorldMeta;
@@ -318,6 +356,8 @@ export interface GameSnapshot {
   serverTime: number;
   // the player's alliance (members, chat, total power) or null if not in one
   alliance: AlliancePublic | null;
+  // the current server-wide world boss (alive or in respawn cooldown)
+  boss: BossPublic | null;
 }
 
 // Server -> client realtime events

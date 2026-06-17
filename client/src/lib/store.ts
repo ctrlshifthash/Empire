@@ -48,6 +48,7 @@ interface GameStore {
   train: (building: BuildingType, unit: UnitType, quantity: number) => void;
   advanceAge: () => void;
   attack: (targetEmpireId: string, units: Partial<Record<UnitType, number>>) => void;
+  attackBoss: (units: Partial<Record<UnitType, number>>) => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -181,6 +182,7 @@ export const useGame = create<GameStore>((set, get) => ({
   train: (building, unit, quantity) => socket?.emit("train", { building, unit, quantity }),
   advanceAge: () => socket?.emit("advanceAge"),
   attack: (targetEmpireId, units) => socket?.emit("attack", { targetEmpireId, units }),
+  attackBoss: (units) => socket?.emit("attackBoss", { units }),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

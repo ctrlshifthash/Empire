@@ -26,6 +26,7 @@ import {
   postChat,
   allianceLeaderboard,
 } from "./alliances.ts";
+import { attackBoss, tickBoss } from "./boss.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
@@ -336,6 +337,16 @@ io.on("connection", (socket) => {
   socket.on("attack", (p: { targetEmpireId: string; units: Army }) =>
     withEmpire((id) => handle(actAttack(state.empires[id], p?.targetEmpireId, p?.units || {}))),
   );
+  socket.on("attackBoss", (p: { units: Army }) =>
+    withEmpire((id) => {
+      const r = attackBoss(state.empires[id], p?.units || {});
+      if (r.ok && r.slain) socket.emit("toast", { kind: "success", text: "You landed the killing blow — spoils incoming!" });
+      else if (r.ok) socket.emit("toast", { kind: "success", text: `Struck for ${(r.damage ?? 0).toLocaleString()} damage!` });
+      else if (r.error) socket.emit("toast", { kind: "warn", text: r.error });
+      scheduleSave();
+      pushSnapshot(id);
+    }),
+  );
   socket.on("rush", (p: { kind: any; id?: string }) =>
     withEmpire((id) => handle(actRush(state.empires[id], p?.kind, p?.id))),
   );
@@ -401,6 +412,7 @@ const AI_MS = 8000;
 setInterval(() => {
   try {
     tick();
+    tickBoss(); // spawn / respawn the world boss
     // push fresh snapshots to everyone connected
     for (const id of onlineEmpires) pushSnapshot(id);
   } catch (err) {

@@ -834,6 +834,28 @@ export const COLORS_BANNER = [
   "#d35400", "#16a085", "#2c3e50", "#c0a020",
 ];
 
+// ── World Boss ───────────────────────────────────────────────────────────────
+// A server-wide PvE event. Everyone sends armies to damage a shared boss; when
+// it dies, IN-GAME spoils (coins + resources) are split by damage dealt. No SOL
+// is ever paid here — the token reward pool is untouched.
+export const BOSS_BASE_HP = 150_000; // tier 1 boss hp
+export const BOSS_HP_GROWTH = 1.3; // each successive boss is tougher
+export const BOSS_RESPAWN_MS = 10 * 60 * 1000; // 10 min after a kill
+export const BOSS_HIT_COOLDOWN_MS = 60 * 1000; // per-empire delay between strikes
+export const BOSS_CASUALTY_RATE = 0.18; // fraction of committed army lost per strike
+export const BOSS_COIN_POOL = 60_000; // coins split by damage share on a kill
+export const BOSS_RESOURCE_POOL = 120_000; // each resource split by damage share
+export const BOSS_POOL_GROWTH = 1.25; // spoils grow with boss tier
+export const BOSS_TOP_BONUS = 1.5; // top damage dealer's share multiplier
+export const BOSS_NAMES = [
+  "The Dread Titan",
+  "Gorehowl the Ravager",
+  "Mortis, Bane of Realms",
+  "The Obsidian Behemoth",
+  "Varog the World-Eater",
+  "Skarn the Unbroken",
+];
+
 // ── Alliances ────────────────────────────────────────────────────────────────
 export const ALLIANCE_MAX_MEMBERS = 12;
 export const ALLIANCE_CREATE_COST = 2000; // coins to found an alliance
