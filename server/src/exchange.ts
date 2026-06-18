@@ -8,6 +8,7 @@ import { PublicKey } from "@solana/web3.js";
 import type { CoinListing, CoinListingPublic } from "../../shared/types.ts";
 import { state, scheduleSave, pushActivity } from "./store.ts";
 import { sharedRpc, tokenMint } from "./rewards.ts";
+import { rumbleUsdPrice } from "./price.ts";
 import { now, uid } from "./util.ts";
 
 const RESERVE_MS = 3 * 60 * 1000;
@@ -29,16 +30,16 @@ export interface ExResult {
   members?: string[];
 }
 
-export function listCoins(empireId: string, sellerWallet: string | undefined, rawCoins: number, rawPrice: number): ExResult {
+export function listCoins(empireId: string, sellerWallet: string | undefined, rawCoins: number, rawUsd: number): ExResult {
   if (!sellerWallet || sellerWallet.includes("@") || sellerWallet.startsWith("did:"))
     return { ok: false, error: "Connect a Solana wallet to sell coins for $RUMBLE." };
   const e = state.empires[empireId];
   if (!e) return { ok: false, error: "No empire." };
   const coinAmount = Math.floor(Number(rawCoins) || 0);
-  const rumblePrice = Math.floor(Number(rawPrice) || 0);
+  const usdPrice = Math.round((Number(rawUsd) || 0) * 100) / 100; // cent precision
   if (coinAmount <= 0) return { ok: false, error: "Enter a coin amount." };
   if (e.coins < coinAmount) return { ok: false, error: "You don't have that many coins." };
-  if (rumblePrice <= 0) return { ok: false, error: "Set a $RUMBLE price." };
+  if (!(usdPrice > 0)) return { ok: false, error: "Set a price in USD." };
   e.coins -= coinAmount; // escrow
   const id = uid("clist_");
   state.coinListings[id] = {
@@ -47,11 +48,11 @@ export function listCoins(empireId: string, sellerWallet: string | undefined, ra
     sellerName: e.name,
     sellerWallet,
     coinAmount,
-    rumblePrice,
+    usdPrice,
     status: "active",
     createdAt: now(),
   };
-  pushActivity("coin", "listed", `${e.name} listed ${coinAmount.toLocaleString()} coins for ${rumblePrice.toLocaleString()} $RUMBLE`);
+  pushActivity("coin", "listed", `${e.name} listed ${coinAmount.toLocaleString()} coins for $${usdPrice.toFixed(2)}`);
   scheduleSave(0);
   return { ok: true, members: [empireId] };
 }
@@ -68,29 +69,37 @@ export function delistCoins(empireId: string, listingId: string): ExResult {
   return { ok: true, members: [empireId] };
 }
 
-function amounts(rumblePrice: number, dec: number): { sellerBase: bigint; burnBase: bigint } {
-  const total = BigInt(rumblePrice) * 10n ** BigInt(dec);
-  const burnBase = (total * BigInt(EXCHANGE_BURN_PCT)) / 100n;
-  return { sellerBase: total - burnBase, burnBase };
+// Convert a USD price to on-chain $RUMBLE base units at the live token price,
+// split 95% seller / 5% burned.
+function amountsFromUsd(usdPrice: number, rumbleUsd: number, dec: number): { sellerBase: bigint; burnBase: bigint; rumbleAmount: number } {
+  const rumbleAmount = usdPrice / rumbleUsd; // $RUMBLE tokens (fractional)
+  const totalBase = BigInt(Math.round(rumbleAmount * 10 ** dec));
+  const burnBase = (totalBase * BigInt(EXCHANGE_BURN_PCT)) / 100n;
+  return { sellerBase: totalBase - burnBase, burnBase, rumbleAmount };
 }
 
 export async function reserveCoinListing(listingId: string, buyer: string): Promise<{
   ok: boolean;
   error?: string;
-  payment?: { mint: string; seller: string; sellerBase: string; burnBase: string; decimals: number };
+  payment?: { mint: string; seller: string; sellerBase: string; burnBase: string; decimals: number; rumbleAmount: number };
 }> {
   const l = state.coinListings[listingId];
   if (!l || l.status !== "active") return { ok: false, error: "That listing is gone." };
   if (l.reservedBy && l.reservedBy !== buyer && (l.reservedUntil ?? 0) > now())
     return { ok: false, error: "Someone is buying this right now — try again in a moment." };
+  const rumbleUsd = await rumbleUsdPrice();
+  if (!rumbleUsd) return { ok: false, error: "$RUMBLE price unavailable — try again in a moment." };
+  const dec = await decimals();
+  const { sellerBase, burnBase, rumbleAmount } = amountsFromUsd(l.usdPrice, rumbleUsd, dec);
+  // lock the $RUMBLE amount for the reservation so the price can't move mid-buy
   l.reservedBy = buyer;
   l.reservedUntil = now() + RESERVE_MS;
+  l.reservedSellerBase = sellerBase.toString();
+  l.reservedBurnBase = burnBase.toString();
   scheduleSave();
-  const dec = await decimals();
-  const { sellerBase, burnBase } = amounts(l.rumblePrice, dec);
   return {
     ok: true,
-    payment: { mint: tokenMint(), seller: l.sellerWallet, sellerBase: sellerBase.toString(), burnBase: burnBase.toString(), decimals: dec },
+    payment: { mint: tokenMint(), seller: l.sellerWallet, sellerBase: sellerBase.toString(), burnBase: burnBase.toString(), decimals: dec, rumbleAmount },
   };
 }
 
@@ -136,9 +145,12 @@ export async function buyCoins(listingId: string, buyer: string, signature: stri
   const buyerEmpire = buyerUser ? state.empires[buyerUser.empireId] : undefined;
   if (!buyerEmpire) return { ok: false, error: "Open the game signed in with this wallet to receive the coins." };
   if (l.sellerId === buyerEmpire.id) return { ok: false, error: "You can't buy your own listing." };
+  // verify against the $RUMBLE amount locked at reserve time (price-stable)
+  if (l.reservedBy !== buyer || !l.reservedSellerBase || !l.reservedBurnBase)
+    return { ok: false, error: "Your price quote expired — reopen and buy again." };
 
-  const dec = await decimals();
-  const { sellerBase, burnBase } = amounts(l.rumblePrice, dec);
+  const sellerBase = BigInt(l.reservedSellerBase);
+  const burnBase = BigInt(l.reservedBurnBase);
   const paid = await verifyPayment(signature, buyer, l.sellerWallet, sellerBase, burnBase);
   if (!paid) return { ok: false, error: "Payment not confirmed — if you were charged, wait a few seconds and retry." };
 
@@ -146,12 +158,12 @@ export async function buyCoins(listingId: string, buyer: string, signature: stri
   l.status = "sold";
   delete state.coinListings[listingId];
   state.exchangeSignatures[signature] = { listingId, buyer, at: now() };
-  pushActivity("coin", "bought", `${buyerEmpire.name} bought ${l.coinAmount.toLocaleString()} coins for ${l.rumblePrice.toLocaleString()} $RUMBLE`);
-  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${l.coinAmount.toLocaleString()} coins for ${l.rumblePrice} $RUMBLE.` });
+  pushActivity("coin", "bought", `${buyerEmpire.name} bought ${l.coinAmount.toLocaleString()} coins for $${l.usdPrice.toFixed(2)}`);
+  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${l.coinAmount.toLocaleString()} coins for $${l.usdPrice.toFixed(2)} in $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   const sellerEmpire = state.empires[l.sellerId];
   if (sellerEmpire) {
-    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${l.coinAmount.toLocaleString()} coins for ${l.rumblePrice} $RUMBLE.` });
+    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${l.coinAmount.toLocaleString()} coins for $${l.usdPrice.toFixed(2)} in $RUMBLE.` });
     if (sellerEmpire.log.length > 60) sellerEmpire.log.length = 60;
   }
   scheduleSave(0);
@@ -161,12 +173,12 @@ export async function buyCoins(listingId: string, buyer: string, signature: stri
 export function activeCoinListings(): CoinListingPublic[] {
   return Object.values(state.coinListings)
     .filter((l) => l.status === "active")
-    .sort((a, b) => a.rumblePrice / a.coinAmount - b.rumblePrice / b.coinAmount) // best value first
+    .sort((a, b) => a.usdPrice / a.coinAmount - b.usdPrice / b.coinAmount) // cheapest per coin first
     .map((l) => ({
       id: l.id,
       sellerName: l.sellerName,
       coinAmount: l.coinAmount,
-      rumblePrice: l.rumblePrice,
+      usdPrice: l.usdPrice,
       reserved: !!(l.reservedBy && (l.reservedUntil ?? 0) > now()),
     }));
 }
@@ -176,6 +188,8 @@ export function expireCoinReservations(): void {
     if (l.reservedBy && (l.reservedUntil ?? 0) <= now()) {
       l.reservedBy = undefined;
       l.reservedUntil = undefined;
+      l.reservedSellerBase = undefined;
+      l.reservedBurnBase = undefined;
     }
   }
 }

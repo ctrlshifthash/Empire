@@ -18,6 +18,22 @@ export interface ExPayment {
   sellerBase: string;
   burnBase: string;
   decimals: number;
+  rumbleAmount?: number; // total $RUMBLE this purchase costs (for display)
+}
+
+export interface ExchangeConfig {
+  burnPct: number;
+  mint: string | null;
+  rumbleUsd: number | null; // live $RUMBLE/USD
+}
+
+export async function fetchExchangeConfig(): Promise<ExchangeConfig> {
+  try {
+    const r = await fetch(`${SERVER_URL}/api/exchange/config`).then((x) => x.json());
+    return r?.ok ? { burnPct: r.burnPct, mint: r.mint, rumbleUsd: r.rumbleUsd } : { burnPct: 5, mint: null, rumbleUsd: null };
+  } catch {
+    return { burnPct: 5, mint: null, rumbleUsd: null };
+  }
 }
 
 export async function fetchCoinListings(): Promise<CoinListingPublic[]> {

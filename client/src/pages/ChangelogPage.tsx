@@ -10,6 +10,12 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 19, 2026",
+    items: [
+      { tag: "Improvement", title: "Coin Exchange priced in USD", desc: "Sell your coins at a stable dollar price — paid to your wallet in $RUMBLE at the live token rate (5% burned), with a one-tap 'Cash out → SOL'. And the token shop no longer sells coins, so the Exchange is now the single free market for them — real, player-set prices." },
+    ],
+  },
+  {
     date: "June 18, 2026",
     items: [
       { tag: "Feature", title: "Marketplace activity feeds", desc: "Every relic and coin listing, purchase and sale now appears in a live Activity feed on its Marketplace tab." },

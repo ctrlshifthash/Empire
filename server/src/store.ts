@@ -127,6 +127,14 @@ export function loadState(): boolean {
       state.characterInstances ??= {};
       state.characterMintCounts ??= {};
       state.marketActivity ??= [];
+      // migrate: drop pre-USD coin listings (refund their escrowed coins)
+      for (const [id, l] of Object.entries(state.coinListings)) {
+        if (typeof (l as { usdPrice?: number }).usdPrice !== "number") {
+          const e = state.empires[l.sellerId];
+          if (e && l.status === "active") e.coins += l.coinAmount || 0;
+          delete state.coinListings[id];
+        }
+      }
       return true;
     }
   } catch (err) {

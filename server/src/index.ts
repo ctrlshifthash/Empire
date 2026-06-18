@@ -19,7 +19,8 @@ import { levelForXp } from "../../shared/progression.ts";
 import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
-import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances } from "./rewards.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint } from "./rewards.ts";
+import { rumbleUsdPrice } from "./price.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -285,7 +286,9 @@ app.post("/api/market/:id/buy", async (req, res) => {
   }
 });
 // ── Coin Exchange (sell in-game coins for $RUMBLE, P2P, on-chain) ────────────
-app.get("/api/exchange/config", (_req, res) => res.json({ ok: true, burnPct: EXCHANGE_BURN_PCT }));
+app.get("/api/exchange/config", async (_req, res) =>
+  res.json({ ok: true, burnPct: EXCHANGE_BURN_PCT, mint: tokenMint(), rumbleUsd: await rumbleUsdPrice() }),
+);
 app.get("/api/exchange/listings", (_req, res) => res.json({ ok: true, listings: activeCoinListings() }));
 app.post("/api/exchange/:id/reserve", async (req, res) => {
   const { address } = (req.body ?? {}) as Record<string, unknown>;
@@ -617,8 +620,8 @@ io.on("connection", (socket) => {
   );
 
   // ── Coin exchange (sell side; buying is HTTP + on-chain $RUMBLE) ────────────
-  socket.on("exchange:list", (p: { coinAmount: number; rumblePrice: number }) =>
-    withEmpire((id) => handleArena(listCoins(id, externalId, Number(p?.coinAmount), Number(p?.rumblePrice)), "Coins listed for $RUMBLE!")),
+  socket.on("exchange:list", (p: { coinAmount: number; usdPrice: number }) =>
+    withEmpire((id) => handleArena(listCoins(id, externalId, Number(p?.coinAmount), Number(p?.usdPrice)), "Coins listed for $RUMBLE!")),
   );
   socket.on("exchange:delist", (p: { listingId: string }) =>
     withEmpire((id) => handleArena(delistCoins(id, String(p?.listingId || "")), "Listing removed.")),

@@ -597,17 +597,19 @@ export interface CoinListing {
   sellerName: string;
   sellerWallet: string; // payout address
   coinAmount: number; // in-game coins offered
-  rumblePrice: number; // whole $RUMBLE asked
+  usdPrice: number; // seller's asking price in USD (settled in $RUMBLE at live price)
   status: "active" | "sold";
   reservedBy?: string;
   reservedUntil?: number;
+  reservedSellerBase?: string; // $RUMBLE amounts locked at reserve time (price can't move mid-buy)
+  reservedBurnBase?: string;
   createdAt: number;
 }
 export interface CoinListingPublic {
   id: string;
   sellerName: string;
   coinAmount: number;
-  rumblePrice: number;
+  usdPrice: number;
   reserved: boolean;
 }
 

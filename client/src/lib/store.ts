@@ -68,7 +68,7 @@ interface GameStore {
   equipItem: (instanceId: string) => void;
   fuseRelics: (rarity: string) => void;
   craftRelic: () => void;
-  listCoins: (coinAmount: number, rumblePrice: number) => void;
+  listCoins: (coinAmount: number, usdPrice: number) => void;
   delistCoins: (listingId: string) => void;
   buyCharacter: (typeId: string) => void;
   equipCharacter: (instanceId: string) => void;
@@ -243,7 +243,7 @@ export const useGame = create<GameStore>((set, get) => ({
   equipItem: (instanceId) => socket?.emit("market:equip", { instanceId }),
   fuseRelics: (rarity) => socket?.emit("market:fuse", { rarity }),
   craftRelic: () => socket?.emit("market:craft"),
-  listCoins: (coinAmount, rumblePrice) => socket?.emit("exchange:list", { coinAmount, rumblePrice }),
+  listCoins: (coinAmount, usdPrice) => socket?.emit("exchange:list", { coinAmount, usdPrice }),
   delistCoins: (listingId) => socket?.emit("exchange:delist", { listingId }),
   buyCharacter: (typeId) => socket?.emit("character:buy", { typeId }),
   equipCharacter: (instanceId) => socket?.emit("character:equip", { instanceId }),
