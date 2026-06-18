@@ -26,14 +26,16 @@ export default function HubWorld({ onEnter }: { onEnter: () => void }) {
   const myBanner = useGame((s) => s.snapshot?.empire?.banner ?? "#c0a020");
   const [chat, setChat] = useState("");
 
+  const connected = useGame((s) => s.connected);
   const me = useRef<Local>({ x: 0, y: 0, facing: 1, moving: false, phase: 0 });
   const keys = useRef<Set<string>>(new Set());
 
-  // join / leave the plaza
+  // join / leave the plaza — re-emit on (re)connect so the enter isn't lost if
+  // the socket wasn't ready yet when the hub first mounted.
   useEffect(() => {
-    hubEnter();
+    if (connected) hubEnter();
     return () => hubLeave();
-  }, [hubEnter, hubLeave]);
+  }, [hubEnter, hubLeave, connected]);
 
   // keyboard (ignored while typing in the chat box)
   useEffect(() => {
