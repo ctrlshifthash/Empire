@@ -12,8 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
-      { tag: "Improvement", title: "Direct wallet sign-in", desc: "Connect straight to Phantom or Solflare — faster, lighter, and with no third-party sign-in limits. Your empire is tied to your wallet address, so existing players keep everything." },
-      { tag: "Improvement", title: "PvP front and centre", desc: "The PvP (Arena) tab now sits right next to Play so wagered duels are easy to find." },
+      { tag: "Improvement", title: "Direct wallet sign-in", desc: "Sign in straight to Phantom or Solflare. Your empire is tied to your wallet, and your holdings unlock the daily SOL rewards." },
       { tag: "Feature", title: "Coin Exchange — cash out to $RUMBLE", desc: "Sell the in-game coins you grind for the project token, P2P, paid straight to your wallet (95%) with the 5% fee burned. Turns playtime into token, on the Market page." },
       { tag: "Feature", title: "Token shop now burns", desc: "Every token-shop purchase burns the $RUMBLE you spend — removed from supply forever. The shop is purely deflationary." },
       { tag: "Improvement", title: "Market in USDC + SOL on leaderboard", desc: "Relics are now priced in dollars (USDC) by default, repriced to match each relic's utility. The leaderboard shows each player's lifetime SOL earned." },
@@ -36,7 +35,6 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
       { tag: "Feature", title: "Wagered Arena (PvP)", desc: "Stake coins and commit an army; anyone can accept and fight you. Winner takes the pot (minus a burned rake). In-game coins only." },
       { tag: "Feature", title: "Diamond Hands rewards", desc: "Holding without selling grows a loyalty multiplier on your SOL accrual (up to 2×); selling resets it." },
       { tag: "Feature", title: "In-game holder perks", desc: "Your holder tier now grants real gameplay bonuses — bigger harvests and faster build/train — refreshed from your holdings." },
-      { tag: "Fix", title: "Navbar polish", desc: "Tightened the nav so the brand and slogan no longer wrap; the changelog link is now labelled “Changelog”." },
       { tag: "Improvement", title: "Daily reward pool tripled", desc: "The shared daily SOL reward pool increased from 1 SOL to 3 SOL per day." },
       { tag: "Feature", title: "Feedback & bug reporting", desc: "Floating Feedback and Report-a-bug buttons; submissions flow into a private admin inbox." },
       { tag: "Feature", title: "Token-holder governance", desc: "Vote on what gets built next — your weight is your on-chain token balance. New Vote page." },
@@ -59,7 +57,6 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
       { tag: "Improvement", title: "Themed home page", desc: "Per-section backdrops: sky, world map, night town, the ages, and the kingdom." },
       { tag: "Improvement", title: "Heraldic empire crests", desc: "Shield-style crests replace flat colour squares across the site." },
       { tag: "Feature", title: "Game-style loading screen", desc: "New warrior logo, matching favicon, and an intro splash." },
-      { tag: "Fix", title: "Navbar layout", desc: "Resolved nav overlap and centring; tidied the social links." },
       { tag: "Docs", title: "Professional README", desc: "Expanded into a full game guide with banner, badges and tables." },
     ],
   },
