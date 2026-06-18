@@ -21,7 +21,7 @@ import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint } from "./rewards.ts";
 import { rumbleUsdPrice } from "./price.ts";
-import { featureLocks } from "./features.ts";
+import { featureLocks, isLocked } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
 import { dailyState, claimDaily } from "./daily.ts";
 import { ownedMounts, equipMount, equippedMountIcon, mountsLocked } from "./mounts.ts";
@@ -720,6 +720,20 @@ io.on("connection", (socket) => {
       if (msg) io.to("hub").emit("hub:message", msg);
     }),
   );
+
+  // Spectate (beta) — watch the live hub read-only, no account. All mutating
+  // handlers require an empire, so a spectator socket is inherently passive.
+  socket.on("spectate", () => {
+    if (isLocked("spectate")) {
+      socket.emit("spectate:locked");
+      return;
+    }
+    socket.join("hub");
+    socket.join("hubspace");
+    socket.emit("hub:history", hubMessages);
+    socket.emit("hub:online", hubOnline());
+    socket.emit("hub:players", [...hubAvatars.values()]);
+  });
 
   // Spatial hub: enter the plaza (spawn an avatar near the fountain).
   socket.on("hub:enter", () =>

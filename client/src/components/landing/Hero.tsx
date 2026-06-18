@@ -100,6 +100,9 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           <Link to="/register" className="btn-gold px-7 py-3 text-base">
             ⚔ Found Your Empire
           </Link>
+          <Link to="/spectate" className="btn-ghost px-7 py-3 text-base">
+            👁 Spectate live
+          </Link>
           <Link to="/guide" className="btn-ghost px-7 py-3 text-base">
             How it works →
           </Link>

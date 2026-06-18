@@ -17,6 +17,7 @@ import EmpiresPage from "./pages/EmpiresPage";
 import GovernancePage from "./pages/GovernancePage";
 import AdminBugsPage from "./pages/AdminBugsPage";
 import ChangelogPage from "./pages/ChangelogPage";
+import SpectateView from "./game/SpectateView";
 import MarketPage from "./pages/MarketPage";
 import { useGame } from "./lib/store";
 
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/governance" element={<GovernancePage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/spectate" element={<SpectateView />} />
           <Route path="/marketplace" element={<MarketPage />} />
           <Route path="/market" element={<Navigate to="/marketplace" replace />} />
           <Route path="/admin" element={<AdminBugsPage />} />
