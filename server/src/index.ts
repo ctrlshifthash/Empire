@@ -14,6 +14,8 @@ import express from "express";
 import { Server as SocketServer } from "socket.io";
 
 import type { Army } from "../../shared/combat.ts";
+import type { HubMessage, HubPlayer } from "../../shared/types.ts";
+import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility } from "./rewards.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
@@ -449,6 +451,30 @@ function pushSnapshot(empireId: string): void {
   io.to(`emp:${empireId}`).emit("snapshot", snap);
 }
 
+// ── Global social hub: a shared chat lobby every player lands in ─────────────
+const hubMessages: HubMessage[] = [];
+const HUB_KEEP = 60; // recent messages retained / sent to joiners
+const HUB_MSG_MAX = 240;
+
+// Everyone currently online, strongest first (drives the hub's "who's here" list).
+function hubOnline(): HubPlayer[] {
+  const list: HubPlayer[] = [];
+  for (const id of onlineEmpires) {
+    const e = state.empires[id];
+    if (e) list.push({ id: e.id, name: e.name, banner: e.banner, power: e.power, rank: rankForPower(e.power).name });
+  }
+  return list.sort((a, b) => b.power - a.power).slice(0, 100);
+}
+
+function postHub(empire: { id: string; name: string; banner: string }, rawText: string): HubMessage | null {
+  const text = String(rawText ?? "").trim().slice(0, HUB_MSG_MAX);
+  if (!text) return null;
+  const msg: HubMessage = { id: uid("hub_"), fromId: empire.id, fromName: empire.name, banner: empire.banner, text, at: now() };
+  hubMessages.push(msg);
+  if (hubMessages.length > HUB_KEEP) hubMessages.splice(0, hubMessages.length - HUB_KEEP);
+  return msg;
+}
+
 io.on("connection", (socket) => {
   let empireId: string | null = null;
   let externalId: string | undefined; // the player's wallet/email id (for selling)
@@ -465,8 +491,12 @@ io.on("connection", (socket) => {
     externalId = user.externalId;
     socket.data.empireId = empireId;
     socket.join(`emp:${empireId}`);
+    socket.join("hub");
     onlineEmpires.add(empireId);
     pushSnapshot(empireId);
+    // welcome them into the social hub: recent chat + who's online right now
+    socket.emit("hub:history", hubMessages);
+    io.to("hub").emit("hub:online", hubOnline());
     // refresh holder-tier perks from chain, then re-push so they apply this
     // session. Also continuously enforce the play-gate: a wallet that has sold
     // below the minimum is bounced (the client logs out on "gated"). Demo and
@@ -649,11 +679,43 @@ io.on("connection", (socket) => {
     withEmpire((id) => handleAlliance(postChat(state.empires[id], String(p?.text ?? "")))),
   );
 
+  // Global hub chat — broadcast to everyone in the lobby.
+  socket.on("hub:chat", (p: { text?: string }) =>
+    withEmpire((id) => {
+      const msg = postHub(state.empires[id], String(p?.text ?? ""));
+      if (msg) io.to("hub").emit("hub:message", msg);
+    }),
+  );
+
+  // Rename the empire (the player's in-game name). Propagates to the leaderboard,
+  // world and hub since they all read empire.name.
+  socket.on("empire:rename", (p: { name?: string }) =>
+    withEmpire((id) => {
+      const e = state.empires[id];
+      const name = String(p?.name ?? "").replace(/[^a-zA-Z0-9_ ]+/g, "").replace(/\s+/g, " ").trim().slice(0, 20);
+      if (name.length < 3) {
+        socket.emit("toast", { kind: "warn", text: "Name must be 3–20 letters, numbers, spaces or underscores." });
+        return;
+      }
+      const taken = Object.values(state.empires).some((o) => o.id !== id && o.name.toLowerCase() === name.toLowerCase());
+      if (taken) {
+        socket.emit("toast", { kind: "warn", text: "That name is already taken." });
+        return;
+      }
+      e.name = name;
+      scheduleSave(0);
+      socket.emit("toast", { kind: "success", text: "Name updated!" });
+      pushSnapshot(id);
+      io.to("hub").emit("hub:online", hubOnline()); // reflect the new name in the lobby
+    }),
+  );
+
   socket.on("disconnect", () => {
     if (!empireId) return;
     // only mark offline if this empire has no other live sockets
     const room = io.sockets.adapter.rooms.get(`emp:${empireId}`);
     if (!room || room.size === 0) onlineEmpires.delete(empireId);
+    io.to("hub").emit("hub:online", hubOnline()); // refresh the lobby's who's-here list
   });
 });
 
@@ -709,6 +771,9 @@ setInterval(() => {
     }
   })();
 }, HOLD_SWEEP_MS);
+
+// keep the hub's who's-here list fresh (power/rank change as people play)
+setInterval(() => io.to("hub").emit("hub:online", hubOnline()), 12000);
 
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);

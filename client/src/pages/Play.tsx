@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useGame } from "../lib/store";
 import ResourceBar from "../game/ResourceBar";
 import LiveWorld from "../game/LiveWorld";
+import HubView from "../game/HubView";
 import EmpireView from "../game/EmpireView";
 import HeroView from "../game/HeroView";
 import WorldView from "../game/WorldView";
@@ -22,6 +23,7 @@ import TutorialOverlay from "../components/TutorialOverlay";
 import { armyTotal } from "../game/derive";
 
 type Tab =
+  | "hub"
   | "live"
   | "hero"
   | "empire"
@@ -38,6 +40,7 @@ type Tab =
   | "rewards";
 
 const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
+  { id: "hub", label: "Hub", icon: "🏰", desc: "The social hub — meet & chat with everyone online before you play" },
   { id: "live", label: "Play", icon: "🌍", desc: "Your live world — walk around, harvest and fight" },
   { id: "arena", label: "PvP", icon: "🏟️", desc: "Wager coins in PvP duels — winner takes the pot" },
   { id: "hero", label: "My Hero", icon: "🦸", desc: "Customise your character: gear, skills & tools" },
@@ -65,7 +68,7 @@ export default function Play() {
   const locate = useGame((s) => s.locate);
   const invadeTarget = useGame((s) => s.invadeTarget);
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("live");
+  const [tab, setTab] = useState<Tab>("hub");
   const [stuck, setStuck] = useState(false);
   const [showTut, setShowTut] = useState(() => {
     try {
@@ -235,6 +238,7 @@ export default function Play() {
             </div>
             <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
               <div className="min-w-0">
+                {tab === "hub" && <HubView onEnter={() => setTab("live")} />}
                 {tab === "hero" && <HeroView empire={empire} />}
                 {tab === "empire" && <EmpireView empire={empire} />}
                 {tab === "world" && <WorldView snapshot={snapshot} />}

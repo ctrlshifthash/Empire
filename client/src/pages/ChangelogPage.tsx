@@ -12,6 +12,8 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "The Hub — meet & chat", desc: "A shared social lobby every ruler now lands in first: chat with everyone online and see who's here, then march into your world." },
+      { tag: "Feature", title: "Custom in-game names", desc: "Rename yourself from the dashboard — your new name shows everywhere: the leaderboard, the world and the hub." },
       { tag: "Feature", title: "Token-gated play", desc: "Playing the full game and earning SOL now requires holding at least 10 $RUMBLE in your wallet, verified on-chain and enforced continuously while you play. Demo mode stays free and open to everyone (no rewards)." },
       { tag: "Improvement", title: "Direct wallet sign-in", desc: "Sign in straight to Phantom or Solflare. Your empire is tied to your wallet, and your holdings unlock the daily SOL rewards." },
       { tag: "Feature", title: "Coin Exchange — cash out to $RUMBLE", desc: "Sell the in-game coins you grind for the project token, P2P, paid straight to your wallet (95%) with the 5% fee burned. Turns playtime into token, on the Market page." },

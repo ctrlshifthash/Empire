@@ -137,9 +137,11 @@ export default function RewardsPanel() {
       {/* ── Header: identity + wallet + network ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="font-display text-2xl font-bold text-gold-light">
-            📊 {empire?.name ?? "Your Dashboard"}
-          </div>
+          {empire ? (
+            <EmpireNameEditor name={empire.name} />
+          ) : (
+            <div className="font-display text-2xl font-bold text-gold-light">📊 Your Dashboard</div>
+          )}
           <div className="mt-0.5 flex items-center gap-2 text-sm">
             <span className="rounded-full bg-gold/15 px-2 py-0.5 font-semibold text-gold-light">⚜ {rank.name}</span>
             {demo && (
@@ -408,5 +410,63 @@ function Stat({ label, value, gold }: { label: string; value: string; gold?: boo
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm text-parchment-200">{children}</div>
+  );
+}
+
+// Inline editor for the player's in-game name. Saving renames the empire, which
+// propagates to the leaderboard, world map and hub (all read empire.name).
+function EmpireNameEditor({ name }: { name: string }) {
+  const renameEmpire = useGame((s) => s.renameEmpire);
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(name);
+  useEffect(() => setVal(name), [name]);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="font-display text-2xl font-bold text-gold-light">📊 {name}</span>
+        <button
+          className="text-sm text-parchment-300/50 hover:text-gold-light"
+          title="Edit your name"
+          onClick={() => setEditing(true)}
+        >
+          ✏️
+        </button>
+      </div>
+    );
+  }
+
+  const save = () => {
+    const t = val.trim();
+    if (t && t !== name) renameEmpire(t);
+    setEditing(false);
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        autoFocus
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") {
+            setVal(name);
+            setEditing(false);
+          }
+        }}
+        maxLength={20}
+        className="w-48 rounded-lg border border-gold/30 bg-black/30 px-2 py-1 font-display text-xl font-bold text-gold-light focus:outline-none"
+      />
+      <button className="btn-gold btn-sm" onClick={save}>Save</button>
+      <button
+        className="chip py-0.5 text-[10px]"
+        onClick={() => {
+          setVal(name);
+          setEditing(false);
+        }}
+      >
+        ✕
+      </button>
+    </div>
   );
 }

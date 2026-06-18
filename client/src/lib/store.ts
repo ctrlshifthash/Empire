@@ -6,6 +6,8 @@ import type {
   BattleReport,
   BuildingType,
   GameSnapshot,
+  HubMessage,
+  HubPlayer,
   ResourceKind,
   ToolId,
   UnitType,
@@ -24,6 +26,9 @@ interface GameStore {
   snapshot: GameSnapshot | null;
   connected: boolean;
   toasts: Toast[];
+  // global social hub (shared chat lobby + who's online)
+  hubMessages: HubMessage[];
+  hubOnline: HubPlayer[];
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -69,6 +74,9 @@ interface GameStore {
   buyArmoury: (kind: "weapon" | "armour" | "helmet" | "heroArmour", unit?: UnitType) => void;
   buyTrait: (traitId: string) => void;
 
+  hubChat: (text: string) => void;
+  renameEmpire: (name: string) => void;
+
   createAlliance: (name: string, tag: string) => void;
   joinAlliance: (allianceId: string) => void;
   leaveAlliance: () => void;
@@ -101,6 +109,8 @@ export const useGame = create<GameStore>((set, get) => ({
   snapshot: null,
   connected: false,
   toasts: [],
+  hubMessages: [],
+  hubOnline: [],
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
@@ -171,6 +181,12 @@ export const useGame = create<GameStore>((set, get) => ({
     socket.on("toast", (t: { kind: Toast["kind"]; text: string }) =>
       get().pushToast(t),
     );
+    // ── social hub ──
+    socket.on("hub:history", (msgs: HubMessage[]) => set({ hubMessages: msgs.slice(-60) }));
+    socket.on("hub:message", (msg: HubMessage) =>
+      set({ hubMessages: [...get().hubMessages, msg].slice(-60) }),
+    );
+    socket.on("hub:online", (players: HubPlayer[]) => set({ hubOnline: players }));
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.
@@ -222,6 +238,9 @@ export const useGame = create<GameStore>((set, get) => ({
   slay: (kind) => socket?.emit("slay", { kind }),
   buyArmoury: (kind, unit) => socket?.emit("buyArmoury", { kind, unit }),
   buyTrait: (traitId) => socket?.emit("buyTrait", { traitId }),
+  hubChat: (text) => socket?.emit("hub:chat", { text }),
+  renameEmpire: (name) => socket?.emit("empire:rename", { name }),
+
   createAlliance: (name, tag) => socket?.emit("alliance:create", { name, tag }),
   joinAlliance: (allianceId) => socket?.emit("alliance:join", { allianceId }),
   leaveAlliance: () => socket?.emit("alliance:leave"),

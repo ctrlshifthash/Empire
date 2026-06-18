@@ -194,6 +194,25 @@ export interface AllianceChatMsg {
   at: number;
 }
 
+// Global social hub: a shared chat lobby every player lands in before entering
+// their world.
+export interface HubMessage {
+  id: string;
+  fromId: string; // empire id
+  fromName: string;
+  banner: string; // sender's banner colour
+  text: string;
+  at: number;
+}
+
+export interface HubPlayer {
+  id: string;
+  name: string;
+  banner: string;
+  power: number;
+  rank: string;
+}
+
 export interface Alliance {
   id: string;
   name: string;
