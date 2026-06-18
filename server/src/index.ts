@@ -22,6 +22,7 @@ import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint } from "./rewards.ts";
 import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks } from "./features.ts";
+import { freeSpin } from "./spinner.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -792,6 +793,15 @@ io.on("connection", (socket) => {
     withEmpire((id) => {
       state.empires[id].profilePublic = p?.public !== false;
       handle({ ok: true }, p?.public !== false ? "Profile set to public." : "Profile hidden from the leaderboard.");
+    }),
+  );
+
+  // Spinner Wheel (beta) — one free spin every 12h; awards resources or a relic.
+  socket.on("spinner:spin", () =>
+    withEmpire((id) => {
+      const r = freeSpin(id);
+      socket.emit("spinner:result", r);
+      handle(r);
     }),
   );
 

@@ -946,6 +946,31 @@ export const CHARACTERS: CharacterType[] = [
 ];
 
 export const characterType = (id: string): CharacterType | undefined => CHARACTERS.find((c) => c.id === id);
+
+// ── Spinner Wheel (beta) ─────────────────────────────────────────────────────
+// A free spin every 12h (paid spins that burn $RUMBLE come with the unlock).
+// Rewards are RESOURCES or a relic — never coins (coins have a free market, so
+// minting them would re-break the coin↔$RUMBLE price).
+export const SPIN_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+export interface SpinSegment {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  weight: number;
+  resources?: { wood?: number; food?: number; gold?: number; stone?: number };
+  relic?: boolean;
+}
+export const SPIN_SEGMENTS: SpinSegment[] = [
+  { id: "wood", label: "5,000 Wood", icon: "🪵", color: "#6e5a30", weight: 18, resources: { wood: 5000 } },
+  { id: "food", label: "5,000 Food", icon: "🍖", color: "#9c5a3c", weight: 18, resources: { food: 5000 } },
+  { id: "stone", label: "5,000 Stone", icon: "🪨", color: "#7c766b", weight: 16, resources: { stone: 5000 } },
+  { id: "gold", label: "5,000 Gold", icon: "🟡", color: "#c0a020", weight: 16, resources: { gold: 5000 } },
+  { id: "haul", label: "Resource Haul", icon: "🎁", color: "#2980b9", weight: 12, resources: { wood: 12000, food: 12000, gold: 12000, stone: 12000 } },
+  { id: "bigGold", label: "10,000 Gold", icon: "💰", color: "#d4af37", weight: 10, resources: { gold: 10000 } },
+  { id: "scraps", label: "2,000 Wood", icon: "🌿", color: "#27ae60", weight: 8, resources: { wood: 2000 } },
+  { id: "relic", label: "A Relic!", icon: "🏺", color: "#8e44ad", weight: 2, relic: true },
+];
 export interface MarketItemType {
   id: string;
   name: string;

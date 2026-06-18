@@ -16,6 +16,7 @@ import ArenaView from "../game/ArenaView";
 import AchievementsView from "../game/AchievementsView";
 import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
+import SpinnerWheel from "../game/SpinnerWheel";
 import LogView from "../game/LogView";
 import OperationsPanel from "../game/OperationsPanel";
 import BattleSpectate from "../game/BattleSpectate";
@@ -36,6 +37,7 @@ type Tab =
   | "alliance"
   | "titles"
   | "quests"
+  | "spinner"
   | "log"
   | "rewards";
 
@@ -53,6 +55,7 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "alliance", label: "Alliance", icon: "🛡️", desc: "Band together — allies can't raid each other & climb the alliance ranks" },
   { id: "titles", label: "Titles", icon: "🏅", desc: "Achievements & milestones you've unlocked" },
   { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
+  { id: "spinner", label: "Spinner", icon: "🎡", desc: "Spin the wheel — a free spin every 12h (beta)" },
   { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
   { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim SOL token rewards" },
 ];
@@ -256,6 +259,7 @@ export default function Play() {
                 {tab === "alliance" && <AllianceView empire={empire} />}
                 {tab === "titles" && <AchievementsView empire={empire} />}
                 {tab === "quests" && <QuestsView empire={empire} />}
+                {tab === "spinner" && <SpinnerWheel />}
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}
               </div>

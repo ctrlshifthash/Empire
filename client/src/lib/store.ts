@@ -33,6 +33,9 @@ interface GameStore {
   hubAvatars: HubAvatar[];
   inHub: boolean; // true while standing in the hub (drives hub-specific music)
   setInHub: (v: boolean) => void;
+  // spinner wheel (beta): last result, nonce re-triggers the wheel animation
+  spinResult: { ok: boolean; index?: number; reward?: string; error?: string; nonce: number } | null;
+  spin: () => void;
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -125,6 +128,8 @@ export const useGame = create<GameStore>((set, get) => ({
   hubAvatars: [],
   inHub: false,
   setInHub: (v) => set({ inHub: v }),
+  spinResult: null,
+  spin: () => socket?.emit("spinner:spin"),
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
@@ -202,6 +207,9 @@ export const useGame = create<GameStore>((set, get) => ({
     );
     socket.on("hub:online", (players: HubPlayer[]) => set({ hubOnline: players }));
     socket.on("hub:players", (avatars: HubAvatar[]) => set({ hubAvatars: avatars }));
+    socket.on("spinner:result", (r: { ok: boolean; index?: number; reward?: string; error?: string }) =>
+      set({ spinResult: { ...r, nonce: (get().spinResult?.nonce ?? 0) + 1 } }),
+    );
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.
