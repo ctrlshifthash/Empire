@@ -116,6 +116,9 @@ export default function LiveWorld({
       wd.setHeroLook(arm?.helmet ?? 0, arm?.heroArmour ?? 0);
       wd.hero.speed = 4.2 * (1 + tb.speedPct); // base hero speed × trait bonus
     }
+    // equipped character skin becomes the in-world hero look too (hub + in-game)
+    const ec = snapshot.characters?.find((c) => c.equipped);
+    wd.setHeroCharacter(ec ? { color: ec.color, hat: ec.hat, cape: ec.cape } : null);
   }, [snapshot]);
 
   // Click a resource in the top bar → fly the camera to, and send the hero to

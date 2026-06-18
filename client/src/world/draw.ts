@@ -780,13 +780,14 @@ export function renderWorld(
           ring: "rgba(244,221,143,0.7)",
         });
         if (!drewHero) {
+          const hc = world.heroCharacter; // equipped character skin overrides the armour look
           drawCharacter(ctx, hsx.x, hsx.y, {
-            color: ARMOUR_TINT[Math.min(look.armour, ARMOUR_TINT.length - 1)],
+            color: hc?.color ?? ARMOUR_TINT[Math.min(look.armour, ARMOUR_TINT.length - 1)],
             facing: world.hero.facing,
             scale: 1.95,
             weapon: "sword",
-            hat: look.helmet > 0 ? "helmet" : "crown",
-            cape: true,
+            hat: hc ? hc.hat ?? undefined : look.helmet > 0 ? "helmet" : "crown",
+            cape: hc ? hc.cape : true,
             moving: world.hero.state === "move",
             attacking: world.hero.state === "fight",
             ring: "rgba(244,221,143,0.7)",

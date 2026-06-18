@@ -456,6 +456,11 @@ export class World {
   setHeroLook(helmet: number, armour: number) {
     this.heroLook = { helmet, armour };
   }
+  // equipped character skin (overrides the armour look in-world), or null
+  heroCharacter: { color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean } | null = null;
+  setHeroCharacter(c: { color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean } | null) {
+    this.heroCharacter = c;
+  }
 
   setArmy(counts: Record<UnitType, number>) {
     this.armyCounts = { ...counts };
