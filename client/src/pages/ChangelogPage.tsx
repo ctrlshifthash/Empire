@@ -10,7 +10,7 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
-    date: "June 19, 2026",
+    date: "June 18, 2026",
     items: [
       { tag: "Improvement", title: "Coin Exchange priced in USD", desc: "Sell your coins at a stable dollar price — paid to your wallet in $RUMBLE at the live token rate (5% burned), with a one-tap 'Cash out → SOL'. And the token shop no longer sells coins, so the Exchange is now the single free market for them — real, player-set prices." },
       { tag: "Improvement", title: "Standout nameplates in the Hub", desc: "Players in the Hub now show a bigger name and a bold level tag above their hero, and higher-level rulers glow gold so the strongest players stand out in the plaza." },
@@ -23,7 +23,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     ],
   },
   {
-    date: "June 18, 2026",
+    date: "June 17, 2026",
     items: [
       { tag: "Feature", title: "Marketplace activity feeds", desc: "Every relic and coin listing, purchase and sale now appears in a live Activity feed on its Marketplace tab." },
       { tag: "Feature", title: "Characters (beta preview)", desc: "A new Characters tab in the Marketplace — preview the character roster you'll be able to buy, wear as your hub avatar, and own as a compressed NFT you can resell. Locked for now while the artwork and on-chain minting are finished." },
@@ -50,7 +50,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     ],
   },
   {
-    date: "June 17, 2026",
+    date: "June 16, 2026",
     items: [
       { tag: "Feature", title: "Wagered Arena (PvP)", desc: "Stake coins and commit an army; anyone can accept and fight you. Winner takes the pot (minus a burned rake). In-game coins only." },
       { tag: "Feature", title: "Diamond Hands rewards", desc: "Holding without selling grows a loyalty multiplier on your SOL accrual (up to 2×); selling resets it." },
@@ -71,7 +71,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     ],
   },
   {
-    date: "June 16, 2026",
+    date: "June 15, 2026",
     items: [
       { tag: "Improvement", title: "Reward playing hard", desc: "Your empire's renown rank now boosts SOL accrual — within the same fixed daily pool." },
       { tag: "Improvement", title: "Themed home page", desc: "Per-section backdrops: sky, world map, night town, the ages, and the kingdom." },
