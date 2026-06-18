@@ -18,7 +18,7 @@ export default function InventoryDashboard() {
     <div className="mt-6 rounded-2xl border border-parchment-300/10 bg-ink-800/60 p-5 shadow-panel">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold text-gold-gradient">Relics &amp; trading</h2>
-        <Link to="/market" className="btn-ghost btn-sm">Open market</Link>
+        <Link to="/marketplace" className="btn-ghost btn-sm">Open marketplace</Link>
       </div>
 
       {/* trading stats */}
@@ -51,7 +51,7 @@ export default function InventoryDashboard() {
         {inventory.length === 0 ? (
           <div className="rounded-lg border border-parchment-300/10 bg-black/20 p-6 text-center text-sm text-parchment-300/55">
             No relics yet — win tournaments &amp; boss fights, complete quests, or rank up to earn them. Or buy on the{" "}
-            <Link to="/market" className="text-gold-light hover:underline">marketplace</Link>.
+            <Link to="/marketplace" className="text-gold-light hover:underline">marketplace</Link>.
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

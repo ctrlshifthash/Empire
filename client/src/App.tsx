@@ -56,7 +56,8 @@ export default function App() {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/governance" element={<GovernancePage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
-          <Route path="/market" element={<MarketPage />} />
+          <Route path="/marketplace" element={<MarketPage />} />
+          <Route path="/market" element={<Navigate to="/marketplace" replace />} />
           <Route path="/admin" element={<AdminBugsPage />} />
           <Route
             path="/play"
