@@ -104,9 +104,7 @@ export async function getHoldings(address: string): Promise<Holdings> {
 // The real (earning) game is token-gated: a wallet must hold at least
 // MIN_PLAY_HOLD of the project token to enter. Demo mode stays open to everyone
 // (no wallet, no rewards). Tunable via the MIN_PLAY_HOLD env var.
-// TEMP (testing): default 0 disables the play-gate so anyone can sign in without
-// holding. Revert this default to "10" to re-enable the hold requirement.
-export const MIN_PLAY_HOLD = Number(process.env.MIN_PLAY_HOLD || "0");
+export const MIN_PLAY_HOLD = Number(process.env.MIN_PLAY_HOLD || "10");
 
 export interface PlayEligibility {
   allowed: boolean;

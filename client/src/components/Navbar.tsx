@@ -146,7 +146,7 @@ export default function Navbar() {
               </>
             ) : (
               <Link to="/login" className="btn-gold btn-sm">
-                Play Free ⚔
+                Sign in
               </Link>
             )}
           </div>
@@ -202,7 +202,7 @@ export default function Navbar() {
                 </button>
               ) : (
                 <Link to="/login" className="btn-gold btn-sm flex-1" onClick={() => setOpen(false)}>
-                  Play Free ⚔
+                  Sign in
                 </Link>
               )}
             </div>
