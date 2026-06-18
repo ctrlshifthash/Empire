@@ -263,7 +263,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         d: m.x + m.y + 0.001,
         draw: () => {
           const s = toScreen(m.x, m.y);
-          drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a" });
+          drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a", hat: myChar?.hat ?? undefined, cape: myChar?.cape });
           label(s.x, s.y - 36, myName, myLvl);
           if (myChar) badge(s.x, s.y - 62, myChar.icon);
         },
@@ -283,7 +283,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           d: dd.x + dd.y,
           draw: () => {
             const s = toScreen(dd.x, dd.y);
-            drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase });
+            drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase, hat: a.character?.hat ?? undefined, cape: a.character?.cape });
             label(s.x, s.y - 36, a.name, a.level);
             if (a.character) badge(s.x, s.y - 62, a.character.icon);
           },

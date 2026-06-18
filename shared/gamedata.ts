@@ -920,11 +920,16 @@ export const RARITY_META: Record<ItemRarity, { label: string; color: string }> =
 // Cosmetic characters you buy (coins or $RUMBLE), wear as your hub avatar, and
 // own as a compressed NFT you can resell. BETA: icon+colour placeholders until
 // the real character art is imported (then `art` points at the sprite/skin).
+// `hat`/`cape`/`weapon` drive a distinct placeholder look via the game's own
+// character renderer until real artwork is imported.
+export type CharHat = "crown" | "helmet" | "hood" | "cap" | null;
 export interface CharacterType {
   id: string;
   name: string;
-  icon: string; // placeholder glyph until real art
-  color: string; // avatar tint until real art
+  icon: string; // small glyph accent
+  color: string; // tunic colour
+  hat: CharHat;
+  cape: boolean;
   rarity: ItemRarity;
   priceCoins: number; // buy with in-game coins
   priceRumble: number; // or buy with $RUMBLE (burned)
@@ -933,11 +938,11 @@ export interface CharacterType {
 }
 
 export const CHARACTERS: CharacterType[] = [
-  { id: "squire", name: "Squire", icon: "🧑‍🌾", color: "#8a8377", rarity: "common", priceCoins: 15000, priceRumble: 4000, maxSupply: 2000, desc: "Every legend starts somewhere." },
-  { id: "azure_knight", name: "Azure Knight", icon: "🛡️", color: "#2980b9", rarity: "common", priceCoins: 25000, priceRumble: 6000, maxSupply: 1000, desc: "Steadfast and blue-clad." },
-  { id: "forest_ranger", name: "Forest Ranger", icon: "🏹", color: "#27ae60", rarity: "rare", priceCoins: 70000, priceRumble: 16000, maxSupply: 250, desc: "Swift, silent, deadly." },
-  { id: "arcane_mage", name: "Arcane Mage", icon: "🔮", color: "#8e44ad", rarity: "epic", priceCoins: 200000, priceRumble: 45000, maxSupply: 50, desc: "Keeper of the old magics." },
-  { id: "crimson_warlord", name: "Crimson Warlord", icon: "⚔️", color: "#c0392b", rarity: "legendary", priceCoins: 900000, priceRumble: 180000, maxSupply: 10, desc: "Feared across the realm. Only ten will exist." },
+  { id: "squire", name: "Squire", icon: "🧑‍🌾", color: "#8a8377", hat: "cap", cape: false, rarity: "common", priceCoins: 15000, priceRumble: 4000, maxSupply: 2000, desc: "Every legend starts somewhere." },
+  { id: "azure_knight", name: "Azure Knight", icon: "🛡️", color: "#2980b9", hat: "helmet", cape: false, rarity: "common", priceCoins: 25000, priceRumble: 6000, maxSupply: 1000, desc: "Steadfast and blue-clad." },
+  { id: "forest_ranger", name: "Forest Ranger", icon: "🏹", color: "#27ae60", hat: "hood", cape: false, rarity: "rare", priceCoins: 70000, priceRumble: 16000, maxSupply: 250, desc: "Swift, silent, deadly." },
+  { id: "arcane_mage", name: "Arcane Mage", icon: "🔮", color: "#8e44ad", hat: "hood", cape: true, rarity: "epic", priceCoins: 200000, priceRumble: 45000, maxSupply: 50, desc: "Keeper of the old magics." },
+  { id: "crimson_warlord", name: "Crimson Warlord", icon: "⚔️", color: "#c0392b", hat: "crown", cape: true, rarity: "legendary", priceCoins: 900000, priceRumble: 180000, maxSupply: 10, desc: "Feared across the realm. Only ten will exist." },
 ];
 
 export const characterType = (id: string): CharacterType | undefined => CHARACTERS.find((c) => c.id === id);

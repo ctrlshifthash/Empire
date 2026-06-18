@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { useGame } from "../lib/store";
 import { RARITY_META } from "@shared/gamedata";
 import { SERVER_URL } from "../lib/config";
+import CharacterAvatar from "./CharacterAvatar";
 
+type Hat = "crown" | "helmet" | "hood" | "cap" | null;
 type CatalogItem = {
   id: string;
   name: string;
   icon: string;
   color: string;
+  hat: Hat;
+  cape: boolean;
   rarity: string;
   priceCoins: number;
   priceRumble: number;
@@ -53,8 +57,8 @@ export default function CharacterShop() {
           return (
             <div key={c.id} className="panel flex flex-col p-4" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg text-2xl" style={{ background: `${c.color}33`, border: `1px solid ${c.color}` }}>
-                  {c.icon}
+                <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: `${c.color}22`, border: `1px solid ${c.color}` }}>
+                  <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} size={52} />
                 </span>
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-parchment-100">{c.name}</div>
@@ -97,8 +101,8 @@ export default function CharacterShop() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {owned.map((c) => (
               <div key={c.instanceId} className="panel flex items-center gap-3 p-3" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-xl" style={{ background: `${c.color}33`, border: `1px solid ${c.color}` }}>
-                  {c.icon}
+                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: `${c.color}22`, border: `1px solid ${c.color}` }}>
+                  <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} size={46} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-parchment-100">

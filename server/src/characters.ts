@@ -50,6 +50,8 @@ export function ownedCharacters(empireId: string): OwnedCharacter[] {
         name: def?.name ?? c.typeId,
         icon: def?.icon ?? "🙂",
         color: def?.color ?? "#888888",
+        hat: def?.hat ?? null,
+        cape: def?.cape ?? false,
         rarity: def?.rarity ?? "common",
         serial: c.serial,
         equipped: eq === c.id,
@@ -89,9 +91,11 @@ export function equipCharacter(empireId: string, instanceId: string): CharResult
 }
 
 // The equipped character's look for the hub avatar (or undefined).
-export function equippedCharacterStyle(e: { equippedCharacter?: string }): { icon: string; color: string } | undefined {
+export function equippedCharacterStyle(
+  e: { equippedCharacter?: string },
+): { icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean } | undefined {
   if (!e.equippedCharacter) return undefined;
   const inst = state.characterInstances[e.equippedCharacter];
   const def = inst ? characterType(inst.typeId) : undefined;
-  return def ? { icon: def.icon, color: def.color } : undefined;
+  return def ? { icon: def.icon, color: def.color, hat: def.hat, cape: def.cape } : undefined;
 }

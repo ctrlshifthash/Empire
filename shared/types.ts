@@ -226,7 +226,8 @@ export interface HubAvatar {
   y: number;
   facing: number; // 1 = facing right, -1 = left
   moving: boolean;
-  character?: { icon: string; color: string }; // equipped character skin, if any
+  // equipped character skin, if any (look drives the placeholder sprite)
+  character?: { icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean };
 }
 
 export interface Alliance {
@@ -531,6 +532,8 @@ export interface OwnedCharacter {
   name: string;
   icon: string;
   color: string;
+  hat: "crown" | "helmet" | "hood" | "cap" | null;
+  cape: boolean;
   rarity: string;
   serial: number;
   equipped: boolean;
