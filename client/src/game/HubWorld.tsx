@@ -312,8 +312,8 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       {/* hub navigation — reach any part of the game straight from the hub */}
       <div className="pointer-events-none absolute inset-x-0 top-0 p-3">
         <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-xl border border-parchment-300/15 bg-black/60 px-2 py-1.5 backdrop-blur">
-          <button className="btn-gold btn-sm" onClick={() => onOpenTab("live")}>
-            ▶ Enter World
+          <button className="btn-gold px-5 py-2 text-base font-bold" onClick={() => onOpenTab("live")}>
+            🏰 Enter My Empire →
           </button>
           <span className="mx-0.5 h-5 w-px bg-parchment-300/20" />
           {HUB_NAV.map(([t, lbl]) => (
