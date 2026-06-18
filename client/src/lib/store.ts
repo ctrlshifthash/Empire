@@ -178,6 +178,14 @@ export const useGame = create<GameStore>((set, get) => ({
       get().pushToast({ kind: "warn", text: "Your session expired — please log in again." });
       get().logout();
     });
+    // server dropped us because the wallet no longer holds the minimum $RUMBLE
+    socket.on("gated", (info: { required?: number; held?: number }) => {
+      get().pushToast({
+        kind: "warn",
+        text: `You need to hold at least ${info?.required ?? 10} $RUMBLE to keep playing. Buy more, then sign in again.`,
+      });
+      get().logout();
+    });
   },
 
   disconnect: () => {

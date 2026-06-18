@@ -467,10 +467,28 @@ io.on("connection", (socket) => {
     socket.join(`emp:${empireId}`);
     onlineEmpires.add(empireId);
     pushSnapshot(empireId);
-    // refresh holder-tier perks from chain, then re-push so they apply this session
+    // refresh holder-tier perks from chain, then re-push so they apply this
+    // session. Also continuously enforce the play-gate: a wallet that has sold
+    // below the minimum is bounced (the client logs out on "gated"). Demo and
+    // legacy/email identities skip the gate; RPC failure never kicks (fails open).
     if (user.externalId) {
       const eid = empireId;
-      void refreshHolderTier(user.externalId).then(() => pushSnapshot(eid));
+      const ext = user.externalId;
+      const isWallet = ext.length >= 32 && !ext.includes("@") && !ext.startsWith("did:");
+      if (isWallet) {
+        void checkPlayEligibility(ext).then((elig) => {
+          if (!elig.allowed && elig.reason === "gate") {
+            socket.emit("gated", { required: elig.required, held: elig.held });
+            onlineEmpires.delete(eid);
+            socket.leave(`emp:${eid}`);
+            empireId = null;
+            return;
+          }
+          void refreshHolderTier(ext).then(() => pushSnapshot(eid));
+        });
+      } else {
+        void refreshHolderTier(ext).then(() => pushSnapshot(eid));
+      }
     }
   });
 
@@ -664,6 +682,33 @@ setInterval(() => {
     console.error("[ai] error (world continues):", err);
   }
 }, AI_MS);
+
+// Continuous token-gate: periodically re-verify that online wallet players still
+// hold the minimum $RUMBLE, and bounce any who've sold below it (the client logs
+// out when it receives "gated"). Demo/legacy identities are skipped, and a failed
+// chain read never kicks (checkPlayEligibility returns "unverified", not "gate").
+const HOLD_SWEEP_MS = 5 * 60 * 1000;
+setInterval(() => {
+  void (async () => {
+    for (const empId of [...onlineEmpires]) {
+      const user = Object.values(state.users).find((u) => u.empireId === empId);
+      const ext = user?.externalId;
+      if (!ext) continue;
+      const isWallet = ext.length >= 32 && !ext.includes("@") && !ext.startsWith("did:");
+      if (!isWallet) continue;
+      try {
+        const elig = await checkPlayEligibility(ext);
+        if (!elig.allowed && elig.reason === "gate") {
+          io.to(`emp:${empId}`).emit("gated", { required: elig.required, held: elig.held });
+          onlineEmpires.delete(empId);
+          io.in(`emp:${empId}`).socketsLeave(`emp:${empId}`);
+        }
+      } catch {
+        /* transient RPC failure — skip this round, never kick on an unverified read */
+      }
+    }
+  })();
+}, HOLD_SWEEP_MS);
 
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);

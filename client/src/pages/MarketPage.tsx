@@ -48,7 +48,7 @@ export default function MarketPage() {
 function Market() {
   const address = useWallet((s) => s.address);
   const { setVisible } = useWalletModal();
-  const { sendTransaction } = useSolWallet();
+  const { publicKey, connected, sendTransaction } = useSolWallet();
   const { connection } = useConnection();
   const pushToast = useGame((s) => s.pushToast);
   const inventory = useGame((s) => s.snapshot?.inventory ?? []);
@@ -67,21 +67,25 @@ function Market() {
   }, []);
 
   async function buy(l: ListingPublic) {
-    if (!address) {
-      pushToast({ kind: "warn", text: "Connect a wallet to buy." });
+    // The live wallet-adapter connection is the source of truth for signing —
+    // a stored address can persist past a reload while the adapter is disconnected.
+    if (!connected || !publicKey) {
+      pushToast({ kind: "warn", text: "Connect your wallet to buy." });
+      setVisible(true);
       return;
     }
+    const buyer = publicKey.toBase58();
     setBusy(l.id);
     try {
-      const r = await reserve(l.id, address);
+      const r = await reserve(l.id, buyer);
       if (!r.ok || !r.payment) {
         pushToast({ kind: "warn", text: r.error ?? "Couldn’t reserve." });
         return;
       }
-      const tx = await buildPaymentTx(r.payment, address);
+      const tx = await buildPaymentTx(r.payment, buyer);
       const signature = await sendTransaction(tx, connection);
       pushToast({ kind: "success", text: "Payment sent — confirming…" });
-      const res = await postBuy(l.id, address, signature);
+      const res = await postBuy(l.id, buyer, signature);
       if (res.ok) {
         pushToast({ kind: "success", text: `${l.name} #${l.serial} is yours!` });
         refresh();
@@ -90,7 +94,12 @@ function Market() {
       }
     } catch (e) {
       const msg = String((e as Error)?.message ?? e);
-      pushToast({ kind: "warn", text: /reject|denied|cancel|closed/i.test(msg) ? "Payment cancelled." : "Couldn’t complete the purchase." });
+      if (/disconnect/i.test(msg)) {
+        pushToast({ kind: "warn", text: "Wallet disconnected — reconnect and try again." });
+        setVisible(true);
+      } else {
+        pushToast({ kind: "warn", text: /reject|denied|cancel|closed/i.test(msg) ? "Payment cancelled." : "Couldn’t complete the purchase." });
+      }
     } finally {
       setBusy(null);
     }

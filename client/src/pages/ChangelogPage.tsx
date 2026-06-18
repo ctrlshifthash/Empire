@@ -12,7 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
-      { tag: "Feature", title: "Token-gated play", desc: "Playing the full game and earning SOL now requires holding at least 10 $RUMBLE in your wallet, verified on-chain at sign-in. Demo mode stays free and open to everyone (no rewards)." },
+      { tag: "Feature", title: "Token-gated play", desc: "Playing the full game and earning SOL now requires holding at least 10 $RUMBLE in your wallet, verified on-chain and enforced continuously while you play. Demo mode stays free and open to everyone (no rewards)." },
       { tag: "Improvement", title: "Direct wallet sign-in", desc: "Sign in straight to Phantom or Solflare. Your empire is tied to your wallet, and your holdings unlock the daily SOL rewards." },
       { tag: "Feature", title: "Coin Exchange — cash out to $RUMBLE", desc: "Sell the in-game coins you grind for the project token, P2P, paid straight to your wallet (95%) with the 5% fee burned. Turns playtime into token, on the Market page." },
       { tag: "Feature", title: "Token shop now burns", desc: "Every token-shop purchase burns the $RUMBLE you spend — removed from supply forever. The shop is purely deflationary." },

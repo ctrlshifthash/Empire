@@ -42,7 +42,7 @@ function ShopGrid() {
   const address = useWallet((s) => s.address);
   const { setVisible } = useWalletModal();
   const pushToast = useGame((s) => s.pushToast);
-  const { sendTransaction } = useSolWallet();
+  const { publicKey, connected, sendTransaction } = useSolWallet();
   const { connection } = useConnection();
 
   const [cfg, setCfg] = useState<ShopConfig | null>(null);
@@ -64,22 +64,27 @@ function ShopGrid() {
       pushToast({ kind: "warn", text: "Shop isn’t live yet." });
       return;
     }
-    if (!address) {
-      pushToast({ kind: "warn", text: "Connect a Solana wallet to buy." });
+    if (!connected || !publicKey) {
+      pushToast({ kind: "warn", text: "Connect your wallet to buy." });
+      setVisible(true);
       return;
     }
+    const buyer = publicKey.toBase58();
     setBusy(item.id);
     try {
-      const tx = await buildPaymentTx(cfg, address, item.price);
+      const tx = await buildPaymentTx(cfg, buyer, item.price);
       const signature = await sendTransaction(tx, connection);
       pushToast({ kind: "success", text: "Payment sent — confirming…" });
-      const res = await postPurchase(address, signature, item.id);
+      const res = await postPurchase(buyer, signature, item.id);
       if (res.ok) pushToast({ kind: "success", text: `${item.name} unlocked!` });
       else pushToast({ kind: "warn", text: res.error ?? "Purchase failed." });
     } catch (e) {
       const msg = String((e as Error)?.message ?? e);
       // user closing the wallet popup isn't an error worth shouting about
-      if (/reject|denied|cancel|closed/i.test(msg)) pushToast({ kind: "warn", text: "Payment cancelled." });
+      if (/disconnect/i.test(msg)) {
+        pushToast({ kind: "warn", text: "Wallet disconnected — reconnect and try again." });
+        setVisible(true);
+      } else if (/reject|denied|cancel|closed/i.test(msg)) pushToast({ kind: "warn", text: "Payment cancelled." });
       else pushToast({ kind: "warn", text: "Couldn’t complete the payment." });
     } finally {
       setBusy(null);
