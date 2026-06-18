@@ -886,7 +886,7 @@ function drawRoof(ctx: CanvasRenderingContext2D, sx: number, top: number, bw: nu
   }
 }
 
-function drawBuilding(ctx: CanvasRenderingContext2D, sx: number, sy: number, b: BuildingView, now: number) {
+export function drawBuilding(ctx: CanvasRenderingContext2D, sx: number, sy: number, b: BuildingView, now: number) {
   const st = B_STYLE[b.type] ?? B_STYLE.house;
   const bw = st.w;
   const bh = st.h;

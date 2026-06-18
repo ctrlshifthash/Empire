@@ -213,9 +213,16 @@ export default function Play() {
           opening Hero / Empire / Military etc. never leaves the live game. */}
       <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} onOpenTab={(t) => setTab(t as Tab)} active={tab === "live"} />
 
+      {/* The social hub is a full-screen shared world you land in — not a popup. */}
+      {tab === "hub" && (
+        <div className="fixed inset-0 top-16 z-40">
+          <HubWorld onEnter={() => setTab("live")} />
+        </div>
+      )}
+
       {/* Dashboard views overlay the live world (which keeps running behind) at
           full dashboard width, so nothing is cramped and you never leave the game. */}
-      {tab !== "live" && (
+      {tab !== "live" && tab !== "hub" && (
         <div
           className="fixed inset-0 top-16 z-40 overflow-y-auto bg-black/60 backdrop-blur-sm"
           onClick={() => setTab("live")}
@@ -236,9 +243,8 @@ export default function Play() {
                 ✕ Close
               </button>
             </div>
-            <div className={`grid gap-5 ${tab === "hub" ? "" : "xl:grid-cols-[1fr_320px]"}`}>
+            <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
               <div className="min-w-0">
-                {tab === "hub" && <HubWorld onEnter={() => setTab("live")} />}
                 {tab === "hero" && <HeroView empire={empire} />}
                 {tab === "empire" && <EmpireView empire={empire} />}
                 {tab === "world" && <WorldView snapshot={snapshot} />}
@@ -253,13 +259,11 @@ export default function Play() {
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}
               </div>
-              {tab !== "hub" && (
-                <aside className="hidden xl:block">
-                  <div className="sticky top-4">
-                    <OperationsPanel snapshot={snapshot} />
-                  </div>
-                </aside>
-              )}
+              <aside className="hidden xl:block">
+                <div className="sticky top-4">
+                  <OperationsPanel snapshot={snapshot} />
+                </div>
+              </aside>
             </div>
           </div>
         </div>
