@@ -14,7 +14,8 @@ import express from "express";
 import { Server as SocketServer } from "socket.io";
 
 import type { Army } from "../../shared/combat.ts";
-import type { HubMessage, HubPlayer } from "../../shared/types.ts";
+import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
+import { levelForXp } from "../../shared/progression.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility } from "./rewards.ts";
@@ -475,6 +476,18 @@ function postHub(empire: { id: string; name: string; banner: string }, rawText: 
   return msg;
 }
 
+// ── Spatial hub: a shared walkable plaza ────────────────────────────────────
+// Avatars of players actively standing in the hub (joined the "hubspace" room).
+const hubAvatars = new Map<string, HubAvatar>();
+const HUB_BOUND = 11; // half-extent of the plaza in tiles
+
+function makeAvatar(empireId: string, x: number, y: number): HubAvatar | null {
+  const e = state.empires[empireId];
+  if (!e) return null;
+  const level = Math.max(1, levelForXp(e.hero?.skills?.combat ?? 0));
+  return { id: e.id, name: e.name, level, banner: e.banner, x, y, facing: 1, moving: false };
+}
+
 io.on("connection", (socket) => {
   let empireId: string | null = null;
   let externalId: string | undefined; // the player's wallet/email id (for selling)
@@ -687,6 +700,36 @@ io.on("connection", (socket) => {
     }),
   );
 
+  // Spatial hub: enter the plaza (spawn an avatar near the fountain).
+  socket.on("hub:enter", () =>
+    withEmpire((id) => {
+      socket.join("hubspace");
+      const a = makeAvatar(id, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
+      if (a) hubAvatars.set(id, a);
+    }),
+  );
+  // Move the avatar (continuous tile coords, clamped to the plaza).
+  socket.on("hub:move", (p: { x?: number; y?: number; facing?: number; moving?: boolean }) =>
+    withEmpire((id) => {
+      const a = hubAvatars.get(id);
+      if (!a) return;
+      const x = Number(p?.x);
+      const y = Number(p?.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      a.x = Math.max(-HUB_BOUND, Math.min(HUB_BOUND, x));
+      a.y = Math.max(-HUB_BOUND, Math.min(HUB_BOUND, y));
+      a.facing = Number(p?.facing) >= 0 ? 1 : -1;
+      a.moving = !!p?.moving;
+    }),
+  );
+  // Leave the plaza (entering their own world or closing the hub).
+  socket.on("hub:leave", () =>
+    withEmpire((id) => {
+      socket.leave("hubspace");
+      hubAvatars.delete(id);
+    }),
+  );
+
   // Rename the empire (the player's in-game name). Propagates to the leaderboard,
   // world and hub since they all read empire.name.
   socket.on("empire:rename", (p: { name?: string }) =>
@@ -703,6 +746,8 @@ io.on("connection", (socket) => {
         return;
       }
       e.name = name;
+      const av = hubAvatars.get(id);
+      if (av) av.name = name; // reflect the new name on the player's hub avatar
       scheduleSave(0);
       socket.emit("toast", { kind: "success", text: "Name updated!" });
       pushSnapshot(id);
@@ -712,6 +757,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     if (!empireId) return;
+    hubAvatars.delete(empireId); // drop their hub avatar if they were standing in the plaza
     // only mark offline if this empire has no other live sockets
     const room = io.sockets.adapter.rooms.get(`emp:${empireId}`);
     if (!room || room.size === 0) onlineEmpires.delete(empireId);
@@ -774,6 +820,11 @@ setInterval(() => {
 
 // keep the hub's who's-here list fresh (power/rank change as people play)
 setInterval(() => io.to("hub").emit("hub:online", hubOnline()), 12000);
+
+// stream avatar positions to everyone standing in the plaza (~10/sec)
+setInterval(() => {
+  if (hubAvatars.size > 0) io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
+}, 100);
 
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);

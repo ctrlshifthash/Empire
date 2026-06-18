@@ -46,13 +46,17 @@ export default function LiveWorld({
   snapshot,
   onInvade,
   onOpenTab,
+  active = true,
 }: {
   snapshot: GameSnapshot;
   onInvade?: () => void;
   onOpenTab?: (tab: string) => void;
+  active?: boolean; // false while an overlay (e.g. the hub) is open — ignore input
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const miniRef = useRef<HTMLCanvasElement>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const miniCache = useRef<HTMLCanvasElement | null>(null);
   const miniCenter = useRef({ x: 0, y: 0 });
   const lastMini = useRef(0);
@@ -349,6 +353,7 @@ export default function LiveWorld({
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      if (!activeRef.current) return; // an overlay (hub) is open — don't steal keys
       // ignore movement keys while typing in a panel input / textarea
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
@@ -382,7 +387,8 @@ export default function LiveWorld({
       const dt = (t - last) / 1000;
       last = t;
 
-      // WASD moves the hero
+      // WASD moves the hero (suspended while an overlay like the hub is open)
+      if (!activeRef.current) keys.current.clear();
       let dx = 0;
       let dy = 0;
       const ks = keys.current;

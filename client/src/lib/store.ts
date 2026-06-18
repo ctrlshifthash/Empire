@@ -6,6 +6,7 @@ import type {
   BattleReport,
   BuildingType,
   GameSnapshot,
+  HubAvatar,
   HubMessage,
   HubPlayer,
   ResourceKind,
@@ -26,9 +27,10 @@ interface GameStore {
   snapshot: GameSnapshot | null;
   connected: boolean;
   toasts: Toast[];
-  // global social hub (shared chat lobby + who's online)
+  // global social hub (shared chat lobby + who's online + spatial avatars)
   hubMessages: HubMessage[];
   hubOnline: HubPlayer[];
+  hubAvatars: HubAvatar[];
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -76,6 +78,9 @@ interface GameStore {
 
   hubChat: (text: string) => void;
   renameEmpire: (name: string) => void;
+  hubEnter: () => void;
+  hubLeave: () => void;
+  hubMove: (x: number, y: number, facing: number, moving: boolean) => void;
 
   createAlliance: (name: string, tag: string) => void;
   joinAlliance: (allianceId: string) => void;
@@ -111,6 +116,7 @@ export const useGame = create<GameStore>((set, get) => ({
   toasts: [],
   hubMessages: [],
   hubOnline: [],
+  hubAvatars: [],
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
@@ -187,6 +193,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ hubMessages: [...get().hubMessages, msg].slice(-60) }),
     );
     socket.on("hub:online", (players: HubPlayer[]) => set({ hubOnline: players }));
+    socket.on("hub:players", (avatars: HubAvatar[]) => set({ hubAvatars: avatars }));
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.
@@ -240,6 +247,9 @@ export const useGame = create<GameStore>((set, get) => ({
   buyTrait: (traitId) => socket?.emit("buyTrait", { traitId }),
   hubChat: (text) => socket?.emit("hub:chat", { text }),
   renameEmpire: (name) => socket?.emit("empire:rename", { name }),
+  hubEnter: () => socket?.emit("hub:enter"),
+  hubLeave: () => socket?.emit("hub:leave"),
+  hubMove: (x, y, facing, moving) => socket?.emit("hub:move", { x, y, facing, moving }),
 
   createAlliance: (name, tag) => socket?.emit("alliance:create", { name, tag }),
   joinAlliance: (allianceId) => socket?.emit("alliance:join", { allianceId }),

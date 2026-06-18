@@ -213,6 +213,19 @@ export interface HubPlayer {
   rank: string;
 }
 
+// A player's avatar in the spatial hub (a shared walkable plaza). Positions are
+// in continuous tile units, synced in real time.
+export interface HubAvatar {
+  id: string;
+  name: string;
+  level: number;
+  banner: string;
+  x: number;
+  y: number;
+  facing: number; // 1 = facing right, -1 = left
+  moving: boolean;
+}
+
 export interface Alliance {
   id: string;
   name: string;

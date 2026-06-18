@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useGame } from "../lib/store";
 import ResourceBar from "../game/ResourceBar";
 import LiveWorld from "../game/LiveWorld";
-import HubView from "../game/HubView";
+import HubWorld from "../game/HubWorld";
 import EmpireView from "../game/EmpireView";
 import HeroView from "../game/HeroView";
 import WorldView from "../game/WorldView";
@@ -211,7 +211,7 @@ export default function Play() {
 
       {/* The Adventure world stays mounted & running underneath everything, so
           opening Hero / Empire / Military etc. never leaves the live game. */}
-      <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} onOpenTab={(t) => setTab(t as Tab)} />
+      <LiveWorld snapshot={snapshot} onInvade={() => setTab("world")} onOpenTab={(t) => setTab(t as Tab)} active={tab === "live"} />
 
       {/* Dashboard views overlay the live world (which keeps running behind) at
           full dashboard width, so nothing is cramped and you never leave the game. */}
@@ -236,9 +236,9 @@ export default function Play() {
                 ✕ Close
               </button>
             </div>
-            <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+            <div className={`grid gap-5 ${tab === "hub" ? "" : "xl:grid-cols-[1fr_320px]"}`}>
               <div className="min-w-0">
-                {tab === "hub" && <HubView onEnter={() => setTab("live")} />}
+                {tab === "hub" && <HubWorld onEnter={() => setTab("live")} />}
                 {tab === "hero" && <HeroView empire={empire} />}
                 {tab === "empire" && <EmpireView empire={empire} />}
                 {tab === "world" && <WorldView snapshot={snapshot} />}
@@ -253,11 +253,13 @@ export default function Play() {
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}
               </div>
-              <aside className="hidden xl:block">
-                <div className="sticky top-4">
-                  <OperationsPanel snapshot={snapshot} />
-                </div>
-              </aside>
+              {tab !== "hub" && (
+                <aside className="hidden xl:block">
+                  <div className="sticky top-4">
+                    <OperationsPanel snapshot={snapshot} />
+                  </div>
+                </aside>
+              )}
             </div>
           </div>
         </div>
