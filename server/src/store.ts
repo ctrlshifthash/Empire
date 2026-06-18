@@ -11,6 +11,7 @@ import type {
   ItemInstance,
   Listing,
   March,
+  MarketActivity,
   Poll,
   Tournament,
   User,
@@ -69,6 +70,8 @@ export interface GameState {
   // character cNFTs: owned instances + minted counts per type
   characterInstances: Record<string, CharacterInstance>;
   characterMintCounts: Record<string, number>;
+  // marketplace activity feed (listed / bought / sold), newest first
+  marketActivity: MarketActivity[];
 }
 
 export const state: GameState = {
@@ -94,6 +97,7 @@ export const state: GameState = {
   exchangeSignatures: {},
   characterInstances: {},
   characterMintCounts: {},
+  marketActivity: [],
 };
 
 export function loadState(): boolean {
@@ -122,6 +126,7 @@ export function loadState(): boolean {
       state.exchangeSignatures ??= {};
       state.characterInstances ??= {};
       state.characterMintCounts ??= {};
+      state.marketActivity ??= [];
       return true;
     }
   } catch (err) {
@@ -160,4 +165,18 @@ export function scheduleSave(delay = 1500): void {
     saveTimer = null;
     save();
   }, delay);
+}
+
+// Record a marketplace activity event (listed / bought / sold), newest first.
+export function pushActivity(category: MarketActivity["category"], kind: MarketActivity["kind"], text: string): void {
+  const ev: MarketActivity = {
+    id: `act_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
+    at: Date.now(),
+    category,
+    kind,
+    text,
+  };
+  state.marketActivity.unshift(ev);
+  if (state.marketActivity.length > 120) state.marketActivity.length = 120;
+  scheduleSave();
 }

@@ -8,6 +8,7 @@ import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
 import CoinExchange from "../game/CoinExchange";
 import CharacterShop from "../game/CharacterShop";
+import MarketActivity from "../game/MarketActivity";
 
 const rarityColor = (r: string) => (RARITY_META as Record<string, { color: string }>)[r]?.color ?? "#9aa4ad";
 
@@ -117,7 +118,7 @@ function Market() {
    <>
     <div className="mt-8 flex justify-center">
       <div className="inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
-        {([["relics", "🏺 Relics"], ["characters", "🎭 Characters"], ["coins", "💱 Coins ⇄ $RUMBLE"]] as [typeof tab, string][]).map(([t, label]) => (
+        {([["relics", "🏺 Relics"], ["coins", "💱 Coins ⇄ $RUMBLE"], ["characters", "🎭 Characters"]] as [typeof tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${tab === t ? "bg-gold/15 text-gold-light" : "text-parchment-300/60 hover:text-parchment-100"}`}>
             {label}
           </button>
@@ -233,6 +234,10 @@ function Market() {
         </ul>
         <p className="mt-3 text-xs text-parchment-300/50">Equip up to 3 for stacking power, harvest, speed — and the rarest for a SOL-yield boost.</p>
       </div>
+    </div>
+
+    <div className="mt-8">
+      <MarketActivity category="relic" />
     </div>
      </>
     )}

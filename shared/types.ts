@@ -196,6 +196,16 @@ export interface AllianceChatMsg {
   at: number;
 }
 
+// A marketplace activity event (listed / bought / sold), per category, for the
+// activity feed shown on each marketplace tab.
+export interface MarketActivity {
+  id: string;
+  at: number;
+  category: "relic" | "coin" | "character";
+  kind: "listed" | "bought" | "sold";
+  text: string; // e.g. "Sol 4AEJ bought Eternal Crown #1 for 200 USDC"
+}
+
 // Global social hub: a shared chat lobby every player lands in before entering
 // their world.
 export interface HubMessage {

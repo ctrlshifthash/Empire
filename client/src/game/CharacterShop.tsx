@@ -3,6 +3,7 @@ import { useGame } from "../lib/store";
 import { RARITY_META } from "@shared/gamedata";
 import { SERVER_URL } from "../lib/config";
 import CharacterAvatar from "./CharacterAvatar";
+import MarketActivity from "./MarketActivity";
 
 type Hat = "crown" | "helmet" | "hood" | "cap" | null;
 type CatalogItem = {
@@ -32,20 +33,28 @@ export default function CharacterShop() {
   const coins = useGame((s) => s.snapshot?.empire?.coins ?? 0);
   const owned = useGame((s) => s.snapshot?.characters ?? []);
   const [catalog, setCatalog] = useState<CatalogItem[] | null>(null);
+  const [locked, setLocked] = useState(true);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/characters/config`)
       .then((r) => r.json())
-      .then((d) => d?.ok && setCatalog(d.characters))
+      .then((d) => {
+        if (!d?.ok) return;
+        setCatalog(d.characters);
+        setLocked(!!d.locked);
+      })
       .catch(() => {});
   }, []);
 
   return (
     <div className="mt-8 space-y-6">
       <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 text-sm text-parchment-200">
-        <span className="font-semibold text-gold-light">🎭 Characters — beta</span> · Buy a character, wear it as your{" "}
-        <strong>hub avatar</strong>, and own it. Each is a <strong>compressed NFT</strong> you'll hold in your wallet
-        and can resell. Real artwork and on-chain minting are landing soon — buy now to lock in a low serial.
+        <span className="font-semibold text-gold-light">🎭 Characters — beta {locked && "· locked"}</span> · Buy a
+        character, wear it as your <strong>hub avatar</strong>, and own it. Each will be a <strong>compressed NFT</strong>{" "}
+        you hold in your wallet and can resell here.{" "}
+        {locked
+          ? "Previewing the roster now — purchases unlock once the artwork and on-chain minting go live."
+          : "Buy now to lock in a low serial."}
       </div>
 
       {/* catalog */}
@@ -76,14 +85,20 @@ export default function CharacterShop() {
                   <div className="font-display font-bold text-gold-light">🪙 {fmt(c.priceCoins)}</div>
                   <div className="text-[10px] text-parchment-300/45">or {fmt(c.priceRumble)} $RUMBLE (soon)</div>
                 </div>
-                <button
-                  className="btn-gold btn-sm"
-                  disabled={soldOut || cantAfford}
-                  onClick={() => buyCharacter(c.id)}
-                  title={cantAfford ? "Not enough coins" : ""}
-                >
-                  {soldOut ? "Sold out" : cantAfford ? "Need coins" : "Buy"}
-                </button>
+                {locked ? (
+                  <button className="btn-ghost btn-sm cursor-not-allowed opacity-70" disabled title="Characters unlock soon">
+                    🔒 Locked
+                  </button>
+                ) : (
+                  <button
+                    className="btn-gold btn-sm"
+                    disabled={soldOut || cantAfford}
+                    onClick={() => buyCharacter(c.id)}
+                    title={cantAfford ? "Not enough coins" : ""}
+                  >
+                    {soldOut ? "Sold out" : cantAfford ? "Need coins" : "Buy"}
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -124,6 +139,8 @@ export default function CharacterShop() {
           </div>
         )}
       </div>
+
+      <MarketActivity category="character" />
     </div>
   );
 }

@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { PublicKey } from "@solana/web3.js";
 import type { CoinListing, CoinListingPublic } from "../../shared/types.ts";
-import { state, scheduleSave } from "./store.ts";
+import { state, scheduleSave, pushActivity } from "./store.ts";
 import { sharedRpc, tokenMint } from "./rewards.ts";
 import { now, uid } from "./util.ts";
 
@@ -51,6 +51,7 @@ export function listCoins(empireId: string, sellerWallet: string | undefined, ra
     status: "active",
     createdAt: now(),
   };
+  pushActivity("coin", "listed", `${e.name} listed ${coinAmount.toLocaleString()} coins for ${rumblePrice.toLocaleString()} $RUMBLE`);
   scheduleSave(0);
   return { ok: true, members: [empireId] };
 }
@@ -145,6 +146,7 @@ export async function buyCoins(listingId: string, buyer: string, signature: stri
   l.status = "sold";
   delete state.coinListings[listingId];
   state.exchangeSignatures[signature] = { listingId, buyer, at: now() };
+  pushActivity("coin", "bought", `${buyerEmpire.name} bought ${l.coinAmount.toLocaleString()} coins for ${l.rumblePrice.toLocaleString()} $RUMBLE`);
   buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${l.coinAmount.toLocaleString()} coins for ${l.rumblePrice} $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   const sellerEmpire = state.empires[l.sellerId];

@@ -5,6 +5,7 @@ import type { CoinListingPublic } from "@shared/types";
 import { useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchCoinListings, reserveCoin, buildExchangeTx, postBuyCoins } from "../lib/exchange";
+import MarketActivity from "./MarketActivity";
 
 const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 
@@ -71,6 +72,7 @@ export default function CoinExchange() {
   }
 
   return (
+   <>
     <div className="mt-10 grid gap-6 lg:grid-cols-5">
       {/* sell coins for $RUMBLE */}
       <div className="lg:col-span-2">
@@ -134,5 +136,9 @@ export default function CoinExchange() {
         </div>
       </div>
     </div>
+    <div className="mt-6">
+      <MarketActivity category="coin" />
+    </div>
+   </>
   );
 }

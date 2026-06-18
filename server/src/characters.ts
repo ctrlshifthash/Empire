@@ -15,6 +15,11 @@ export interface CharResult {
   members?: string[];
 }
 
+// Beta: characters are visible but locked (not buyable) until art + on-chain
+// minting are ready. Flip with the CHARACTERS_LOCKED env var ("0" to unlock).
+const CHARACTERS_LOCKED = (process.env.CHARACTERS_LOCKED ?? "1") !== "0";
+export const charactersLocked = (): boolean => CHARACTERS_LOCKED;
+
 export function characterCatalog() {
   return CHARACTERS.map((c) => {
     const minted = state.characterMintCounts[c.id] ?? 0;
@@ -62,6 +67,7 @@ export function ownedCharacters(empireId: string): OwnedCharacter[] {
 
 // Buy a character with in-game coins (instant).
 export function buyCharacterCoins(empireId: string, typeId: string): CharResult {
+  if (CHARACTERS_LOCKED) return { ok: false, error: "Characters are in beta and locked — coming soon." };
   const e = state.empires[empireId];
   if (!e) return { ok: false, error: "No empire." };
   const def = characterType(typeId);

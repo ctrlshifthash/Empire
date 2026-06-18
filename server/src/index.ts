@@ -16,7 +16,7 @@ import { Server as SocketServer } from "socket.io";
 import type { Army } from "../../shared/combat.ts";
 import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
 import { levelForXp } from "../../shared/progression.ts";
-import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle } from "./characters.ts";
+import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances } from "./rewards.ts";
@@ -261,8 +261,13 @@ app.get("/api/arena/rankings", (_req, res) => {
 
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
-app.get("/api/characters/config", (_req, res) => res.json({ ok: true, characters: characterCatalog() }));
+app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
 app.get("/api/market/listings", (_req, res) => res.json({ ok: true, listings: activeListings() }));
+app.get("/api/market/activity", (req, res) => {
+  const cat = String(req.query.category ?? "");
+  const items = cat ? state.marketActivity.filter((a) => a.category === cat) : state.marketActivity;
+  res.json({ ok: true, activity: items.slice(0, 40) });
+});
 app.post("/api/market/:id/reserve", (req, res) => {
   const { address } = (req.body ?? {}) as Record<string, unknown>;
   if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
