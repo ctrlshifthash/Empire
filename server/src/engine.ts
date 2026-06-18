@@ -52,6 +52,7 @@ import { areAllies, alliancePublic } from "./alliances.ts";
 import { bossPublic } from "./boss.ts";
 import { openDuelsPublic, tournamentPublic } from "./arena.ts";
 import { inventoryOf, mintItem, randomDropType } from "./market.ts";
+import { maybeDropMount } from "./mounts.ts";
 import { ownedCharacters } from "./characters.ts";
 import { LOCAL_WORLD, type SkillId, type ToolId } from "../../shared/types.ts";
 import {
@@ -798,6 +799,7 @@ function resolveAttack(march: March, at: number): void {
     attacker.raidsWon += 1;
     defender.raidsLost += 1;
     attacker.coins += 5; // spoils of victory
+    maybeDropMount(attacker.id); // rare mount drop (beta; no-op while locked)
     const lootTotal = result.loot.wood + result.loot.food + result.loot.gold + result.loot.stone;
     log(
       attacker,

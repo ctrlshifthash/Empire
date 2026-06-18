@@ -989,6 +989,28 @@ export const SPIN_SEGMENTS: SpinSegment[] = [
   { id: "scraps", label: "2,000 Wood", icon: "🌿", color: "#27ae60", weight: 8, resources: { wood: 2000 } },
   { id: "relic", label: "A Relic!", icon: "🏺", color: "#8e44ad", weight: 2, relic: true },
 ];
+
+// ── Mounts & Pets (beta) ─────────────────────────────────────────────────────
+// Rare drops earned by winning raids — cNFT-style collectibles you own, equip
+// beside your hero, and (later) resell. No supply cap; rarity sets drop odds.
+export interface MountType {
+  id: string;
+  name: string;
+  icon: string;
+  rarity: ItemRarity;
+  dropWeight: number; // relative odds within a drop
+  desc: string;
+}
+export const MOUNTS: MountType[] = [
+  { id: "war_pony", name: "War Pony", icon: "🐴", rarity: "common", dropWeight: 100, desc: "A sturdy, dependable steed." },
+  { id: "dire_wolf", name: "Dire Wolf", icon: "🐺", rarity: "rare", dropWeight: 42, desc: "A fanged companion of the wild." },
+  { id: "war_boar", name: "War Boar", icon: "🐗", rarity: "rare", dropWeight: 36, desc: "Tusked, armoured and tireless." },
+  { id: "royal_stag", name: "Royal Stag", icon: "🦌", rarity: "epic", dropWeight: 14, desc: "A noble mount of the high court." },
+  { id: "phoenix", name: "Phoenix", icon: "🦅", rarity: "legendary", dropWeight: 4, desc: "Reborn from its own ashes." },
+  { id: "dragonling", name: "Dragonling", icon: "🐉", rarity: "legendary", dropWeight: 1, desc: "The rarest beast in the realm." },
+];
+export const mountType = (id: string): MountType | undefined => MOUNTS.find((m) => m.id === id);
+export const MOUNT_DROP_CHANCE = 0.06; // chance to drop a mount on a raid win
 export interface MarketItemType {
   id: string;
   name: string;

@@ -18,6 +18,7 @@ import RewardsPanel from "../game/RewardsPanel";
 import QuestsView from "../game/QuestsView";
 import DailyQuestsView from "../game/DailyQuestsView";
 import SpinnerWheel from "../game/SpinnerWheel";
+import MountsView from "../game/MountsView";
 import LogView from "../game/LogView";
 import OperationsPanel from "../game/OperationsPanel";
 import BattleSpectate from "../game/BattleSpectate";
@@ -40,6 +41,7 @@ type Tab =
   | "quests"
   | "daily"
   | "spinner"
+  | "mounts"
   | "log"
   | "rewards";
 
@@ -59,6 +61,7 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "quests", label: "Quests", icon: "📜", desc: "Goals to complete for coins & resources" },
   { id: "daily", label: "Daily", icon: "📅", desc: "Daily-resetting objectives for resource rewards (beta)" },
   { id: "spinner", label: "Spinner", icon: "🎡", desc: "Spin the wheel — a free spin every 12h (beta)" },
+  { id: "mounts", label: "Mounts", icon: "🐎", desc: "Rare mounts & pets dropped from raids — collect & equip (beta)" },
   { id: "log", label: "Battles", icon: "📖", desc: "Watch replays of your battles & event history" },
   { id: "rewards", label: "Rewards", icon: "💰", desc: "Connect your wallet & claim SOL token rewards" },
 ];
@@ -264,6 +267,7 @@ export default function Play() {
                 {tab === "quests" && <QuestsView empire={empire} />}
                 {tab === "daily" && <DailyQuestsView />}
                 {tab === "spinner" && <SpinnerWheel />}
+                {tab === "mounts" && <MountsView />}
                 {tab === "log" && <LogView empire={empire} />}
                 {tab === "rewards" && <RewardsPanel />}
               </div>

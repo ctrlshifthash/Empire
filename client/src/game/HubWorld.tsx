@@ -274,12 +274,20 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         ctx.textBaseline = "alphabetic";
         ctx.fillText(icon, cx, y);
       };
+      // equipped mount/pet — stands at the hero's side (beta)
+      const mountGlyph = (cx: number, y: number, icon: string) => {
+        ctx.font = "20px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(icon, cx, y);
+      };
       const seen = new Set<string>();
       objs.push({
         d: m.x + m.y + 0.001,
         draw: () => {
           const s = toScreen(m.x, m.y);
           drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a", hat: myChar?.hat ?? undefined, cape: myChar?.cape });
+          if (meAvatar?.mount) mountGlyph(s.x + 21, s.y + 1, meAvatar.mount);
           label(s.x, s.y - 40, myName, myLvl);
           if (myChar) badge(s.x, s.y - 76, myChar.icon);
         },
@@ -300,6 +308,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           draw: () => {
             const s = toScreen(dd.x, dd.y);
             drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase, hat: a.character?.hat ?? undefined, cape: a.character?.cape });
+            if (a.mount) mountGlyph(s.x + 21, s.y + 1, a.mount);
             label(s.x, s.y - 40, a.name, a.level);
             if (a.character) badge(s.x, s.y - 76, a.character.icon);
           },

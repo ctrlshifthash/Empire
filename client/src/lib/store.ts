@@ -7,6 +7,7 @@ import type {
   BuildingType,
   DailyState,
   GameSnapshot,
+  MountsState,
   HubAvatar,
   HubMessage,
   HubPlayer,
@@ -41,6 +42,10 @@ interface GameStore {
   dailyState: DailyState | null;
   getDaily: () => void;
   claimDaily: (id: string) => void;
+  // mounts & pets (beta)
+  mountsState: MountsState | null;
+  getMounts: () => void;
+  equipMount: (instanceId: string) => void;
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -138,6 +143,9 @@ export const useGame = create<GameStore>((set, get) => ({
   dailyState: null,
   getDaily: () => socket?.emit("daily:get"),
   claimDaily: (id) => socket?.emit("daily:claim", { id }),
+  mountsState: null,
+  getMounts: () => socket?.emit("mounts:get"),
+  equipMount: (instanceId) => socket?.emit("mounts:equip", { instanceId }),
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
@@ -219,6 +227,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ spinResult: { ...r, nonce: (get().spinResult?.nonce ?? 0) + 1 } }),
     );
     socket.on("daily:state", (d: DailyState) => set({ dailyState: d }));
+    socket.on("mounts:state", (m: MountsState) => set({ mountsState: m }));
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.

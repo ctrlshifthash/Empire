@@ -12,6 +12,7 @@ import type {
   Listing,
   March,
   MarketActivity,
+  MountInstance,
   Poll,
   Tournament,
   User,
@@ -70,6 +71,9 @@ export interface GameState {
   // character cNFTs: owned instances + minted counts per type
   characterInstances: Record<string, CharacterInstance>;
   characterMintCounts: Record<string, number>;
+  // mount/pet cNFTs (beta): owned instances + serial counts per type
+  mountInstances: Record<string, MountInstance>;
+  mountMintCounts: Record<string, number>;
   // marketplace activity feed (listed / bought / sold), newest first
   marketActivity: MarketActivity[];
 }
@@ -97,6 +101,8 @@ export const state: GameState = {
   exchangeSignatures: {},
   characterInstances: {},
   characterMintCounts: {},
+  mountInstances: {},
+  mountMintCounts: {},
   marketActivity: [],
 };
 
@@ -126,6 +132,8 @@ export function loadState(): boolean {
       state.exchangeSignatures ??= {};
       state.characterInstances ??= {};
       state.characterMintCounts ??= {};
+      state.mountInstances ??= {};
+      state.mountMintCounts ??= {};
       state.marketActivity ??= [];
       // migrate: drop pre-USD coin listings (refund their escrowed coins)
       for (const [id, l] of Object.entries(state.coinListings)) {

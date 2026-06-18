@@ -24,6 +24,7 @@ import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
 import { dailyState, claimDaily } from "./daily.ts";
+import { ownedMounts, equipMount, equippedMountIcon, mountsLocked } from "./mounts.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -500,7 +501,7 @@ function makeAvatar(empireId: string, x: number, y: number): HubAvatar | null {
   const e = state.empires[empireId];
   if (!e) return null;
   const level = Math.max(1, levelForXp(e.hero?.skills?.combat ?? 0));
-  return { id: e.id, name: e.name, level, banner: e.banner, x, y, facing: 1, moving: false, character: equippedCharacterStyle(e) };
+  return { id: e.id, name: e.name, level, banner: e.banner, x, y, facing: 1, moving: false, character: equippedCharacterStyle(e), mount: equippedMountIcon(e) };
 }
 
 io.on("connection", (socket) => {
@@ -829,6 +830,21 @@ io.on("connection", (socket) => {
       if (r.ok) {
         const av = hubAvatars.get(id);
         if (av) av.character = equippedCharacterStyle(state.empires[id]);
+        io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
+      }
+    }),
+  );
+
+  // Mounts & Pets (beta) — owned drops; equip one beside your hero.
+  socket.on("mounts:get", () => withEmpire((id) => socket.emit("mounts:state", { locked: mountsLocked(), mounts: ownedMounts(id) })));
+  socket.on("mounts:equip", (p: { instanceId?: string }) =>
+    withEmpire((id) => {
+      const r = equipMount(id, String(p?.instanceId ?? ""));
+      handle(r);
+      socket.emit("mounts:state", { locked: mountsLocked(), mounts: ownedMounts(id) });
+      if (r.ok) {
+        const av = hubAvatars.get(id);
+        if (av) av.mount = equippedMountIcon(state.empires[id]);
         io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
       }
     }),

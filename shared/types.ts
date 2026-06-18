@@ -178,6 +178,7 @@ export interface Empire {
   equipped?: string[];
   // equipped character cNFT instance id (your hub avatar skin), if any
   equippedCharacter?: string;
+  equippedMount?: string; // equipped mount/pet instance id (beta)
   // show your name publicly on the leaderboard (default true); private hides it
   profilePublic?: boolean;
   lastSpinAt?: number; // last free spinner spin (beta)
@@ -258,6 +259,7 @@ export interface HubAvatar {
   moving: boolean;
   // equipped character skin, if any (look drives the placeholder sprite)
   character?: { icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean };
+  mount?: string; // equipped mount/pet icon, shown beside the avatar (beta)
 }
 
 export interface Alliance {
@@ -568,6 +570,30 @@ export interface OwnedCharacter {
   serial: number;
   equipped: boolean;
   onChain: boolean; // true once it's a real cNFT
+}
+
+// A mount/pet cNFT a player owns (beta) — earned as a rare raid drop.
+export interface MountInstance {
+  id: string;
+  typeId: string;
+  ownerId: string; // empire id
+  serial: number;
+  assetId: string | null; // on-chain cNFT asset id — set when minting goes live
+  mintedAt: number;
+}
+export interface OwnedMount {
+  instanceId: string;
+  typeId: string;
+  name: string;
+  icon: string;
+  rarity: string;
+  serial: number;
+  equipped: boolean;
+  onChain: boolean;
+}
+export interface MountsState {
+  locked: boolean;
+  mounts: OwnedMount[];
 }
 export interface Listing {
   id: string;
