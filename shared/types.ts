@@ -178,6 +178,9 @@ export interface Empire {
   equipped?: string[];
   // equipped character cNFT instance id (your hub avatar skin), if any
   equippedCharacter?: string;
+  // show your name publicly on the leaderboard (default true); private hides it
+  profilePublic?: boolean;
+  lastSpinAt?: number; // last free spinner spin (beta)
   // lifetime marketplace trading record
   marketStats?: {
     bought: number;

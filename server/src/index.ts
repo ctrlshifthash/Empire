@@ -21,6 +21,7 @@ import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint } from "./rewards.ts";
 import { rumbleUsdPrice } from "./price.ts";
+import { featureLocks } from "./features.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -234,7 +235,7 @@ app.get("/api/leaderboard", (_req, res) => {
       const wallet = walletByEmpire[e.id];
       const claimed = wallet ? state.rewards[wallet]?.totalClaimed ?? 0 : 0;
       return {
-        name: e.name,
+        name: e.profilePublic === false ? "🕵 Hidden" : e.name, // private profiles keep their rank but hide the name
         banner: e.banner,
         isBot: e.isBot,
         age: e.age,
@@ -263,6 +264,7 @@ app.get("/api/arena/rankings", (_req, res) => {
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
 app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
+app.get("/api/features", (_req, res) => res.json({ ok: true, locked: featureLocks() }));
 app.get("/api/market/listings", (_req, res) => res.json({ ok: true, listings: activeListings() }));
 app.get("/api/market/activity", (req, res) => {
   const cat = String(req.query.category ?? "");
@@ -782,6 +784,14 @@ io.on("connection", (socket) => {
       socket.emit("toast", { kind: "success", text: "Crest colour updated!" });
       pushSnapshot(id);
       io.to("hub").emit("hub:online", hubOnline());
+    }),
+  );
+
+  // Public/private leaderboard name. Private keeps your rank but hides your name.
+  socket.on("profile:visibility", (p: { public?: boolean }) =>
+    withEmpire((id) => {
+      state.empires[id].profilePublic = p?.public !== false;
+      handle({ ok: true }, p?.public !== false ? "Profile set to public." : "Profile hidden from the leaderboard.");
     }),
   );
 

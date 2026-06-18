@@ -8,6 +8,7 @@ export default function ProfileCard() {
   const empire = useGame((s) => s.snapshot?.empire);
   const renameEmpire = useGame((s) => s.renameEmpire);
   const setBanner = useGame((s) => s.setBanner);
+  const setProfileVisibility = useGame((s) => s.setProfileVisibility);
   const [name, setName] = useState(empire?.name ?? "");
 
   // keep the field in sync when the server confirms a rename
@@ -66,6 +67,22 @@ export default function ProfileCard() {
           />
         ))}
       </div>
+
+      {/* leaderboard privacy */}
+      <label className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-sm text-parchment-200">
+          Show my name on the leaderboard
+          <span className="block text-[11px] text-parchment-300/55">Hidden keeps your rank but shows "Hidden" instead of your name.</span>
+        </span>
+        <button
+          role="switch"
+          aria-checked={empire.profilePublic !== false}
+          onClick={() => setProfileVisibility(empire.profilePublic === false)}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${empire.profilePublic !== false ? "bg-gold/70" : "bg-parchment-300/20"}`}
+        >
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${empire.profilePublic !== false ? "left-[1.4rem]" : "left-0.5"}`} />
+        </button>
+      </label>
     </div>
   );
 }

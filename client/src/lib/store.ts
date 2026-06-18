@@ -83,6 +83,7 @@ interface GameStore {
   hubChat: (text: string) => void;
   renameEmpire: (name: string) => void;
   setBanner: (banner: string) => void;
+  setProfileVisibility: (pub: boolean) => void;
   hubEnter: () => void;
   hubLeave: () => void;
   hubMove: (x: number, y: number, facing: number, moving: boolean) => void;
@@ -257,6 +258,7 @@ export const useGame = create<GameStore>((set, get) => ({
   hubChat: (text) => socket?.emit("hub:chat", { text }),
   renameEmpire: (name) => socket?.emit("empire:rename", { name }),
   setBanner: (banner) => socket?.emit("empire:banner", { banner }),
+  setProfileVisibility: (pub) => socket?.emit("profile:visibility", { public: pub }),
   hubEnter: () => socket?.emit("hub:enter"),
   hubLeave: () => socket?.emit("hub:leave"),
   hubMove: (x, y, facing, moving) => socket?.emit("hub:move", { x, y, facing, moving }),
