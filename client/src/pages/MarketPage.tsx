@@ -7,6 +7,7 @@ import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
 import CoinExchange from "../game/CoinExchange";
+import CharacterShop from "../game/CharacterShop";
 
 const rarityColor = (r: string) => (RARITY_META as Record<string, { color: string }>)[r]?.color ?? "#9aa4ad";
 
@@ -57,7 +58,7 @@ function Market() {
   const craftRelic = useGame((s) => s.craftRelic);
   const [listings, setListings] = useState<ListingPublic[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [tab, setTab] = useState<"relics" | "coins">("relics");
+  const [tab, setTab] = useState<"relics" | "characters" | "coins">("relics");
 
   const refresh = () => fetchListings().then(setListings);
   useEffect(() => {
@@ -116,7 +117,7 @@ function Market() {
    <>
     <div className="mt-8 flex justify-center">
       <div className="inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
-        {([["relics", "🏺 Relics"], ["coins", "💱 Coins ⇄ $RUMBLE"]] as [typeof tab, string][]).map(([t, label]) => (
+        {([["relics", "🏺 Relics"], ["characters", "🎭 Characters"], ["coins", "💱 Coins ⇄ $RUMBLE"]] as [typeof tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${tab === t ? "bg-gold/15 text-gold-light" : "text-parchment-300/60 hover:text-parchment-100"}`}>
             {label}
           </button>
@@ -126,6 +127,8 @@ function Market() {
 
     {tab === "coins" ? (
       <CoinExchange />
+    ) : tab === "characters" ? (
+      <CharacterShop />
     ) : (
      <>
     <div className="mt-6 grid gap-6 lg:grid-cols-3">

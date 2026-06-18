@@ -249,14 +249,23 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       }
 
       const remote = useGame.getState().hubAvatars;
-      const myLvl = remote.find((a) => a.id === myId)?.level ?? 1;
+      const meAvatar = remote.find((a) => a.id === myId);
+      const myLvl = meAvatar?.level ?? 1;
+      const myChar = meAvatar?.character;
+      const badge = (cx: number, y: number, icon: string) => {
+        ctx.font = "16px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(icon, cx, y);
+      };
       const seen = new Set<string>();
       objs.push({
         d: m.x + m.y + 0.001,
         draw: () => {
           const s = toScreen(m.x, m.y);
-          drawCharacter(ctx, s.x, s.y, { color: myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a" });
+          drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a" });
           label(s.x, s.y - 36, myName, myLvl);
+          if (myChar) badge(s.x, s.y - 62, myChar.icon);
         },
       });
       for (const a of remote) {
@@ -274,8 +283,9 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           d: dd.x + dd.y,
           draw: () => {
             const s = toScreen(dd.x, dd.y);
-            drawCharacter(ctx, s.x, s.y, { color: a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase });
+            drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase });
             label(s.x, s.y - 36, a.name, a.level);
+            if (a.character) badge(s.x, s.y - 62, a.character.icon);
           },
         });
       }

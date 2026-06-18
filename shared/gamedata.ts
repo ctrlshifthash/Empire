@@ -915,6 +915,32 @@ export const RARITY_META: Record<ItemRarity, { label: string; color: string }> =
   epic: { label: "Epic", color: "#9b59b6" },
   legendary: { label: "Legendary", color: "#e8c75a" },
 };
+
+// ── Character cNFTs ──────────────────────────────────────────────────────────
+// Cosmetic characters you buy (coins or $RUMBLE), wear as your hub avatar, and
+// own as a compressed NFT you can resell. BETA: icon+colour placeholders until
+// the real character art is imported (then `art` points at the sprite/skin).
+export interface CharacterType {
+  id: string;
+  name: string;
+  icon: string; // placeholder glyph until real art
+  color: string; // avatar tint until real art
+  rarity: ItemRarity;
+  priceCoins: number; // buy with in-game coins
+  priceRumble: number; // or buy with $RUMBLE (burned)
+  maxSupply: number; // how many cNFTs of this character can ever mint
+  desc: string;
+}
+
+export const CHARACTERS: CharacterType[] = [
+  { id: "squire", name: "Squire", icon: "🧑‍🌾", color: "#8a8377", rarity: "common", priceCoins: 15000, priceRumble: 4000, maxSupply: 2000, desc: "Every legend starts somewhere." },
+  { id: "azure_knight", name: "Azure Knight", icon: "🛡️", color: "#2980b9", rarity: "common", priceCoins: 25000, priceRumble: 6000, maxSupply: 1000, desc: "Steadfast and blue-clad." },
+  { id: "forest_ranger", name: "Forest Ranger", icon: "🏹", color: "#27ae60", rarity: "rare", priceCoins: 70000, priceRumble: 16000, maxSupply: 250, desc: "Swift, silent, deadly." },
+  { id: "arcane_mage", name: "Arcane Mage", icon: "🔮", color: "#8e44ad", rarity: "epic", priceCoins: 200000, priceRumble: 45000, maxSupply: 50, desc: "Keeper of the old magics." },
+  { id: "crimson_warlord", name: "Crimson Warlord", icon: "⚔️", color: "#c0392b", rarity: "legendary", priceCoins: 900000, priceRumble: 180000, maxSupply: 10, desc: "Feared across the realm. Only ten will exist." },
+];
+
+export const characterType = (id: string): CharacterType | undefined => CHARACTERS.find((c) => c.id === id);
 export interface MarketItemType {
   id: string;
   name: string;

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type {
   Alliance,
   BugReport,
+  CharacterInstance,
   CoinListing,
   Duel,
   Empire,
@@ -65,6 +66,9 @@ export interface GameState {
   // coin exchange: sell in-game coins for the $RUMBLE token (P2P)
   coinListings: Record<string, CoinListing>;
   exchangeSignatures: Record<string, { listingId: string; buyer: string; at: number }>;
+  // character cNFTs: owned instances + minted counts per type
+  characterInstances: Record<string, CharacterInstance>;
+  characterMintCounts: Record<string, number>;
 }
 
 export const state: GameState = {
@@ -88,6 +92,8 @@ export const state: GameState = {
   marketSignatures: {},
   coinListings: {},
   exchangeSignatures: {},
+  characterInstances: {},
+  characterMintCounts: {},
 };
 
 export function loadState(): boolean {
@@ -114,6 +120,8 @@ export function loadState(): boolean {
       state.marketSignatures ??= {};
       state.coinListings ??= {};
       state.exchangeSignatures ??= {};
+      state.characterInstances ??= {};
+      state.characterMintCounts ??= {};
       return true;
     }
   } catch (err) {

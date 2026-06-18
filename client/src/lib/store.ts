@@ -70,6 +70,8 @@ interface GameStore {
   craftRelic: () => void;
   listCoins: (coinAmount: number, rumblePrice: number) => void;
   delistCoins: (listingId: string) => void;
+  buyCharacter: (typeId: string) => void;
+  equipCharacter: (instanceId: string) => void;
   rush: (kind: "building" | "age" | "train", id?: string) => void;
   claimQuest: (questId: string) => void;
   gather: (resource: ResourceKind) => void;
@@ -243,6 +245,8 @@ export const useGame = create<GameStore>((set, get) => ({
   craftRelic: () => socket?.emit("market:craft"),
   listCoins: (coinAmount, rumblePrice) => socket?.emit("exchange:list", { coinAmount, rumblePrice }),
   delistCoins: (listingId) => socket?.emit("exchange:delist", { listingId }),
+  buyCharacter: (typeId) => socket?.emit("character:buy", { typeId }),
+  equipCharacter: (instanceId) => socket?.emit("character:equip", { instanceId }),
   rush: (kind, id) => socket?.emit("rush", { kind, id }),
   claimQuest: (questId) => socket?.emit("claimQuest", { questId }),
   gather: (resource) => socket?.emit("gather", { resource }),

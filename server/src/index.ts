@@ -16,6 +16,7 @@ import { Server as SocketServer } from "socket.io";
 import type { Army } from "../../shared/combat.ts";
 import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
 import { levelForXp } from "../../shared/progression.ts";
+import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances } from "./rewards.ts";
@@ -260,6 +261,7 @@ app.get("/api/arena/rankings", (_req, res) => {
 
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
+app.get("/api/characters/config", (_req, res) => res.json({ ok: true, characters: characterCatalog() }));
 app.get("/api/market/listings", (_req, res) => res.json({ ok: true, listings: activeListings() }));
 app.post("/api/market/:id/reserve", (req, res) => {
   const { address } = (req.body ?? {}) as Record<string, unknown>;
@@ -486,7 +488,7 @@ function makeAvatar(empireId: string, x: number, y: number): HubAvatar | null {
   const e = state.empires[empireId];
   if (!e) return null;
   const level = Math.max(1, levelForXp(e.hero?.skills?.combat ?? 0));
-  return { id: e.id, name: e.name, level, banner: e.banner, x, y, facing: 1, moving: false };
+  return { id: e.id, name: e.name, level, banner: e.banner, x, y, facing: 1, moving: false, character: equippedCharacterStyle(e) };
 }
 
 io.on("connection", (socket) => {
@@ -772,6 +774,22 @@ io.on("connection", (socket) => {
       socket.emit("toast", { kind: "success", text: "Crest colour updated!" });
       pushSnapshot(id);
       io.to("hub").emit("hub:online", hubOnline());
+    }),
+  );
+
+  // Character cNFTs — buy with in-game coins, equip as your hub-avatar skin.
+  socket.on("character:buy", (p: { typeId?: string }) =>
+    withEmpire((id) => handle(buyCharacterCoins(id, String(p?.typeId ?? "")), "Character unlocked!")),
+  );
+  socket.on("character:equip", (p: { instanceId?: string }) =>
+    withEmpire((id) => {
+      const r = equipCharacter(id, String(p?.instanceId ?? ""));
+      handle(r);
+      if (r.ok) {
+        const av = hubAvatars.get(id);
+        if (av) av.character = equippedCharacterStyle(state.empires[id]);
+        io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
+      }
     }),
   );
 

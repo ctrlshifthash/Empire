@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "Characters (beta)", desc: "A new Characters tab in the Marketplace — buy a character with coins, wear it as your hub avatar, and own it. Each is a compressed NFT you'll hold and can resell; on-chain minting, $RUMBLE pricing and real artwork are landing next." },
       { tag: "Improvement", title: "Rewards go to active players", desc: "The daily SOL pool now splits among active holders — people who hold $RUMBLE and actually play — instead of being diluted across the whole token supply. Far bigger, real rewards for players in the game, with a per-wallet cap so no whale drains the day. Daily pool raised to 5 SOL." },
       { tag: "Improvement", title: "Full leaderboard", desc: "The leaderboard now lists every ruler, ranked by power, with pages to flip through (50 per page) — no more top-25 cutoff, bots excluded." },
       { tag: "Feature", title: "The Hub — a place to gather", desc: "A shared, walkable plaza every ruler now spawns in: stroll around as your hero with WASD, see everyone online moving about with their name and level, chat in real time, then march into your world." },

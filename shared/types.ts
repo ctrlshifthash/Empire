@@ -176,6 +176,8 @@ export interface Empire {
   lastArenaBonusDay?: number; // UTC day index of the last daily-win bonus claimed
   // equipped marketplace relic instance ids (up to EQUIP_SLOTS); their effects stack
   equipped?: string[];
+  // equipped character cNFT instance id (your hub avatar skin), if any
+  equippedCharacter?: string;
   // lifetime marketplace trading record
   marketStats?: {
     bought: number;
@@ -224,6 +226,7 @@ export interface HubAvatar {
   y: number;
   facing: number; // 1 = facing right, -1 = left
   moving: boolean;
+  character?: { icon: string; color: string }; // equipped character skin, if any
 }
 
 export interface Alliance {
@@ -509,6 +512,30 @@ export interface ItemInstance {
   serial: number; // #N of the type's max supply
   mintedAt: number;
 }
+
+// A character cNFT a player owns. `assetId` is the on-chain compressed-NFT asset
+// id once minted (null in beta / before the mint goes live).
+export interface CharacterInstance {
+  id: string;
+  typeId: string;
+  ownerId: string; // empire id
+  serial: number;
+  assetId: string | null; // on-chain cNFT asset id (Bubblegum) — set when minted
+  mintedAt: number;
+}
+
+// Snapshot view of a character a player owns.
+export interface OwnedCharacter {
+  instanceId: string;
+  typeId: string;
+  name: string;
+  icon: string;
+  color: string;
+  rarity: string;
+  serial: number;
+  equipped: boolean;
+  onChain: boolean; // true once it's a real cNFT
+}
 export interface Listing {
   id: string;
   instanceId: string;
@@ -588,6 +615,8 @@ export interface GameSnapshot {
   tournament: TournamentPublic | null;
   // the player's owned marketplace items
   inventory: InventoryItem[];
+  // the player's owned character cNFTs
+  characters: OwnedCharacter[];
 }
 
 // Server -> client realtime events
