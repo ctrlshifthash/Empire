@@ -39,11 +39,11 @@ type Tab =
 
 const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "live", label: "Play", icon: "🌍", desc: "Your live world — walk around, harvest and fight" },
+  { id: "arena", label: "PvP", icon: "🏟️", desc: "Wager coins in PvP duels — winner takes the pot" },
   { id: "hero", label: "My Hero", icon: "🦸", desc: "Customise your character: gear, skills & tools" },
   { id: "empire", label: "Buildings", icon: "🏰", desc: "Build & upgrade your settlement, advance ages" },
   { id: "world", label: "Attack", icon: "🗡️", desc: "Pick a rival empire and invade it" },
   { id: "boss", label: "World Boss", icon: "👹", desc: "Team up against a server-wide boss for in-game spoils" },
-  { id: "arena", label: "Arena", icon: "⚔️", desc: "Wager coins in PvP duels — winner takes the pot" },
   { id: "military", label: "Army", icon: "⚔️", desc: "Train soldiers for your army" },
   { id: "armoury", label: "Armoury", icon: "🛒", desc: "Buy weapons & armour for your army with coins" },
   { id: "tokenshop", label: "Token Shop", icon: "💎", desc: "Spend the project token on packs, boosts, armies & traits" },
