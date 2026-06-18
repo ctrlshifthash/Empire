@@ -31,6 +31,8 @@ interface GameStore {
   hubMessages: HubMessage[];
   hubOnline: HubPlayer[];
   hubAvatars: HubAvatar[];
+  inHub: boolean; // true while standing in the hub (drives hub-specific music)
+  setInHub: (v: boolean) => void;
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -118,6 +120,8 @@ export const useGame = create<GameStore>((set, get) => ({
   hubMessages: [],
   hubOnline: [],
   hubAvatars: [],
+  inHub: false,
+  setInHub: (v) => set({ inHub: v }),
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),

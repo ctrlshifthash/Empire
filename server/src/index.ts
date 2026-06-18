@@ -243,7 +243,7 @@ app.get("/api/leaderboard", (_req, res) => {
       };
     })
     .sort((a, b) => b.power - a.power)
-    .slice(0, 100);
+    .slice(0, 2000); // effectively all players (safety cap); paginated client-side
   res.json({ ok: true, rows });
 });
 

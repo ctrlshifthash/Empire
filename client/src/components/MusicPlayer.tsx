@@ -1,31 +1,44 @@
 import { useEffect, useRef, useState } from "react";
+import { useGame } from "../lib/store";
 
-// Looping ambient soundtrack with a floating mute toggle. Browsers block audio
-// with sound until the user interacts, so when music is enabled we start it on
-// the first click/keypress. The on/off choice is remembered.
+// Looping ambient soundtrack with a floating mute toggle. Plays a livelier track
+// while you're in the hub, and the theme everywhere else. Browsers block audio
+// until the user interacts, so when enabled we start it on the first interaction.
+// (If the hub track file isn't present, it falls back to the theme — never silent.)
 const LS = "rr_music";
-const TRACK = "/music/theme.m4a";
+const THEME = "/music/theme.m4a";
+const HUB = "/music/hub.m4a"; // upbeat hub track; drop the file here to enable it
 
 export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const inHub = useGame((s) => s.inHub);
   const [on, setOn] = useState(() => {
     try {
       const v = localStorage.getItem(LS);
-      return v === null ? true : v === "1"; // default on (themed), but silent until first interaction
+      return v === null ? true : v === "1";
     } catch {
       return true;
     }
   });
 
+  // create the audio element once, with a hub→theme fallback
   useEffect(() => {
-    const a = new Audio(TRACK);
+    const a = new Audio();
     a.loop = true;
     a.volume = 0.32;
     a.preload = "auto";
+    a.addEventListener("error", () => {
+      // hub track missing/unsupported → fall back to the theme so it's never silent
+      if (a.src.includes("/hub.")) {
+        a.src = THEME;
+        a.play().catch(() => {});
+      }
+    });
     audioRef.current = a;
     return () => a.pause();
   }, []);
 
+  // pick the track for the current context (hub vs. elsewhere) + play/pause
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -34,11 +47,13 @@ export default function MusicPlayer() {
     } catch {
       /* ignore */
     }
+    const want = inHub ? HUB : THEME;
+    if (a.src.split("/").pop() !== want.split("/").pop()) a.src = want;
+
     if (!on) {
       a.pause();
       return;
     }
-    // try to play; if the browser blocks it, start on the very first interaction
     a.play().catch(() => {
       const events = ["pointerdown", "keydown", "wheel", "touchstart"];
       const start = () => {
@@ -47,7 +62,7 @@ export default function MusicPlayer() {
       };
       events.forEach((e) => window.addEventListener(e, start, { once: true, passive: true }));
     });
-  }, [on]);
+  }, [on, inHub]);
 
   return (
     <button

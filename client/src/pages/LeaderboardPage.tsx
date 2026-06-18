@@ -22,6 +22,8 @@ export default function LeaderboardPage() {
   const [view, setView] = useState<View>("players");
   const [board, setBoard] = useState<Board | null>(null);
   const [alliances, setAlliances] = useState<AllianceRow[] | null>(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   useEffect(() => {
     let alive = true;
@@ -41,6 +43,12 @@ export default function LeaderboardPage() {
   }, []);
 
   const rows = board?.rows ?? [];
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageRows = rows.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  // a windowed set of page numbers around the current page
+  const winFrom = Math.max(0, Math.min(safePage - 3, totalPages - 7));
+  const pageWindow = Array.from({ length: Math.min(7, totalPages) }, (_, k) => winFrom + k);
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)]">
@@ -116,9 +124,11 @@ export default function LeaderboardPage() {
             <div className="p-10 text-center text-sm text-parchment-300/60">Loading the realm…</div>
           )}
 
-          {rows.map((r, i) => (
+          {pageRows.map((r, i) => {
+            const rank = safePage * PAGE_SIZE + i + 1;
+            return (
             <motion.div
-              key={r.name + i}
+              key={r.name + rank}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: Math.min(i * 0.02, 0.4) }}
@@ -126,14 +136,14 @@ export default function LeaderboardPage() {
             >
               <div
                 className={`font-display text-lg font-bold ${
-                  i === 0
+                  rank === 1
                     ? "text-gold-light"
-                    : i < 3
+                    : rank <= 3
                       ? "text-parchment-200"
                       : "text-parchment-300/50"
                 }`}
               >
-                {i + 1}
+                {rank}
               </div>
               <div className="flex min-w-0 items-center gap-3">
                 <EmpireCrest color={r.banner} name={r.name} size={30} />
@@ -159,8 +169,43 @@ export default function LeaderboardPage() {
               <div className="hidden text-right text-sm text-parchment-300/70 sm:block">{r.raidsWon}</div>
               <div className="text-right font-display font-bold text-gold-light">{fmt(r.power)}</div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
+        )}
+
+        {/* pagination (players) */}
+        {view === "players" && totalPages > 1 && (
+          <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-1.5">
+            <button
+              disabled={safePage === 0}
+              onClick={() => setPage(safePage - 1)}
+              className="rounded-lg border border-parchment-300/15 bg-white/5 px-3 py-1.5 text-sm text-parchment-100/80 hover:border-gold/40 hover:text-gold-light disabled:opacity-30"
+            >
+              ‹ Prev
+            </button>
+            {winFrom > 0 && <span className="px-1 text-parchment-300/40">…</span>}
+            {pageWindow.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`min-w-9 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  p === safePage ? "bg-gold/15 text-gold-light" : "border border-parchment-300/10 bg-white/5 text-parchment-300/70 hover:text-parchment-100"
+                }`}
+              >
+                {p + 1}
+              </button>
+            ))}
+            {winFrom + 7 < totalPages && <span className="px-1 text-parchment-300/40">…</span>}
+            <button
+              disabled={safePage >= totalPages - 1}
+              onClick={() => setPage(safePage + 1)}
+              className="rounded-lg border border-parchment-300/15 bg-white/5 px-3 py-1.5 text-sm text-parchment-100/80 hover:border-gold/40 hover:text-gold-light disabled:opacity-30"
+            >
+              Next ›
+            </button>
+            <span className="ml-2 text-xs text-parchment-300/50">{rows.length} rulers</span>
+          </div>
         )}
 
         <div className="mt-10 text-center">

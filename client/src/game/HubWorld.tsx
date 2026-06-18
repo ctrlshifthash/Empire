@@ -36,17 +36,6 @@ const DECOR: { x: number; y: number; g: string }[] = [
 type Local = { x: number; y: number; facing: number; moving: boolean; phase: number };
 type RemoteDisp = { x: number; y: number; facing: number; moving: boolean; phase: number };
 
-// Quick destinations reachable straight from the hub (so players aren't stuck).
-const HUB_NAV: [string, string][] = [
-  ["empire", "🏰 Buildings"],
-  ["military", "⚔ Army"],
-  ["armoury", "🛒 Armoury"],
-  ["world", "🗡 Attack"],
-  ["tokenshop", "💎 Shop"],
-  ["quests", "📜 Quests"],
-  ["rewards", "💰 Rewards"],
-];
-
 export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hubEnter = useGame((s) => s.hubEnter);
@@ -59,6 +48,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const myName = useGame((s) => s.snapshot?.empire?.name ?? "You");
   const myBanner = useGame((s) => s.snapshot?.empire?.banner ?? "#c0a020");
   const [chat, setChat] = useState("");
+  const setInHub = useGame((s) => s.setInHub);
 
   const me = useRef<Local>({ x: 2, y: 2, facing: -1, moving: false, phase: 0 });
   const keys = useRef<Set<string>>(new Set());
@@ -68,6 +58,12 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
     if (connected) hubEnter();
     return () => hubLeave();
   }, [hubEnter, hubLeave, connected]);
+
+  // tell the music player we're in the hub (plays the hub track while here)
+  useEffect(() => {
+    setInHub(true);
+    return () => setInHub(false);
+  }, [setInHub]);
 
   // keyboard (ignored while typing in the chat box)
   useEffect(() => {
@@ -309,27 +305,18 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
     <div className="relative h-full w-full overflow-hidden bg-[#3f7a3a]">
       <canvas ref={canvasRef} className="h-full w-full" />
 
-      {/* hub navigation — reach any part of the game straight from the hub */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 p-3">
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-xl border border-parchment-300/15 bg-black/60 px-2 py-1.5 backdrop-blur">
-          <button className="btn-gold px-5 py-2 text-base font-bold" onClick={() => onOpenTab("live")}>
-            🏰 Enter My Empire →
-          </button>
-          <span className="mx-0.5 h-5 w-px bg-parchment-300/20" />
-          {HUB_NAV.map(([t, lbl]) => (
-            <button
-              key={t}
-              onClick={() => onOpenTab(t)}
-              className="rounded-lg px-2.5 py-1 text-xs font-semibold text-parchment-100/80 transition-colors hover:bg-white/10 hover:text-gold-light"
-            >
-              {lbl}
-            </button>
-          ))}
-        </div>
+      {/* the one button players need — the rest of the game's nav is inside */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
+        <button
+          className="btn-gold pointer-events-auto px-6 py-2.5 text-base font-bold shadow-gold"
+          onClick={() => onOpenTab("live")}
+        >
+          🏰 Enter My Empire →
+        </button>
       </div>
 
       {/* controls hint */}
-      <div className="pointer-events-none absolute right-3 top-16 rounded-lg bg-black/50 px-2.5 py-1 text-[11px] text-parchment-200 backdrop-blur">
+      <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-black/50 px-2.5 py-1 text-[11px] text-parchment-200 backdrop-blur">
         Walk with <b>WASD</b> / arrows
       </div>
 
