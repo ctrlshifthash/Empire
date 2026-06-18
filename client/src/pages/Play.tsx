@@ -216,7 +216,7 @@ export default function Play() {
       {/* The social hub is a full-screen shared world you land in — not a popup. */}
       {tab === "hub" && (
         <div className="fixed inset-0 top-16 z-40">
-          <HubWorld onEnter={() => setTab("live")} />
+          <HubWorld onOpenTab={(t) => setTab(t as Tab)} />
         </div>
       )}
 

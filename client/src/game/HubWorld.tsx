@@ -36,7 +36,18 @@ const DECOR: { x: number; y: number; g: string }[] = [
 type Local = { x: number; y: number; facing: number; moving: boolean; phase: number };
 type RemoteDisp = { x: number; y: number; facing: number; moving: boolean; phase: number };
 
-export default function HubWorld({ onEnter }: { onEnter: () => void }) {
+// Quick destinations reachable straight from the hub (so players aren't stuck).
+const HUB_NAV: [string, string][] = [
+  ["empire", "🏰 Buildings"],
+  ["military", "⚔ Army"],
+  ["armoury", "🛒 Armoury"],
+  ["world", "🗡 Attack"],
+  ["tokenshop", "💎 Shop"],
+  ["quests", "📜 Quests"],
+  ["rewards", "💰 Rewards"],
+];
+
+export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hubEnter = useGame((s) => s.hubEnter);
   const hubLeave = useGame((s) => s.hubLeave);
@@ -298,13 +309,28 @@ export default function HubWorld({ onEnter }: { onEnter: () => void }) {
     <div className="relative h-full w-full overflow-hidden bg-[#3f7a3a]">
       <canvas ref={canvasRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
-        <div className="pointer-events-auto rounded-lg bg-black/55 px-3 py-1.5 text-xs text-parchment-200 backdrop-blur">
-          🏰 <b className="text-gold-light">The Hub</b> — walk with <b>WASD</b> / arrows. Everyone here is online with you.
+      {/* hub navigation — reach any part of the game straight from the hub */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 p-3">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-xl border border-parchment-300/15 bg-black/60 px-2 py-1.5 backdrop-blur">
+          <button className="btn-gold btn-sm" onClick={() => onOpenTab("live")}>
+            ▶ Enter World
+          </button>
+          <span className="mx-0.5 h-5 w-px bg-parchment-300/20" />
+          {HUB_NAV.map(([t, lbl]) => (
+            <button
+              key={t}
+              onClick={() => onOpenTab(t)}
+              className="rounded-lg px-2.5 py-1 text-xs font-semibold text-parchment-100/80 transition-colors hover:bg-white/10 hover:text-gold-light"
+            >
+              {lbl}
+            </button>
+          ))}
         </div>
-        <button className="btn-gold btn-sm pointer-events-auto" onClick={onEnter}>
-          Play now ⚔
-        </button>
+      </div>
+
+      {/* controls hint */}
+      <div className="pointer-events-none absolute right-3 top-16 rounded-lg bg-black/50 px-2.5 py-1 text-[11px] text-parchment-200 backdrop-blur">
+        Walk with <b>WASD</b> / arrows
       </div>
 
       <div className="absolute bottom-3 left-3 w-[min(20rem,72vw)]">
