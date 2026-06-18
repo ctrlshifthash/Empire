@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import bs58 from "bs58";
-import { usePrivy } from "@privy-io/react-auth";
-import { useSignAndSendTransaction, useWallets } from "@privy-io/react-auth/solana";
+import { useWallet as useSolWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import type { ListingPublic, InventoryItem } from "@shared/types";
 import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, RELIC_CAP, nextRarity } from "@shared/gamedata";
-import { privyConfigured, useWallet } from "../lib/web3";
+import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
 import CoinExchange from "../game/CoinExchange";
@@ -40,7 +39,7 @@ export default function MarketPage() {
             </div>
           </div>
         </div>
-        {privyConfigured ? <Market /> : <p className="mt-10 text-center text-sm text-parchment-300/60">Wallet trading isn’t configured on this build.</p>}
+        {walletReady ? <Market /> : <p className="mt-10 text-center text-sm text-parchment-300/60">Wallet trading isn’t configured on this build.</p>}
       </div>
     </div>
   );
@@ -48,9 +47,9 @@ export default function MarketPage() {
 
 function Market() {
   const address = useWallet((s) => s.address);
-  const { login } = usePrivy();
-  const { wallets } = useWallets();
-  const { signAndSendTransaction } = useSignAndSendTransaction();
+  const { setVisible } = useWalletModal();
+  const { sendTransaction } = useSolWallet();
+  const { connection } = useConnection();
   const pushToast = useGame((s) => s.pushToast);
   const inventory = useGame((s) => s.snapshot?.inventory ?? []);
   const coins = useGame((s) => s.snapshot?.empire?.coins ?? 0);
@@ -72,11 +71,6 @@ function Market() {
       pushToast({ kind: "warn", text: "Connect a wallet to buy." });
       return;
     }
-    const wallet = wallets.find((w) => w.address === address);
-    if (!wallet) {
-      pushToast({ kind: "warn", text: "Reconnect your wallet and try again." });
-      return;
-    }
     setBusy(l.id);
     try {
       const r = await reserve(l.id, address);
@@ -85,9 +79,9 @@ function Market() {
         return;
       }
       const tx = await buildPaymentTx(r.payment, address);
-      const { signature } = await signAndSendTransaction({ transaction: tx, wallet });
+      const signature = await sendTransaction(tx, connection);
       pushToast({ kind: "success", text: "Payment sent — confirming…" });
-      const res = await postBuy(l.id, address, bs58.encode(signature));
+      const res = await postBuy(l.id, address, signature);
       if (res.ok) {
         pushToast({ kind: "success", text: `${l.name} #${l.serial} is yours!` });
         refresh();
@@ -130,7 +124,7 @@ function Market() {
           {address ? (
             <span className="chip font-mono text-xs">👛 {address.slice(0, 4)}…{address.slice(-4)}</span>
           ) : (
-            <button className="btn-gold btn-sm" onClick={() => login()}>Connect wallet</button>
+            <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>Connect wallet</button>
           )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">

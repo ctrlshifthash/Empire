@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import bs58 from "bs58";
-import { usePrivy } from "@privy-io/react-auth";
-import { useSignAndSendTransaction, useWallets } from "@privy-io/react-auth/solana";
-import { privyConfigured, useWallet } from "../lib/web3";
+import { useWallet as useSolWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import {
   fetchShopConfig,
@@ -33,7 +32,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 }
 
 export default function TokenShop() {
-  if (!privyConfigured) {
+  if (!walletReady) {
     return <Notice>The token shop needs a connected Solana wallet, which isn’t configured on this build yet.</Notice>;
   }
   return <ShopGrid />;
@@ -41,10 +40,10 @@ export default function TokenShop() {
 
 function ShopGrid() {
   const address = useWallet((s) => s.address);
-  const { login } = usePrivy();
+  const { setVisible } = useWalletModal();
   const pushToast = useGame((s) => s.pushToast);
-  const { wallets } = useWallets();
-  const { signAndSendTransaction } = useSignAndSendTransaction();
+  const { sendTransaction } = useSolWallet();
+  const { connection } = useConnection();
 
   const [cfg, setCfg] = useState<ShopConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,18 +68,12 @@ function ShopGrid() {
       pushToast({ kind: "warn", text: "Connect a Solana wallet to buy." });
       return;
     }
-    const wallet = wallets.find((w) => w.address === address);
-    if (!wallet) {
-      pushToast({ kind: "warn", text: "Couldn’t find your wallet — reconnect and try again." });
-      return;
-    }
     setBusy(item.id);
     try {
       const tx = await buildPaymentTx(cfg, address, item.price);
-      const { signature } = await signAndSendTransaction({ transaction: tx, wallet });
-      const sig = bs58.encode(signature);
+      const signature = await sendTransaction(tx, connection);
       pushToast({ kind: "success", text: "Payment sent — confirming…" });
-      const res = await postPurchase(address, sig, item.id);
+      const res = await postPurchase(address, signature, item.id);
       if (res.ok) pushToast({ kind: "success", text: `${item.name} unlocked!` });
       else pushToast({ kind: "warn", text: res.error ?? "Purchase failed." });
     } catch (e) {
@@ -108,7 +101,7 @@ function ShopGrid() {
         {address ? (
           <span className="chip font-mono text-xs">👛 {address.slice(0, 4)}…{address.slice(-4)}</span>
         ) : (
-          <button className="btn-gold btn-sm" onClick={() => login()}>
+          <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>
             Connect wallet
           </button>
         )}

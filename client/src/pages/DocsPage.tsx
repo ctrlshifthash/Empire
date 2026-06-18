@@ -127,12 +127,8 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
       <>
         <ul className="ml-5 list-disc space-y-2">
           <li>
-            <strong>Solana wallet (Phantom etc.)</strong> — sign in with your wallet via Privy. Your empire is created
+            <strong>Solana wallet (Phantom or Solflare)</strong> — sign in with your wallet. Your empire is created
             automatically and tied to your address, and your holdings unlock token rewards.
-          </li>
-          <li>
-            <strong>Email</strong> — sign in with email through Privy. You get a full empire; connect a wallet later on
-            the dashboard to start earning.
           </li>
           <li>
             <strong>Demo mode</strong> — one click, no wallet. A throwaway empire with worthless in-game coins so you can

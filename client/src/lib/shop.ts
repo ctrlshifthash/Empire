@@ -1,7 +1,7 @@
 // Client side of the token shop. Fetches the catalog/config from the server,
 // builds the SPL-token payment transaction (player ATA -> treasury ATA), and
 // posts the resulting signature back for the server to verify & grant. The
-// actual signing happens in the component via Privy's useSignAndSendTransaction.
+// actual signing happens in the component via the wallet adapter's sendTransaction.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, createBurnCheckedInstruction } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
@@ -35,12 +35,10 @@ export async function fetchShopConfig(): Promise<ShopConfig | null> {
   }
 }
 
-// Build the (unsigned) payment transaction, serialized for Privy to sign+send.
-// Includes an idempotent create of the treasury's token account so the first
-// purchase still works if the treasury has never held the token.
+// Build the (unsigned) payment transaction for the wallet to sign+send.
 // Shop purchases BURN the token — the buyer burns the price from their own
 // wallet (deflationary), so the tx is a single burnChecked instruction.
-export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens: number): Promise<Uint8Array> {
+export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens: number): Promise<Transaction> {
   const conn = new Connection(SOLANA_RPC, "confirmed");
   const mint = new PublicKey(cfg.mint);
   const buyerPk = new PublicKey(buyer);
@@ -52,7 +50,7 @@ export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;
-  return tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+  return tx;
 }
 
 export interface BuyResponse {

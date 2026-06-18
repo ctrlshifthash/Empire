@@ -1,7 +1,7 @@
 // Client side of the player marketplace. Browse listings, and buy by paying the
 // seller (+ treasury fee) wallet-to-wallet in SOL or USDC. The server returns the
-// exact amounts/recipients to pay; we build the transaction, Privy signs it, and
-// the server verifies it on-chain before transferring the item.
+// exact amounts/recipients to pay; we build the transaction, the wallet signs it,
+// and the server verifies it on-chain before transferring the item.
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import {
   getAssociatedTokenAddressSync,
@@ -71,8 +71,8 @@ export async function postBuy(listingId: string, address: string, signature: str
   }
 }
 
-// Build the (unsigned) payment transaction for Privy to sign + send.
-export async function buildPaymentTx(p: PaymentParams, buyer: string): Promise<Uint8Array> {
+// Build the (unsigned) payment transaction for the wallet to sign + send.
+export async function buildPaymentTx(p: PaymentParams, buyer: string): Promise<Transaction> {
   const conn = new Connection(SOLANA_RPC, "confirmed");
   const buyerPk = new PublicKey(buyer);
   const sellerPk = new PublicKey(p.seller);
@@ -96,5 +96,5 @@ export async function buildPaymentTx(p: PaymentParams, buyer: string): Promise<U
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;
-  return tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+  return tx;
 }

@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { usePrivy } from "@privy-io/react-auth";
+import { useWallet as useSolWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { api } from "../lib/api";
 import { useGame } from "../lib/store";
-import { privyConfigured } from "../lib/web3";
-import { privyIdentity } from "../lib/PrivyBridge";
+import { walletReady } from "../lib/web3";
 import Logo from "../components/Logo";
 
-// Sign in (or auto-create an empire) with a Solana wallet or email via Privy.
-// Only rendered when Privy is configured, so it's always inside PrivyProvider.
-function PrivySignIn({
+// Sign in (or auto-create an empire) with a Solana wallet. The empire is keyed
+// on the wallet address, so the same wallet always resolves to the same empire.
+function WalletSignIn({
   busy,
   setBusy,
   setError,
@@ -19,23 +19,23 @@ function PrivySignIn({
   setBusy: (b: boolean) => void;
   setError: (e: string | null) => void;
 }) {
-  const { login, authenticated, user, ready } = usePrivy();
+  const { publicKey, connected } = useSolWallet();
+  const { setVisible } = useWalletModal();
   const navigate = useNavigate();
   const setAuth = useGame((s) => s.setAuth);
   const pushToast = useGame((s) => s.pushToast);
   const [armed, setArmed] = useState(false);
 
-  // once Privy reports an authenticated identity (after the modal, or already
-  // connected), bridge it into a game session.
+  // once a wallet connects (after the modal, or auto-reconnect), bridge its
+  // address into a game session.
   useEffect(() => {
-    if (!armed || !authenticated || !user) return;
-    const id = privyIdentity(user);
-    if (!id) return;
+    if (!armed || !connected || !publicKey) return;
+    const address = publicKey.toBase58();
     setArmed(false);
     (async () => {
       setBusy(true);
       try {
-        const res = await api.privyAuth(id.identity, id.label);
+        const res = await api.privyAuth(address);
         if (res.ok && res.token && res.user) {
           setAuth(res.token, res.user);
           pushToast({ kind: "success", text: `Welcome, ${res.user.username}.` });
@@ -49,20 +49,20 @@ function PrivySignIn({
         setBusy(false);
       }
     })();
-  }, [armed, authenticated, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [armed, connected, publicKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <button
       type="button"
       className="btn-gold w-full py-3 text-base"
-      disabled={busy || !ready}
+      disabled={busy}
       onClick={() => {
         setError(null);
         setArmed(true);
-        if (!authenticated) login();
+        if (!connected) setVisible(true);
       }}
     >
-      🔗 Sign in with wallet or email
+      🔗 Sign in with wallet
     </button>
   );
 }
@@ -110,19 +110,14 @@ export default function AuthPage(_props: { mode: "login" | "register" }) {
             <Logo size={48} />
             <h1 className="mt-4 text-2xl font-bold">Enter the World</h1>
             <p className="mt-2 text-sm text-parchment-300/70">
-              Sign in with your Solana wallet or email — your empire is created automatically. Hold the token to earn
-              SOL.
+              Sign in with your Solana wallet — your empire is created automatically. Hold the token to earn SOL.
             </p>
           </div>
 
           <div className="mt-7 space-y-3">
-            {privyConfigured ? (
-              <PrivySignIn busy={busy} setBusy={setBusy} setError={setError} />
-            ) : (
-              <div className="rounded-lg border border-gold/20 bg-gold/5 px-3 py-2 text-center text-xs text-parchment-300/70">
-                Wallet sign-in activates once Privy is configured. Try demo mode below.
-              </div>
-            )}
+            {walletReady ? (
+              <WalletSignIn busy={busy} setBusy={setBusy} setError={setError} />
+            ) : null}
 
             <div className="flex items-center gap-3 py-1 text-[11px] uppercase tracking-wider text-parchment-300/40">
               <span className="h-px flex-1 bg-parchment-300/15" />

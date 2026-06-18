@@ -12,6 +12,8 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Improvement", title: "Direct wallet sign-in", desc: "Connect straight to Phantom or Solflare — faster, lighter, and with no third-party sign-in limits. Your empire is tied to your wallet address, so existing players keep everything." },
+      { tag: "Improvement", title: "PvP front and centre", desc: "The PvP (Arena) tab now sits right next to Play so wagered duels are easy to find." },
       { tag: "Feature", title: "Coin Exchange — cash out to $RUMBLE", desc: "Sell the in-game coins you grind for the project token, P2P, paid straight to your wallet (95%) with the 5% fee burned. Turns playtime into token, on the Market page." },
       { tag: "Feature", title: "Token shop now burns", desc: "Every token-shop purchase burns the $RUMBLE you spend — removed from supply forever. The shop is purely deflationary." },
       { tag: "Improvement", title: "Market in USDC + SOL on leaderboard", desc: "Relics are now priced in dollars (USDC) by default, repriced to match each relic's utility. The leaderboard shows each player's lifetime SOL earned." },

@@ -53,7 +53,7 @@ export async function postBuyCoins(listingId: string, address: string, signature
   }
 }
 
-export async function buildExchangeTx(p: ExPayment, buyer: string): Promise<Uint8Array> {
+export async function buildExchangeTx(p: ExPayment, buyer: string): Promise<Transaction> {
   const conn = new Connection(SOLANA_RPC, "confirmed");
   const mint = new PublicKey(p.mint);
   const buyerPk = new PublicKey(buyer);
@@ -68,5 +68,5 @@ export async function buildExchangeTx(p: ExPayment, buyer: string): Promise<Uint
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;
-  return tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+  return tx;
 }

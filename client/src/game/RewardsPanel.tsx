@@ -2,8 +2,9 @@
 // alongside the Solana token-rewards panel — holdings, what's earned, what's
 // claimable, and a Claim button (first claim anytime, then every 6 hours).
 import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { privyConfigured, useWallet } from "../lib/web3";
+import { useWallet as useSolWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { AGES, rankForPower, nextRank, REWARD_TIERS, rewardTier, holderPerksForTier } from "@shared/gamedata";
 import type { BattleReport } from "@shared/types";
@@ -35,22 +36,23 @@ function fmtDuration(ms: number): string {
   return `${s}s`;
 }
 
-// Only rendered when Privy is configured (so it's inside PrivyProvider).
-function PrivyConnect() {
-  const { login, logout, authenticated } = usePrivy();
+// Connect/disconnect a Solana wallet via the standard wallet adapter.
+function WalletConnect() {
+  const { connected, disconnect } = useSolWallet();
+  const { setVisible } = useWalletModal();
   const setAddress = useWallet((s) => s.setAddress);
-  return authenticated ? (
+  return connected ? (
     <button
       className="text-xs text-parchment-300/50 hover:text-parchment-100"
       onClick={() => {
-        logout();
+        disconnect().catch(() => {});
         setAddress(null);
       }}
     >
       Disconnect
     </button>
   ) : (
-    <button className="btn-gold btn-sm" onClick={() => login()}>
+    <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>
       🔗 Connect Wallet
     </button>
   );
@@ -166,8 +168,8 @@ export default function RewardsPanel() {
                 Disconnect
               </button>
             </span>
-          ) : privyConfigured ? (
-            <PrivyConnect />
+          ) : walletReady ? (
+            <WalletConnect />
           ) : null}
         </div>
       </div>
@@ -178,7 +180,7 @@ export default function RewardsPanel() {
           <div className="mb-3 text-sm text-parchment-300/75">
             Connect your Solana wallet to track holdings and claim SOL rewards.
           </div>
-          {privyConfigured ? <PrivyConnect /> : <ManualConnect />}
+          {walletReady ? <WalletConnect /> : <ManualConnect />}
         </div>
       ) : (
         <div className="rounded-xl border border-gold/25 bg-gradient-to-b from-gold/10 to-transparent p-4">

@@ -3,11 +3,12 @@
 import { create } from "zustand";
 import { SERVER_URL } from "./config";
 
-export const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID as string | undefined) ?? "";
 export const TOKEN_MINT = (import.meta.env.VITE_TOKEN_MINT as string | undefined) ?? "";
 export const SOLANA_RPC =
   (import.meta.env.VITE_SOLANA_RPC as string | undefined) ?? "https://api.mainnet-beta.solana.com";
-export const privyConfigured = PRIVY_APP_ID.length > 0;
+// Wallet sign-in is always available now (standard Solana wallet adapter — no
+// app id, no third-party cap). Kept as a named export so the UI gates still read.
+export const walletReady = true;
 
 export interface RewardStatus {
   configured: boolean;

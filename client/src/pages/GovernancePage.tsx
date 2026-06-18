@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import type { PollResult } from "@shared/types";
-import { privyConfigured, useWallet } from "../lib/web3";
+import { walletReady, useWallet } from "../lib/web3";
 import { fetchPolls, castVote } from "../lib/governance";
 import { useGame } from "../lib/store";
 import { fmt } from "../lib/format";
@@ -20,7 +20,7 @@ export default function GovernancePage() {
   const address = useWallet((s) => s.address);
   const status = useWallet((s) => s.status);
   const refresh = useWallet((s) => s.refresh);
-  const { login } = usePrivy();
+  const { setVisible } = useWalletModal();
   const pushToast = useGame((s) => s.pushToast);
   const [polls, setPolls] = useState<PollResult[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -72,8 +72,8 @@ export default function GovernancePage() {
             ) : (
               <>
                 <span className="text-parchment-300/70">Connect a wallet to vote</span>
-                {privyConfigured && (
-                  <button className="btn-gold btn-sm" onClick={() => login()}>
+                {walletReady && (
+                  <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>
                     Connect
                   </button>
                 )}

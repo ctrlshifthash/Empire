@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import bs58 from "bs58";
-import { usePrivy } from "@privy-io/react-auth";
-import { useSignAndSendTransaction, useWallets } from "@privy-io/react-auth/solana";
+import { useWallet as useSolWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import type { CoinListingPublic } from "@shared/types";
 import { useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
@@ -13,9 +12,9 @@ const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 // token cash-out: turn the coins you farm into the project token, P2P.
 export default function CoinExchange() {
   const address = useWallet((s) => s.address);
-  const { login } = usePrivy();
-  const { wallets } = useWallets();
-  const { signAndSendTransaction } = useSignAndSendTransaction();
+  const { setVisible } = useWalletModal();
+  const { sendTransaction } = useSolWallet();
+  const { connection } = useConnection();
   const pushToast = useGame((s) => s.pushToast);
   const coins = useGame((s) => s.snapshot?.empire?.coins ?? 0);
   const listCoins = useGame((s) => s.listCoins);
@@ -36,16 +35,14 @@ export default function CoinExchange() {
 
   async function buy(l: CoinListingPublic) {
     if (!address) return pushToast({ kind: "warn", text: "Connect a wallet to buy." });
-    const wallet = wallets.find((w) => w.address === address);
-    if (!wallet) return pushToast({ kind: "warn", text: "Reconnect your wallet and try again." });
     setBusy(l.id);
     try {
       const r = await reserveCoin(l.id, address);
       if (!r.ok || !r.payment) return pushToast({ kind: "warn", text: r.error ?? "Couldn't reserve." });
       const tx = await buildExchangeTx(r.payment, address);
-      const { signature } = await signAndSendTransaction({ transaction: tx, wallet });
+      const signature = await sendTransaction(tx, connection);
       pushToast({ kind: "success", text: "Payment sent — confirming…" });
-      const res = await postBuyCoins(l.id, address, bs58.encode(signature));
+      const res = await postBuyCoins(l.id, address, signature);
       if (res.ok) {
         pushToast({ kind: "success", text: `Bought ${fmt(l.coinAmount)} coins!` });
         refresh();
@@ -91,7 +88,7 @@ export default function CoinExchange() {
       <div className="lg:col-span-3">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold">Coins for sale</h3>
-          {!address && <button className="btn-gold btn-sm" onClick={() => login()}>Connect wallet</button>}
+          {!address && <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>Connect wallet</button>}
         </div>
         <div className="space-y-2">
           {listings === null && <div className="panel p-8 text-center text-sm text-parchment-300/60">Loading…</div>}
