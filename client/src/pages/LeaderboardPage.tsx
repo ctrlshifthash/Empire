@@ -23,6 +23,7 @@ export default function LeaderboardPage() {
   const [board, setBoard] = useState<Board | null>(null);
   const [alliances, setAlliances] = useState<AllianceRow[] | null>(null);
   const [page, setPage] = useState(0);
+  const [sort, setSort] = useState<"power" | "earned">("power");
   const PAGE_SIZE = 50;
 
   useEffect(() => {
@@ -43,9 +44,11 @@ export default function LeaderboardPage() {
   }, []);
 
   const rows = board?.rows ?? [];
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  // server returns power-sorted; re-sort by SOL earned when chosen
+  const sortedRows = sort === "earned" ? [...rows].sort((a, b) => (b.solEarned || 0) - (a.solEarned || 0)) : rows;
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
-  const pageRows = rows.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pageRows = sortedRows.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
   // a windowed set of page numbers around the current page
   const winFrom = Math.max(0, Math.min(safePage - 3, totalPages - 7));
   const pageWindow = Array.from({ length: Math.min(7, totalPages) }, (_, k) => winFrom + k);
@@ -76,6 +79,28 @@ export default function LeaderboardPage() {
               </button>
             ))}
           </div>
+
+          {view === "players" && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-parchment-300/55">
+              <span>Sort by</span>
+              <div className="inline-flex rounded-lg border border-parchment-300/15 bg-ink-800/60 p-0.5">
+                {(["power", "earned"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setSort(s);
+                      setPage(0);
+                    }}
+                    className={`rounded-md px-3 py-1 font-semibold transition-colors ${
+                      sort === s ? "bg-gold/15 text-gold-light" : "text-parchment-300/55 hover:text-parchment-100"
+                    }`}
+                  >
+                    {s === "power" ? "Power" : "SOL earned"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {view === "alliances" ? (
@@ -112,12 +137,13 @@ export default function LeaderboardPage() {
           </div>
         ) : (
         <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-parchment-300/10 bg-ink-800/60 shadow-panel">
-          <div className="grid grid-cols-[3rem_1fr_auto_auto] gap-4 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55 sm:grid-cols-[3rem_1fr_6rem_5rem_5rem]">
+          <div className="grid grid-cols-[2.5rem_1fr_auto_auto] gap-3 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55 sm:grid-cols-[3rem_1fr_5rem_4rem_5.5rem_5rem] sm:gap-4">
             <div>#</div>
             <div>Empire</div>
             <div className="hidden text-right sm:block">Age</div>
             <div className="hidden text-right sm:block">Raids</div>
-            <div className="text-right">Power</div>
+            <div className={`text-right ${sort === "earned" ? "text-gold-light" : ""}`}>Earned</div>
+            <div className={`text-right ${sort === "power" ? "text-gold-light" : ""}`}>Power</div>
           </div>
 
           {rows.length === 0 && (
@@ -132,7 +158,7 @@ export default function LeaderboardPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: Math.min(i * 0.02, 0.4) }}
-              className="grid grid-cols-[3rem_1fr_auto_auto] items-center gap-4 border-b border-parchment-300/5 px-5 py-3.5 last:border-0 sm:grid-cols-[3rem_1fr_6rem_5rem_5rem]"
+              className="grid grid-cols-[2.5rem_1fr_auto_auto] items-center gap-3 border-b border-parchment-300/5 px-5 py-3.5 last:border-0 sm:grid-cols-[3rem_1fr_5rem_4rem_5.5rem_5rem] sm:gap-4"
             >
               <div
                 className={`font-display text-lg font-bold ${
@@ -154,10 +180,7 @@ export default function LeaderboardPage() {
                       <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 align-middle" />
                     )}
                   </div>
-                  <div className="text-xs text-parchment-300/55">
-                    ⚜ {rankForPower(r.power).name}
-                    {r.solEarned > 0 && <span className="text-gold-light/80"> · ◎ {r.solEarned.toFixed(3)} SOL earned</span>}
-                  </div>
+                  <div className="text-xs text-parchment-300/55">⚜ {rankForPower(r.power).name}</div>
                 </div>
               </div>
               <div
@@ -167,6 +190,9 @@ export default function LeaderboardPage() {
                 {AGE_META[r.age as keyof typeof AGE_META]?.short ?? r.age}
               </div>
               <div className="hidden text-right text-sm text-parchment-300/70 sm:block">{r.raidsWon}</div>
+              <div className={`text-right text-sm font-semibold tabular-nums ${r.solEarned > 0 ? "text-gold-light" : "text-parchment-300/35"}`}>
+                {r.solEarned > 0 ? `◎ ${r.solEarned.toFixed(3)}` : "—"}
+              </div>
               <div className="text-right font-display font-bold text-gold-light">{fmt(r.power)}</div>
             </motion.div>
             );
