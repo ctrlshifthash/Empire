@@ -100,6 +100,34 @@ export async function getHoldings(address: string): Promise<Holdings> {
   }
 }
 
+// ── Play gate ────────────────────────────────────────────────────────────────
+// The real (earning) game is token-gated: a wallet must hold at least
+// MIN_PLAY_HOLD of the project token to enter. Demo mode stays open to everyone
+// (no wallet, no rewards). Tunable via the MIN_PLAY_HOLD env var.
+export const MIN_PLAY_HOLD = Number(process.env.MIN_PLAY_HOLD || "10");
+
+export interface PlayEligibility {
+  allowed: boolean;
+  reason: "ok" | "gate" | "unverified"; // "unverified" = chain read failed, ask to retry
+  held: number;
+  required: number;
+}
+
+// Verify a wallet may enter the real game. Fails to a retry signal (not a
+// lock-out) when the chain can't be read, so a transient RPC hiccup never blocks
+// a genuine holder. Pre-launch (no mint) or MIN_PLAY_HOLD<=0 → ungated.
+export async function checkPlayEligibility(address: string): Promise<PlayEligibility> {
+  const required = MIN_PLAY_HOLD;
+  if (!rewardsConfigured() || MIN_PLAY_HOLD <= 0) return { allowed: true, reason: "ok", held: 0, required };
+  try {
+    const { balance } = await getHoldings(address);
+    if (balance >= MIN_PLAY_HOLD) return { allowed: true, reason: "ok", held: balance, required };
+    return { allowed: false, reason: "gate", held: balance, required };
+  } catch {
+    return { allowed: false, reason: "unverified", held: 0, required };
+  }
+}
+
 // Bigger holders earn a bigger multiplier on their pro-rata share. The exact
 // value comes from the holder's reward tier (Bronze … Diamond, up to 3×).
 export function multiplier(sharePct: number): number {

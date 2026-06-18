@@ -15,7 +15,7 @@ import { Server as SocketServer } from "socket.io";
 
 import type { Army } from "../../shared/combat.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
-import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier } from "./rewards.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility } from "./rewards.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -160,11 +160,29 @@ app.post("/api/login", (req, res) => {
   res.status(result.ok ? 200 : 400).json(result);
 });
 
-// Privy login (Solana wallet or email). Identity is the verified wallet address
-// or email from Privy; the same identity always maps to the same empire.
-app.post("/api/auth/privy", (req, res) => {
+// Wallet login. Identity is the connected Solana wallet address; the same
+// identity always maps to the same empire. Token-gated: the real (earning) game
+// requires holding at least MIN_PLAY_HOLD $RUMBLE, verified on-chain for the
+// connected wallet. Demo mode (separate endpoint) stays open & unpaid.
+app.post("/api/auth/privy", async (req, res) => {
   const { identity, label } = req.body ?? {};
-  const result = privyLogin(identity, label);
+  const ext = String(identity || "").trim();
+  const isWallet = ext.length >= 32 && !ext.includes("@") && !ext.startsWith("did:");
+  if (isWallet) {
+    const elig = await checkPlayEligibility(ext);
+    if (!elig.allowed) {
+      if (elig.reason === "unverified")
+        return res.status(503).json({ ok: false, error: "Couldn't verify your $RUMBLE balance right now — try again in a moment." });
+      return res.status(403).json({
+        ok: false,
+        gated: true,
+        required: elig.required,
+        held: elig.held,
+        error: `You need to hold at least ${elig.required} $RUMBLE to play and earn. Buy $RUMBLE, then sign in again — or play demo mode (no rewards).`,
+      });
+    }
+  }
+  const result = privyLogin(ext, label);
   res.status(result.ok ? 200 : 400).json(result);
 });
 

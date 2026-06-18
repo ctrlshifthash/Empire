@@ -8,16 +8,21 @@ import { useGame } from "../lib/store";
 import { walletReady } from "../lib/web3";
 import Logo from "../components/Logo";
 
+const PUMP_URL = "https://pump.fun/coin/qYc4gQ9xVq48XmeBBUh7GMfTYycoLS1m3VTT9tapump";
+
 // Sign in (or auto-create an empire) with a Solana wallet. The empire is keyed
 // on the wallet address, so the same wallet always resolves to the same empire.
+// The real game is token-gated server-side (must hold the minimum $RUMBLE).
 function WalletSignIn({
   busy,
   setBusy,
   setError,
+  setGated,
 }: {
   busy: boolean;
   setBusy: (b: boolean) => void;
   setError: (e: string | null) => void;
+  setGated: (b: boolean) => void;
 }) {
   const { publicKey, connected } = useSolWallet();
   const { setVisible } = useWalletModal();
@@ -41,6 +46,7 @@ function WalletSignIn({
           pushToast({ kind: "success", text: `Welcome, ${res.user.username}.` });
           navigate("/play");
         } else {
+          if (res.gated) setGated(true);
           setError(res.error ?? "Sign-in failed.");
         }
       } catch {
@@ -58,6 +64,7 @@ function WalletSignIn({
       disabled={busy}
       onClick={() => {
         setError(null);
+        setGated(false);
         setArmed(true);
         if (!connected) setVisible(true);
       }}
@@ -73,6 +80,7 @@ export default function AuthPage(_props: { mode: "login" | "register" }) {
   const pushToast = useGame((s) => s.pushToast);
 
   const [error, setError] = useState<string | null>(null);
+  const [gated, setGated] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function playDemo() {
@@ -110,13 +118,14 @@ export default function AuthPage(_props: { mode: "login" | "register" }) {
             <Logo size={48} />
             <h1 className="mt-4 text-2xl font-bold">Enter the World</h1>
             <p className="mt-2 text-sm text-parchment-300/70">
-              Sign in with your Solana wallet — your empire is created automatically. Hold the token to earn SOL.
+              Sign in with your Solana wallet to play and earn SOL. You need to hold at least{" "}
+              <strong className="text-gold-light">10 $RUMBLE</strong> — or try demo mode free below.
             </p>
           </div>
 
           <div className="mt-7 space-y-3">
             {walletReady ? (
-              <WalletSignIn busy={busy} setBusy={setBusy} setError={setError} />
+              <WalletSignIn busy={busy} setBusy={setBusy} setError={setError} setGated={setGated} />
             ) : null}
 
             <div className="flex items-center gap-3 py-1 text-[11px] uppercase tracking-wider text-parchment-300/40">
@@ -136,6 +145,17 @@ export default function AuthPage(_props: { mode: "login" | "register" }) {
               <div className="rounded-lg border border-blood-light/40 bg-blood/20 px-3 py-2 text-sm text-parchment-50">
                 {error}
               </div>
+            )}
+
+            {gated && (
+              <a
+                href={PUMP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-gold flex w-full items-center justify-center py-3 text-base"
+              >
+                Buy $RUMBLE on Pump.fun
+              </a>
             )}
           </div>
         </div>

@@ -24,6 +24,9 @@ export interface AuthResponse {
   error?: string;
   token?: string;
   user?: AuthUser;
+  gated?: boolean; // wallet doesn't hold the required minimum to play
+  required?: number;
+  held?: number;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
