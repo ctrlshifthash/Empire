@@ -50,7 +50,7 @@ import { scheduleSave, state } from "./store.ts";
 import { isOnline } from "./presence.ts";
 import { areAllies, alliancePublic } from "./alliances.ts";
 import { bossPublic } from "./boss.ts";
-import { openDuelsPublic, tournamentPublic } from "./arena.ts";
+import { openDuelsPublic, tournamentPublic, myTombstones } from "./arena.ts";
 import { inventoryOf, mintItem, randomDropType } from "./market.ts";
 import { maybeDropMount } from "./mounts.ts";
 import { ownedCharacters } from "./characters.ts";
@@ -1001,6 +1001,7 @@ export function snapshotFor(empireId: string): GameSnapshot | null {
     alliance: alliancePublic(empire.allianceId),
     boss: bossPublic(empireId),
     duels: openDuelsPublic(),
+    tombstones: myTombstones(empireId),
     tournament: tournamentPublic(empireId),
     inventory: inventoryOf(empireId),
     characters: ownedCharacters(empireId),

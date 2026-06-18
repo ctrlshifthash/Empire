@@ -44,6 +44,8 @@ import {
   leaveTournament,
   ensureTournament,
   arenaRankings,
+  recoverTombstone,
+  sweepTombstones,
 } from "./arena.ts";
 import {
   marketConfig,
@@ -594,8 +596,11 @@ io.on("connection", (socket) => {
     const ids = result.members ?? (empireId ? [empireId] : []);
     for (const id of ids) pushSnapshot(id);
   }
-  socket.on("duel:create", (p: { stake: number; units: Army }) =>
-    withEmpire((id) => handleArena(createDuel(state.empires[id], p?.stake, p?.units || {}), "Wager posted to the Arena!")),
+  socket.on("duel:create", (p: { stake: number; units: Army; mode?: "normal" | "tombstone" }) =>
+    withEmpire((id) => handleArena(createDuel(state.empires[id], p?.stake, p?.units || {}, p?.mode === "tombstone" ? "tombstone" : "normal"), p?.mode === "tombstone" ? "Tombstone wager posted!" : "Wager posted to the Arena!")),
+  );
+  socket.on("tombstone:recover", (p: { tombId?: string }) =>
+    withEmpire((id) => handleArena(recoverTombstone(state.empires[id], String(p?.tombId || "")), "Tombstone recovered!")),
   );
   socket.on("duel:cancel", (p: { duelId: string }) =>
     withEmpire((id) => handleArena(cancelDuel(state.empires[id], String(p?.duelId || "")), "Wager withdrawn — stake refunded.")),
@@ -926,6 +931,12 @@ setInterval(() => {
 
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);
+
+// expire tombstone duels — award unrecovered tombstones to their victors
+setInterval(() => {
+  const ids = sweepTombstones();
+  for (const id of new Set(ids)) pushSnapshot(id);
+}, 30000);
 
 process.on("SIGINT", () => {
   console.log("\n[shutdown] saving world…");

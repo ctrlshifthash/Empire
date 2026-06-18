@@ -1104,6 +1104,9 @@ export const ARENA_RAKE = 0.05; // 5% of the pot is burned (coin sink)
 export const ARENA_WINNER_LOSS = 0.15; // winner loses 15% of committed army
 export const ARENA_LOSER_LOSS = 0.55; // loser loses 55% of committed army
 export const ARENA_DAILY_BONUS = 2000; // coins for your first arena win each day
+// Tombstone duels (beta): the loser's stake drops into a recoverable tombstone.
+export const TOMBSTONE_RECOVER_PCT = 0.6; // loser recovers this much if they reach it in time
+export const TOMBSTONE_WINDOW_MS = 5 * 60 * 1000; // window to recover before the victor loots it
 export const TOURNEY_ENTRY_FEE = 1000; // coins to enter the rolling tournament
 export const TOURNEY_SIZE = 8; // entrants before it auto-runs
 

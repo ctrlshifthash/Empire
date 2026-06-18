@@ -16,11 +16,15 @@ import {
   ARENA_DAILY_BONUS,
   TOURNEY_ENTRY_FEE,
   TOURNEY_SIZE,
+  TOMBSTONE_RECOVER_PCT,
+  TOMBSTONE_WINDOW_MS,
 } from "../../shared/gamedata.ts";
 import type {
   Duel,
   DuelPublic,
   Empire,
+  Tombstone,
+  TombstonePublic,
   Tournament,
   TournamentPublic,
   UnitType,
@@ -28,6 +32,7 @@ import type {
 import { state, scheduleSave } from "./store.ts";
 import { recomputePower } from "./engine.ts";
 import { mintItem, randomDropType } from "./market.ts";
+import { isLocked } from "./features.ts";
 import { now, uid } from "./util.ts";
 
 type Army = Partial<Record<UnitType, number>>;
@@ -88,7 +93,8 @@ function returnSurvivors(e: Empire, committed: Army, lossFrac: number): void {
   }
 }
 
-export function createDuel(e: Empire, rawStake: number, rawArmy: Army): ArenaResult {
+export function createDuel(e: Empire, rawStake: number, rawArmy: Army, mode: "normal" | "tombstone" = "normal"): ArenaResult {
+  if (mode === "tombstone" && isLocked("wilderness")) return { ok: false, error: "Tombstone duels are in beta — not live yet." };
   const stake = Math.floor(Number(rawStake) || 0);
   if (stake < ARENA_MIN_STAKE) return { ok: false, error: `Minimum wager is ${ARENA_MIN_STAKE} coins.` };
   if (e.coins < stake) return { ok: false, error: `You need ${stake} coins to stake that.` };
@@ -109,6 +115,7 @@ export function createDuel(e: Empire, rawStake: number, rawArmy: Army): ArenaRes
     army,
     status: "open",
     createdAt: now(),
+    mode,
   };
   state.duels[duel.id] = duel;
   scheduleSave(0);
@@ -157,9 +164,10 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
 
   const winner = challengerWins ? challenger : e;
   const loser = challengerWins ? e : challenger;
+  const tombstoneMode = duel.mode === "tombstone" && !!winner && !!loser;
   let bonus = 0;
   if (winner) {
-    winner.coins += prize;
+    winner.coins += tombstoneMode ? duel.stake : prize; // tombstone: only your own stake back now
     bonus = recordWin(winner); // streak + once-daily win bonus
   }
   if (loser) {
@@ -167,42 +175,103 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
     loser.duelStreak = 0;
   }
 
-  // logs
-  if (challenger) {
-    challenger.log.unshift({
-      id: uid("log_"),
-      at: now(),
-      kind: "battle",
-      text: challengerWins
-        ? `Arena: you beat ${e.name} and won ${prize} coins!`
-        : `Arena: ${e.name} beat you — lost your ${duel.stake} coin stake.`,
-    });
-    if (challenger.log.length > 60) challenger.log.length = 60;
-    recomputePower(challenger);
-  }
-  e.log.unshift({
-    id: uid("log_"),
-    at: now(),
-    kind: "battle",
-    text: challengerWins
-      ? `Arena: ${duel.challengerName} beat you — lost your ${duel.stake} coin stake.`
-      : `Arena: you beat ${duel.challengerName} and won ${prize} coins!`,
-  });
-  if (e.log.length > 60) e.log.length = 60;
-  recomputePower(e);
+  const pushLog = (emp: Empire | undefined, kind: "battle" | "system", text: string) => {
+    if (!emp) return;
+    emp.log.unshift({ id: uid("log_"), at: now(), kind, text });
+    if (emp.log.length > 60) emp.log.length = 60;
+  };
 
-  if (bonus > 0 && winner) {
-    winner.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Arena: first win of the day — +${bonus} bonus coins!` });
-    if (winner.log.length > 60) winner.log.length = 60;
+  // logs (+ drop the loser's stake into a tombstone in tombstone mode)
+  if (tombstoneMode && winner && loser) {
+    const tomb: Tombstone = {
+      id: uid("tomb_"),
+      ownerId: loser.id,
+      ownerName: loser.name,
+      winnerId: winner.id,
+      winnerName: winner.name,
+      coins: duel.stake,
+      createdAt: now(),
+      expiresAt: now() + TOMBSTONE_WINDOW_MS,
+    };
+    state.tombstones[tomb.id] = tomb;
+    pushLog(winner, "battle", `☠️ Tombstone duel: you beat ${loser.name}! Their ${duel.stake} coins are in a tombstone — yours if they don't recover it within 5 minutes.`);
+    pushLog(loser, "battle", `☠️ Tombstone duel: ${winner.name} beat you! Your ${duel.stake} coins dropped into a tombstone — recover ${Math.round(TOMBSTONE_RECOVER_PCT * 100)}% within 5 minutes in the Arena.`);
+  } else {
+    pushLog(winner, "battle", `Arena: you beat ${loser?.name ?? "your rival"} and won ${prize} coins!`);
+    pushLog(loser, "battle", `Arena: ${winner?.name ?? "your rival"} beat you — lost your ${duel.stake} coin stake.`);
   }
+  if (bonus > 0 && winner) pushLog(winner, "system", `Arena: first win of the day — +${bonus} bonus coins!`);
+
+  if (challenger) recomputePower(challenger);
+  recomputePower(e);
 
   delete state.duels[duelId];
   scheduleSave(0);
   return {
     ok: true,
     members: [e.id, duel.challengerId],
-    outcome: { won: !challengerWins, prize, opponentName: duel.challengerName },
+    outcome: { won: !challengerWins, prize: tombstoneMode ? duel.stake : prize, opponentName: duel.challengerName },
   };
+}
+
+// ── Tombstones (beta) ────────────────────────────────────────────────────────
+// Recover your own dropped stake within the window (keep TOMBSTONE_RECOVER_PCT;
+// the rest goes to the victor). After it expires, the victor loots the lot.
+function awardTombstoneToWinner(t: Tombstone, full: boolean): void {
+  const winner = state.empires[t.winnerId];
+  const owner = state.empires[t.ownerId];
+  const toWinnerGross = full ? t.coins : t.coins - Math.floor(t.coins * TOMBSTONE_RECOVER_PCT);
+  const prize = toWinnerGross - Math.floor(toWinnerGross * ARENA_RAKE); // rake burned (coin sink)
+  if (winner && prize > 0) {
+    winner.coins += prize;
+    winner.log.unshift({ id: uid("log_"), at: now(), kind: full ? "battle" : "system", text: full ? `☠️ ${t.ownerName} never recovered their tombstone — you looted ${prize} coins.` : `☠️ ${t.ownerName} recovered their tombstone — you claimed ${prize} coins.` });
+    if (winner.log.length > 60) winner.log.length = 60;
+  }
+  if (full && owner) {
+    owner.log.unshift({ id: uid("log_"), at: now(), kind: "battle", text: `☠️ Your tombstone was looted by ${t.winnerName} — too slow to recover it.` });
+    if (owner.log.length > 60) owner.log.length = 60;
+  }
+}
+
+export function recoverTombstone(e: Empire, tombId: string): ArenaResult {
+  if (isLocked("wilderness")) return { ok: false, error: "Tombstone duels are in beta — not live yet." };
+  const t = state.tombstones[tombId];
+  if (!t || t.ownerId !== e.id) return { ok: false, error: "That tombstone isn't yours." };
+  if (now() > t.expiresAt) {
+    awardTombstoneToWinner(t, true);
+    delete state.tombstones[tombId];
+    scheduleSave(0);
+    return { ok: false, error: "Too late — the victor looted your tombstone.", members: [e.id, t.winnerId] };
+  }
+  const recovered = Math.floor(t.coins * TOMBSTONE_RECOVER_PCT);
+  e.coins += recovered;
+  e.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `☠️ Recovered your tombstone — ${recovered} coins back.` });
+  if (e.log.length > 60) e.log.length = 60;
+  awardTombstoneToWinner(t, false); // victor gets the remainder
+  delete state.tombstones[tombId];
+  scheduleSave(0);
+  return { ok: true, members: [e.id, t.winnerId] };
+}
+
+// Lazy expiry: award expired tombstones to their victors. Returns affected ids.
+export function sweepTombstones(): string[] {
+  const affected: string[] = [];
+  for (const t of Object.values(state.tombstones)) {
+    if (now() > t.expiresAt) {
+      awardTombstoneToWinner(t, true);
+      affected.push(t.winnerId, t.ownerId);
+      delete state.tombstones[t.id];
+    }
+  }
+  if (affected.length) scheduleSave(0);
+  return affected;
+}
+
+export function myTombstones(empireId: string): TombstonePublic[] {
+  return Object.values(state.tombstones)
+    .filter((t) => t.ownerId === empireId && now() <= t.expiresAt)
+    .sort((a, b) => a.expiresAt - b.expiresAt)
+    .map((t) => ({ id: t.id, coins: t.coins, recoverable: Math.floor(t.coins * TOMBSTONE_RECOVER_PCT), expiresAt: t.expiresAt, winnerName: t.winnerName }));
 }
 
 // ── Rolling tournament ───────────────────────────────────────────────────────
@@ -337,5 +406,6 @@ export function openDuelsPublic(): DuelPublic[] {
       stake: d.stake,
       armySize: UNIT_TYPES.reduce((s, u) => s + (d.army[u] ?? 0), 0),
       createdAt: d.createdAt,
+      mode: d.mode ?? "normal",
     }));
 }

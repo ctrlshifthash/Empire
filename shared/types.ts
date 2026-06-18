@@ -487,10 +487,31 @@ export interface Duel {
   army: Partial<Record<UnitType, number>>; // army the challenger committed
   status: "open" | "resolved";
   createdAt: number;
+  mode?: "normal" | "tombstone"; // tombstone: loser's stake drops into a recoverable tombstone (beta)
   opponentId?: string;
   opponentName?: string;
   winnerId?: string;
   resolvedAt?: number;
+}
+
+// A tombstone holding a defeated player's dropped stake — recoverable by them for
+// a window, after which the victor loots it (beta tombstone duels).
+export interface Tombstone {
+  id: string;
+  ownerId: string; // the defeated player (can recover)
+  ownerName: string;
+  winnerId: string; // the victor (loots it if unrecovered)
+  winnerName: string;
+  coins: number; // the dropped stake
+  createdAt: number;
+  expiresAt: number;
+}
+export interface TombstonePublic {
+  id: string;
+  coins: number;
+  recoverable: number; // coins you'd get back if you recover now
+  expiresAt: number;
+  winnerName: string;
 }
 export interface DuelPublic {
   id: string;
@@ -500,6 +521,7 @@ export interface DuelPublic {
   stake: number;
   armySize: number; // challenger's committed army size (shown so you can decide)
   createdAt: number;
+  mode?: "normal" | "tombstone";
 }
 
 // A rolling single-elimination tournament. Players pay a coin entry fee; when it
@@ -672,6 +694,8 @@ export interface GameSnapshot {
   boss: BossPublic | null;
   // open wagered-arena duels anyone can accept
   duels: DuelPublic[];
+  // your recoverable tombstones from lost tombstone duels (beta)
+  tombstones: TombstonePublic[];
   // the current rolling arena tournament
   tournament: TournamentPublic | null;
   // the player's owned marketplace items

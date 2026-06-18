@@ -7,6 +7,7 @@ import type {
   CharacterInstance,
   CoinListing,
   Duel,
+  Tombstone,
   Empire,
   ItemInstance,
   Listing,
@@ -58,6 +59,8 @@ export interface GameState {
   bugReports: BugReport[];
   // open + recently-resolved wagered-arena duels keyed by id
   duels: Record<string, Duel>;
+  // recoverable tombstones from lost tombstone duels (beta), keyed by id
+  tombstones: Record<string, Tombstone>;
   // the current rolling arena tournament (null until seeded)
   tournament: Tournament | null;
   // marketplace: item instances, listings, minted counts per type, used pay sigs
@@ -92,6 +95,7 @@ export const state: GameState = {
   polls: {},
   bugReports: [],
   duels: {},
+  tombstones: {},
   tournament: null,
   itemInstances: {},
   listings: {},
@@ -123,6 +127,7 @@ export function loadState(): boolean {
       state.polls ??= {};
       state.bugReports ??= [];
       state.duels ??= {};
+      state.tombstones ??= {};
       state.tournament ??= null;
       state.itemInstances ??= {};
       state.listings ??= {};

@@ -71,9 +71,10 @@ interface GameStore {
   advanceAge: () => void;
   attack: (targetEmpireId: string, units: Partial<Record<UnitType, number>>) => void;
   attackBoss: (units: Partial<Record<UnitType, number>>) => void;
-  createDuel: (stake: number, units: Partial<Record<UnitType, number>>) => void;
+  createDuel: (stake: number, units: Partial<Record<UnitType, number>>, mode?: "normal" | "tombstone") => void;
   acceptDuel: (duelId: string, units: Partial<Record<UnitType, number>>) => void;
   cancelDuel: (duelId: string) => void;
+  recoverTombstone: (tombId: string) => void;
   joinTournament: () => void;
   leaveTournament: () => void;
   listItem: (instanceId: string, price: number, currency: "SOL" | "USDC") => void;
@@ -260,9 +261,10 @@ export const useGame = create<GameStore>((set, get) => ({
   advanceAge: () => socket?.emit("advanceAge"),
   attack: (targetEmpireId, units) => socket?.emit("attack", { targetEmpireId, units }),
   attackBoss: (units) => socket?.emit("attackBoss", { units }),
-  createDuel: (stake, units) => socket?.emit("duel:create", { stake, units }),
+  createDuel: (stake, units, mode = "normal") => socket?.emit("duel:create", { stake, units, mode }),
   acceptDuel: (duelId, units) => socket?.emit("duel:accept", { duelId, units }),
   cancelDuel: (duelId) => socket?.emit("duel:cancel", { duelId }),
+  recoverTombstone: (tombId) => socket?.emit("tombstone:recover", { tombId }),
   joinTournament: () => socket?.emit("tournament:join"),
   leaveTournament: () => socket?.emit("tournament:leave"),
   listItem: (instanceId, price, currency) => socket?.emit("market:list", { instanceId, price, currency }),

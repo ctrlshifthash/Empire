@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Empire } from "@shared/types";
-import { UNITS, UNIT_TYPES, ARENA_MIN_STAKE, ARENA_DAILY_BONUS, TOURNEY_SIZE } from "@shared/gamedata";
+import { UNITS, UNIT_TYPES, ARENA_MIN_STAKE, ARENA_DAILY_BONUS, TOURNEY_SIZE, TOMBSTONE_RECOVER_PCT } from "@shared/gamedata";
 import { useGame } from "../lib/store";
 import { SERVER_URL } from "../lib/config";
+import { fetchFeatureLocks } from "../lib/features";
 import { fmt } from "../lib/format";
 
 type Army = Partial<Record<(typeof UNIT_TYPES)[number], number>>;
@@ -67,15 +68,29 @@ export default function ArenaView({ empire }: { empire: Empire }) {
 // ── Duels ────────────────────────────────────────────────────────────────────
 function Duels({ empire }: { empire: Empire }) {
   const duels = useGame((s) => s.snapshot?.duels ?? []);
+  const tombstones = useGame((s) => s.snapshot?.tombstones ?? []);
   const createDuel = useGame((s) => s.createDuel);
   const acceptDuel = useGame((s) => s.acceptDuel);
   const cancelDuel = useGame((s) => s.cancelDuel);
+  const recoverTombstone = useGame((s) => s.recoverTombstone);
   const [stake, setStake] = useState(ARENA_MIN_STAKE);
   const [postArmy, setPostArmy] = useState<Army>({});
   const [accepting, setAccepting] = useState<string | null>(null);
   const [acceptArmy, setAcceptArmy] = useState<Army>({});
+  const [tombstoneMode, setTombstoneMode] = useState(false);
+  const [tombLocked, setTombLocked] = useState(true);
+  const [clock, setClock] = useState(() => Date.now());
   const acceptTarget = duels.find((d) => d.id === accepting) ?? null;
   const bonusReady = empire.lastArenaBonusDay !== todayIdx();
+
+  useEffect(() => {
+    fetchFeatureLocks().then((l) => setTombLocked(l.wilderness !== false));
+  }, []);
+  useEffect(() => {
+    if (!tombstones.length) return;
+    const t = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [tombstones.length]);
 
   return (
     <div className="grid gap-4 lg:grid-cols-5">
@@ -94,10 +109,55 @@ function Duels({ empire }: { empire: Empire }) {
           <input type="number" min={ARENA_MIN_STAKE} value={stake} onChange={(e) => setStake(Math.max(0, parseInt(e.target.value) || 0))} className="mt-1 w-full rounded-lg border border-parchment-300/15 bg-black/30 px-3 py-2 text-sm focus:border-gold/40 focus:outline-none" />
           <div className="mt-3 text-xs text-parchment-300/55">Commit your army</div>
           <div className="mt-1"><ArmyPicker empire={empire} army={postArmy} setArmy={setPostArmy} /></div>
-          <button className="btn-gold btn-sm mt-3 w-full justify-center" disabled={stake < ARENA_MIN_STAKE || empire.coins < stake || armyTotal(postArmy) === 0} onClick={() => { createDuel(stake, postArmy); setPostArmy({}); }}>
-            Post wager · {fmt(stake)} coins
+
+          {/* tombstone mode (beta) */}
+          <button
+            type="button"
+            disabled={tombLocked}
+            onClick={() => setTombstoneMode((v) => !v)}
+            className={`mt-3 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors ${tombLocked ? "cursor-not-allowed border-parchment-300/10 bg-black/20 text-parchment-300/40" : tombstoneMode ? "border-purple-400/50 bg-purple-500/15 text-purple-100" : "border-parchment-300/15 bg-black/20 text-parchment-300/70"}`}
+          >
+            <span>
+              ☠️ <b>Tombstone duel</b>
+              <span className="ml-1 rounded-full border border-purple-400/40 bg-purple-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-200">Beta</span>
+              <span className="mt-0.5 block text-[10px] text-parchment-300/45">{tombLocked ? "Coming soon" : `Loser's stake drops into a tombstone — recover ${Math.round(TOMBSTONE_RECOVER_PCT * 100)}% within 5 min or the victor loots it.`}</span>
+            </span>
+            <span className={`grid h-5 w-9 shrink-0 items-center rounded-full px-0.5 ${tombstoneMode && !tombLocked ? "bg-purple-500/70" : "bg-parchment-300/15"}`}>
+              <span className={`h-4 w-4 rounded-full bg-white transition-transform ${tombstoneMode && !tombLocked ? "translate-x-4" : ""}`} />
+            </span>
+          </button>
+
+          <button className="btn-gold btn-sm mt-3 w-full justify-center" disabled={stake < ARENA_MIN_STAKE || empire.coins < stake || armyTotal(postArmy) === 0} onClick={() => { createDuel(stake, postArmy, tombstoneMode && !tombLocked ? "tombstone" : "normal"); setPostArmy({}); }}>
+            {tombstoneMode && !tombLocked ? "☠️ " : ""}Post wager · {fmt(stake)} coins
           </button>
         </div>
+
+        {/* recover your dropped tombstones before the victor loots them */}
+        {tombstones.length > 0 && (
+          <div className="panel border-purple-400/30 p-4">
+            <div className="font-display text-base font-semibold text-purple-200">☠️ Your tombstones</div>
+            <p className="mt-1 text-xs text-parchment-300/60">Recover your dropped stake before the victor loots it.</p>
+            <div className="mt-2 space-y-2">
+              {tombstones.map((t) => {
+                const left = Math.max(0, t.expiresAt - clock);
+                const secs = Math.ceil(left / 1000);
+                const mm = Math.floor(secs / 60);
+                const ss = secs % 60;
+                return (
+                  <div key={t.id} className="flex items-center gap-2 rounded-lg border border-purple-400/20 bg-purple-500/5 px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-parchment-100">{fmt(t.coins)} coins</div>
+                      <div className="text-[11px] text-parchment-300/55">lost to {t.winnerName} · {mm}:{ss.toString().padStart(2, "0")} left</div>
+                    </div>
+                    <button className="btn-gold btn-sm shrink-0" disabled={left <= 0} onClick={() => recoverTombstone(t.id)}>
+                      Recover {fmt(t.recoverable)}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="lg:col-span-3">
@@ -111,7 +171,7 @@ function Duels({ empire }: { empire: Empire }) {
                 <div key={d.id} className="flex items-center gap-3 rounded-lg border border-transparent px-2 py-2 hover:bg-white/5">
                   <span className="h-7 w-7 shrink-0 rounded-md ring-1 ring-black/40" style={{ background: d.challengerBanner }} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{d.challengerName} {mine && <span className="text-parchment-300/45">(you)</span>}</div>
+                    <div className="truncate text-sm font-medium">{d.challengerName} {d.mode === "tombstone" && <span title="Tombstone duel" className="text-purple-300">☠️</span>} {mine && <span className="text-parchment-300/45">(you)</span>}</div>
                     <div className="text-xs text-parchment-300/55">⚔ {d.armySize} units committed</div>
                   </div>
                   <div className="text-right"><div className="text-sm font-semibold text-gold-light">{fmt(d.stake)}</div><div className="text-[10px] text-parchment-300/50">coin stake</div></div>
