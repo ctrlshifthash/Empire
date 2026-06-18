@@ -4,6 +4,7 @@ import { RARITY_META } from "@shared/gamedata";
 import { SERVER_URL } from "../lib/config";
 import CharacterAvatar from "./CharacterAvatar";
 import MarketActivity from "./MarketActivity";
+import OwnedCharactersGrid from "./OwnedCharactersGrid";
 
 type Hat = "crown" | "helmet" | "hood" | "cap" | null;
 type CatalogItem = {
@@ -29,9 +30,7 @@ const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 // your hub avatar, own it as a compressed NFT, and resell it later.
 export default function CharacterShop() {
   const buyCharacter = useGame((s) => s.buyCharacter);
-  const equipCharacter = useGame((s) => s.equipCharacter);
   const coins = useGame((s) => s.snapshot?.empire?.coins ?? 0);
-  const owned = useGame((s) => s.snapshot?.characters ?? []);
   const [catalog, setCatalog] = useState<CatalogItem[] | null>(null);
   const [locked, setLocked] = useState(true);
 
@@ -108,36 +107,7 @@ export default function CharacterShop() {
       {/* owned */}
       <div>
         <h3 className="mb-2 font-display text-lg font-semibold">Your characters</h3>
-        {owned.length === 0 ? (
-          <div className="panel p-6 text-center text-sm text-parchment-300/55">
-            You don't own a character yet — buy one above to wear it in the hub.
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {owned.map((c) => (
-              <div key={c.instanceId} className="panel flex items-center gap-3 p-3" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
-                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: `${c.color}22`, border: `1px solid ${c.color}` }}>
-                  <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} size={46} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-parchment-100">
-                    {c.name} <span className="text-parchment-300/50">#{c.serial}</span>
-                  </div>
-                  <div className="text-[10px] text-parchment-300/55">
-                    {c.onChain ? "on-chain cNFT" : "beta · cNFT pending"}
-                    {c.equipped && <span className="text-emerald-300"> · equipped</span>}
-                  </div>
-                </div>
-                <button
-                  className={c.equipped ? "btn-ghost btn-sm" : "btn-gold btn-sm"}
-                  onClick={() => equipCharacter(c.instanceId)}
-                >
-                  {c.equipped ? "Unequip" : "Wear"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <OwnedCharactersGrid emptyText="You don't own a character yet — collect them above (once unlocked) to wear in the hub." />
       </div>
 
       <MarketActivity category="character" />

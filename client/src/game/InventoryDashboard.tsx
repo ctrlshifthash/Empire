@@ -2,12 +2,14 @@ import { Link } from "react-router-dom";
 import { RARITY_META, EQUIP_SLOTS, RELIC_CAP } from "@shared/gamedata";
 import { marketItem } from "@shared/gamedata";
 import { useGame } from "../lib/store";
+import OwnedCharactersGrid from "./OwnedCharactersGrid";
 
 const rarityColor = (r: string) => (RARITY_META as Record<string, { color: string }>)[r]?.color ?? "#9aa4ad";
 const fmtN = (n: number, d = 3) => (n || 0).toLocaleString("en-US", { maximumFractionDigits: d });
 
 export default function InventoryDashboard() {
   const inventory = useGame((s) => s.snapshot?.inventory ?? []);
+  const characters = useGame((s) => s.snapshot?.characters ?? []);
   const stats = useGame((s) => s.snapshot?.empire?.marketStats);
   const equippedCount = inventory.filter((i) => i.equipped).length;
 
@@ -74,6 +76,14 @@ export default function InventoryDashboard() {
             })}
           </div>
         )}
+      </div>
+
+      {/* characters */}
+      <div className="mt-5">
+        <div className="mb-2 text-xs uppercase tracking-wider text-parchment-300/55">
+          Your characters <span className="text-parchment-300/40">({characters.length})</span>
+        </div>
+        <OwnedCharactersGrid emptyText="No characters yet — collect them in the Marketplace (beta), then wear one in the hub." />
       </div>
     </div>
   );
