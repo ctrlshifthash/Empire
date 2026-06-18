@@ -120,16 +120,32 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
     const label = (cx: number, topY: number, name: string, level: number) => {
       ctx.textAlign = "center";
       ctx.textBaseline = "alphabetic";
-      ctx.font = "700 9px ui-sans-serif, system-ui";
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "rgba(0,0,0,0.85)";
-      ctx.strokeText(`Lvl ${level}`, cx, topY - 12);
-      ctx.fillStyle = "#e8c75a";
-      ctx.fillText(`Lvl ${level}`, cx, topY - 12);
-      ctx.font = "700 11px ui-sans-serif, system-ui";
+      // higher levels stand out: gold name + glow; everyone shows a bold level tag
+      const elite = level >= 30;
+      const high = level >= 15;
+      const nameColor = elite ? "#f4dd8f" : high ? "#ffe9a8" : "#ffffff";
+      const lvlColor = elite ? "#ff8c3a" : "#e8a23a";
+
+      // level tag (above the name)
+      ctx.font = "800 12px ui-sans-serif, system-ui";
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = "rgba(0,0,0,0.92)";
+      ctx.strokeText(`Lvl ${level}`, cx, topY - 18);
+      ctx.fillStyle = lvlColor;
+      ctx.fillText(`Lvl ${level}`, cx, topY - 18);
+
+      // name — bigger, with a gold glow for elites
+      if (elite) {
+        ctx.shadowColor = "rgba(244,221,143,0.95)";
+        ctx.shadowBlur = 9;
+      }
+      ctx.font = "800 16px ui-sans-serif, system-ui";
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = "rgba(0,0,0,0.92)";
       ctx.strokeText(name, cx, topY);
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = nameColor;
       ctx.fillText(name, cx, topY);
+      ctx.shadowBlur = 0;
     };
 
     const drawFountain = (cx: number, cy: number, t: number) => {
@@ -264,8 +280,8 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         draw: () => {
           const s = toScreen(m.x, m.y);
           drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a", hat: myChar?.hat ?? undefined, cape: myChar?.cape });
-          label(s.x, s.y - 36, myName, myLvl);
-          if (myChar) badge(s.x, s.y - 62, myChar.icon);
+          label(s.x, s.y - 40, myName, myLvl);
+          if (myChar) badge(s.x, s.y - 76, myChar.icon);
         },
       });
       for (const a of remote) {
@@ -284,8 +300,8 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           draw: () => {
             const s = toScreen(dd.x, dd.y);
             drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase, hat: a.character?.hat ?? undefined, cape: a.character?.cape });
-            label(s.x, s.y - 36, a.name, a.level);
-            if (a.character) badge(s.x, s.y - 62, a.character.icon);
+            label(s.x, s.y - 40, a.name, a.level);
+            if (a.character) badge(s.x, s.y - 76, a.character.icon);
           },
         });
       }
