@@ -25,8 +25,15 @@ import { rewardTier, nextRewardTier, rankForPower, marketItem } from "../../shar
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
-const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "3");
+const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "5");
 const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
+// The daily pool is split among ACTIVE holders only (wallets that hold the
+// minimum AND have a game empire) — not the whole supply — so the pool actually
+// flows to players. No single wallet may take more than this share of the day.
+const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.25");
+// Cache of on-chain balances (populated on every read + a rolling refresh) so we
+// can sum the active-holder supply without an RPC call per holder per claim.
+const balanceCache = new Map<string, { bal: number; at: number }>();
 
 // First claim is allowed anytime; afterwards a wallet may claim every 6 hours
 // (4× per day). Accrual keeps running continuously between claims.
@@ -87,6 +94,7 @@ export async function getHoldings(address: string): Promise<Holdings> {
     }
     const supplyInfo = await rpc().getTokenSupply(mint);
     const supply = supplyInfo.value.uiAmount || 0;
+    balanceCache.set(address, { bal: balance, at: now() });
     return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
   } catch (err) {
     // Before the token mint exists on-chain (pre-launch), the RPC throws
@@ -137,6 +145,55 @@ export async function checkPlayEligibility(address: string): Promise<PlayEligibi
     return { allowed: false, reason: "gate", held: balance, required };
   } catch {
     return { allowed: false, reason: "unverified", held: 0, required };
+  }
+}
+
+// Total $RUMBLE held by ACTIVE holders — wallets that hold ≥ MIN_PLAY_HOLD AND
+// have a game empire (i.e. play). This is the pool's denominator: the pool is
+// split among players, not diluted by the bonding curve / non-players who never
+// claim. Balance-weighted, so splitting a bag across wallets gains nothing.
+function activeSupply(): number {
+  let sum = 0;
+  for (const u of Object.values(state.users)) {
+    const ext = u.externalId;
+    if (!ext || ext.includes("@") || ext.length < 32) continue;
+    const c = balanceCache.get(ext);
+    if (c && c.bal >= MIN_PLAY_HOLD) sum += c.bal;
+  }
+  return sum;
+}
+
+// SOL/day a wallet accrues: its share of the ACTIVE-holder supply × pool ×
+// multipliers, capped per wallet so one whale can't drain the day's pool. The
+// global pool cap still bounds the daily total across everyone.
+function dailyAccrualSol(balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
+  const active = activeSupply();
+  const share = active > 0 ? balance / active : 0;
+  const raw = share * DAILY_SOL_POOL * m * playMult * loyaltyMult * relicMult;
+  return Math.min(raw, DAILY_SOL_POOL * WALLET_CAP_PCT);
+}
+
+// Rolling refresh of the balance cache so activeSupply() stays fresh for holders
+// who aren't currently online. Called in small batches from the world tick.
+let _refreshIdx = 0;
+export async function refreshActiveBalances(batch = 5): Promise<void> {
+  if (!rewardsConfigured()) return;
+  const wallets = [
+    ...new Set(
+      Object.values(state.users)
+        .map((u) => u.externalId)
+        .filter((e): e is string => !!e && !e.includes("@") && e.length >= 32),
+    ),
+  ];
+  if (!wallets.length) return;
+  for (let i = 0; i < batch; i++) {
+    const addr = wallets[_refreshIdx % wallets.length];
+    _refreshIdx++;
+    try {
+      await getHoldings(addr);
+    } catch {
+      /* skip — transient RPC hiccup */
+    }
   }
 }
 
@@ -279,7 +336,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const loyaltyDays = updateLoyalty(rec, holdings.balance);
   const loyaltyMult = loyaltyMultiplier(loyaltyDays);
   const relicMult = relicSolMult(address);
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * play.mult * loyaltyMult * relicMult;
+  const dailySol = dailyAccrualSol(holdings.balance, m, play.mult, loyaltyMult, relicMult);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
   // you can only ever claim what's left in today's shared pool
@@ -367,7 +424,7 @@ export async function claim(address: string): Promise<ClaimResult> {
 
   const m = multiplier(holdings.sharePct);
   const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
-  const dailySol = holdings.sharePct * DAILY_SOL_POOL * m * playBonus(address).mult * loyaltyMult * relicSolMult(address);
+  const dailySol = dailyAccrualSol(holdings.balance, m, playBonus(address).mult, loyaltyMult, relicSolMult(address));
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const claimSol = dailySol * (elapsed / DAY_MS);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };

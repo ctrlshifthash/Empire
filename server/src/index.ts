@@ -18,7 +18,7 @@ import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
 import { levelForXp } from "../../shared/progression.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
-import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility } from "./rewards.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances } from "./rewards.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -227,6 +227,7 @@ app.get("/api/leaderboard", (_req, res) => {
   const walletByEmpire: Record<string, string | undefined> = {};
   for (const u of Object.values(state.users)) walletByEmpire[u.empireId] = u.externalId;
   const rows = Object.values(state.empires)
+    .filter((e) => !e.isBot)
     .map((e) => {
       const wallet = walletByEmpire[e.id];
       const claimed = wallet ? state.rewards[wallet]?.totalClaimed ?? 0 : 0;
@@ -242,7 +243,7 @@ app.get("/api/leaderboard", (_req, res) => {
       };
     })
     .sort((a, b) => b.power - a.power)
-    .slice(0, 25);
+    .slice(0, 100);
   res.json({ ok: true, rows });
 });
 
@@ -820,6 +821,9 @@ setInterval(() => {
 
 // keep the hub's who's-here list fresh (power/rank change as people play)
 setInterval(() => io.to("hub").emit("hub:online", hubOnline()), 12000);
+
+// roll through holder balances so the active-supply denominator stays fresh
+setInterval(() => void refreshActiveBalances(5), 10000);
 
 // stream avatar positions to everyone standing in the plaza (~10/sec)
 setInterval(() => {

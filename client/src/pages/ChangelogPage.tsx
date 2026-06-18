@@ -12,6 +12,8 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Improvement", title: "Rewards go to active players", desc: "The daily SOL pool now splits among active holders — people who hold $RUMBLE and actually play — instead of being diluted across the whole token supply. Far bigger, real rewards for players in the game, with a per-wallet cap so no whale drains the day. Daily pool raised to 5 SOL." },
+      { tag: "Improvement", title: "Bigger leaderboard", desc: "The leaderboard now shows the top 100 rulers (was 25), bots excluded." },
       { tag: "Feature", title: "The Hub — a place to gather", desc: "A shared, walkable plaza every ruler now spawns in: stroll around as your hero with WASD, see everyone online moving about with their name and level, chat in real time, then march into your world." },
       { tag: "Feature", title: "Custom in-game names", desc: "Rename yourself from the dashboard — your new name shows everywhere: the leaderboard, the world and the hub." },
       { tag: "Feature", title: "Token-gated play", desc: "Playing the full game and earning SOL now requires holding at least 10 $RUMBLE in your wallet, verified on-chain and enforced continuously while you play. Demo mode stays free and open to everyone (no rewards)." },
