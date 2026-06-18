@@ -7,7 +7,7 @@ import { useGame } from "../lib/store";
 // (If the hub track file isn't present, it falls back to the theme — never silent.)
 const LS = "rr_music";
 const THEME = "/music/theme.m4a";
-const HUB = "/music/hub.m4a"; // upbeat hub track; drop the file here to enable it
+const HUB = "/music/hub.mp3"; // upbeat CC0 hub track (public domain, no attribution)
 
 export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
