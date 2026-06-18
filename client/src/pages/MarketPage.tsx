@@ -113,6 +113,7 @@ function Market() {
   const spare = inventory.filter((i) => !i.listed && !i.equipped);
   const spareOf = (r: string) => spare.filter((i) => i.rarity === r).length;
   const canCraft = coins >= CRAFT_COST.coins;
+  const activeCategory: "relic" | "coin" | "character" = tab === "coins" ? "coin" : tab === "characters" ? "character" : "relic";
 
   return (
    <>
@@ -126,6 +127,14 @@ function Market() {
       </div>
     </div>
 
+    <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
+      {/* live activity — a sticky sidebar (top of page on mobile) so it's actually seen */}
+      <aside className="w-full lg:order-last lg:w-80 lg:shrink-0">
+        <div className="lg:sticky lg:top-20">
+          <MarketActivity category={activeCategory} />
+        </div>
+      </aside>
+      <div className="min-w-0 flex-1">
     {tab === "coins" ? (
       <CoinExchange />
     ) : tab === "characters" ? (
@@ -236,11 +245,10 @@ function Market() {
       </div>
     </div>
 
-    <div className="mt-8">
-      <MarketActivity category="relic" />
-    </div>
      </>
     )}
+      </div>
+    </div>
    </>
   );
 }

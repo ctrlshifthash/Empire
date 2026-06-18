@@ -3,7 +3,6 @@ import { useGame } from "../lib/store";
 import { RARITY_META } from "@shared/gamedata";
 import { SERVER_URL } from "../lib/config";
 import CharacterAvatar from "./CharacterAvatar";
-import MarketActivity from "./MarketActivity";
 import OwnedCharactersGrid from "./OwnedCharactersGrid";
 
 type Hat = "crown" | "helmet" | "hood" | "cap" | null;
@@ -109,8 +108,6 @@ export default function CharacterShop() {
         <h3 className="mb-2 font-display text-lg font-semibold">Your characters</h3>
         <OwnedCharactersGrid emptyText="You don't own a character yet — collect them above (once unlocked) to wear in the hub." />
       </div>
-
-      <MarketActivity category="character" />
     </div>
   );
 }

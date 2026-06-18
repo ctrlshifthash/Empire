@@ -5,7 +5,7 @@ import type { CoinListingPublic } from "@shared/types";
 import { useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchCoinListings, fetchExchangeConfig, reserveCoin, buildExchangeTx, postBuyCoins, type ExchangeConfig } from "../lib/exchange";
-import MarketActivity from "./MarketActivity";
+import SolanaIcon from "../components/SolanaIcon";
 
 const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 const fmtRumble = (n: number) => Math.round(n).toLocaleString("en-US");
@@ -118,8 +118,8 @@ export default function CoinExchange() {
           {/* one-tap cash out to SOL */}
           <div className="mt-4 border-t border-parchment-300/10 pt-3">
             <p className="text-[11px] text-parchment-300/55">Already holding $RUMBLE? Turn it into SOL in one tap.</p>
-            <a href={jupUrl} target="_blank" rel="noreferrer" className="btn-ghost btn-sm mt-2 flex w-full items-center justify-center">
-              ◎ Cash out $RUMBLE → SOL
+            <a href={jupUrl} target="_blank" rel="noreferrer" className="btn-ghost btn-sm mt-2 flex w-full items-center justify-center gap-1.5">
+              <SolanaIcon className="h-3.5 w-3.5" /> Cash out $RUMBLE → SOL
             </a>
           </div>
         </div>
@@ -163,9 +163,6 @@ export default function CoinExchange() {
           })}
         </div>
       </div>
-    </div>
-    <div className="mt-6">
-      <MarketActivity category="coin" />
     </div>
    </>
   );

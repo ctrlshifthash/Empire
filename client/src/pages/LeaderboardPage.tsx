@@ -6,6 +6,7 @@ import { SERVER_URL } from "../lib/config";
 import { AGE_META, fmt } from "../lib/format";
 import { rankForPower } from "@shared/gamedata";
 import EmpireCrest from "../components/EmpireCrest";
+import SolanaIcon from "../components/SolanaIcon";
 
 type Board = Awaited<ReturnType<typeof api.leaderboard>>;
 type AllianceRow = {
@@ -137,13 +138,13 @@ export default function LeaderboardPage() {
           </div>
         ) : (
         <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-parchment-300/10 bg-ink-800/60 shadow-panel">
-          <div className="grid grid-cols-[2.5rem_1fr_auto_auto] gap-3 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55 sm:grid-cols-[3rem_1fr_5rem_4rem_5.5rem_5rem] sm:gap-4">
+          <div className="grid grid-cols-[2.5rem_1fr_auto_auto] gap-3 border-b border-parchment-300/10 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-parchment-300/55 sm:grid-cols-[3rem_1fr_5rem_4rem_5rem_5.5rem] sm:gap-4">
             <div>#</div>
             <div>Empire</div>
             <div className="hidden text-right sm:block">Age</div>
             <div className="hidden text-right sm:block">Raids</div>
-            <div className={`text-right ${sort === "earned" ? "text-gold-light" : ""}`}>Earned</div>
             <div className={`text-right ${sort === "power" ? "text-gold-light" : ""}`}>Power</div>
+            <div className={`text-right ${sort === "earned" ? "text-gold-light" : ""}`}>Earned</div>
           </div>
 
           {rows.length === 0 && (
@@ -158,7 +159,7 @@ export default function LeaderboardPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: Math.min(i * 0.02, 0.4) }}
-              className="grid grid-cols-[2.5rem_1fr_auto_auto] items-center gap-3 border-b border-parchment-300/5 px-5 py-3.5 last:border-0 sm:grid-cols-[3rem_1fr_5rem_4rem_5.5rem_5rem] sm:gap-4"
+              className="grid grid-cols-[2.5rem_1fr_auto_auto] items-center gap-3 border-b border-parchment-300/5 px-5 py-3.5 last:border-0 sm:grid-cols-[3rem_1fr_5rem_4rem_5rem_5.5rem] sm:gap-4"
             >
               <div
                 className={`font-display text-lg font-bold ${
@@ -190,10 +191,10 @@ export default function LeaderboardPage() {
                 {AGE_META[r.age as keyof typeof AGE_META]?.short ?? r.age}
               </div>
               <div className="hidden text-right text-sm text-parchment-300/70 sm:block">{r.raidsWon}</div>
-              <div className={`text-right text-sm font-semibold tabular-nums ${r.solEarned > 0 ? "text-gold-light" : "text-parchment-300/35"}`}>
-                {r.solEarned > 0 ? `◎ ${r.solEarned.toFixed(3)}` : "—"}
-              </div>
               <div className="text-right font-display font-bold text-gold-light">{fmt(r.power)}</div>
+              <div className={`flex items-center justify-end gap-1 text-sm font-semibold tabular-nums ${r.solEarned > 0 ? "text-gold-light" : "text-parchment-300/35"}`}>
+                {r.solEarned > 0 ? <><SolanaIcon className="h-3 w-3" /> {r.solEarned.toFixed(3)}</> : "—"}
+              </div>
             </motion.div>
             );
           })}
