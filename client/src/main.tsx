@@ -1,3 +1,4 @@
+import "./lib/polyfills"; // must be first — defines Buffer/global for web3 + spl-token
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
