@@ -181,6 +181,8 @@ export interface Empire {
   // show your name publicly on the leaderboard (default true); private hides it
   profilePublic?: boolean;
   lastSpinAt?: number; // last free spinner spin (beta)
+  // daily-quest tracking (beta): baselines snapshot at day rollover
+  daily?: { day: string; baseline: { raids: number; duels: number; xp: number }; claimed: string[] };
   // lifetime marketplace trading record
   marketStats?: {
     bought: number;
@@ -207,6 +209,21 @@ export interface MarketActivity {
   category: "relic" | "coin" | "character";
   kind: "listed" | "bought" | "sold";
   text: string; // e.g. "Sol 4AEJ bought Eternal Crown #1 for 200 USDC"
+}
+
+// Daily Quests (beta) — sent to the client per-empire.
+export interface DailyQuestView {
+  id: string;
+  label: string;
+  icon: string;
+  target: number;
+  progress: number;
+  claimed: boolean;
+  rewardText: string;
+}
+export interface DailyState {
+  locked: boolean;
+  quests: DailyQuestView[];
 }
 
 // Global social hub: a shared chat lobby every player lands in before entering

@@ -23,6 +23,7 @@ import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier,
 import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
+import { dailyState, claimDaily } from "./daily.ts";
 import { shopConfig, buyShopItem } from "./shop.ts";
 import {
   createAlliance,
@@ -793,6 +794,18 @@ io.on("connection", (socket) => {
     withEmpire((id) => {
       state.empires[id].profilePublic = p?.public !== false;
       handle({ ok: true }, p?.public !== false ? "Profile set to public." : "Profile hidden from the leaderboard.");
+    }),
+  );
+
+  // Daily Quests (beta) — daily-resetting objectives, resource rewards.
+  socket.on("daily:get", () => withEmpire((id) => socket.emit("daily:state", dailyState(id))));
+  socket.on("daily:claim", (p: { id?: string }) =>
+    withEmpire((id) => {
+      const r = claimDaily(id, String(p?.id ?? ""));
+      if (r.ok) socket.emit("toast", { kind: "success", text: `Daily quest claimed: ${r.reward}` });
+      else if (r.error) socket.emit("toast", { kind: "warn", text: r.error });
+      socket.emit("daily:state", dailyState(id));
+      if (r.ok) handle({ ok: true });
     }),
   );
 

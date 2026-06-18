@@ -947,6 +947,24 @@ export const CHARACTERS: CharacterType[] = [
 
 export const characterType = (id: string): CharacterType | undefined => CHARACTERS.find((c) => c.id === id);
 
+// ── Daily Quests (beta) ──────────────────────────────────────────────────────
+// Daily-resetting objectives tracked as a delta off cumulative counters. Rewards
+// are RESOURCES (never coins — peg-safe). Progress resets each UTC day.
+export interface DailyQuestDef {
+  id: string;
+  label: string;
+  icon: string;
+  metric: "raids" | "duels" | "xp";
+  target: number;
+  rewardText: string;
+  resources?: { wood?: number; food?: number; gold?: number; stone?: number };
+}
+export const DAILY_QUESTS: DailyQuestDef[] = [
+  { id: "dq_raids", label: "Win 2 raids", icon: "🗡️", metric: "raids", target: 2, rewardText: "8,000 Gold", resources: { gold: 8000 } },
+  { id: "dq_duels", label: "Win an Arena duel", icon: "🏟️", metric: "duels", target: 1, rewardText: "6,000 Gold", resources: { gold: 6000 } },
+  { id: "dq_xp", label: "Earn 800 XP", icon: "⭐", metric: "xp", target: 800, rewardText: "6,000 Wood + 6,000 Food", resources: { wood: 6000, food: 6000 } },
+];
+
 // ── Spinner Wheel (beta) ─────────────────────────────────────────────────────
 // A free spin every 12h (paid spins that burn $RUMBLE come with the unlock).
 // Rewards are RESOURCES or a relic — never coins (coins have a free market, so

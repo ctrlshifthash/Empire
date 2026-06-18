@@ -5,6 +5,7 @@ import type {
   AuthUser,
   BattleReport,
   BuildingType,
+  DailyState,
   GameSnapshot,
   HubAvatar,
   HubMessage,
@@ -36,6 +37,10 @@ interface GameStore {
   // spinner wheel (beta): last result, nonce re-triggers the wheel animation
   spinResult: { ok: boolean; index?: number; reward?: string; error?: string; nonce: number } | null;
   spin: () => void;
+  // daily quests (beta)
+  dailyState: DailyState | null;
+  getDaily: () => void;
+  claimDaily: (id: string) => void;
   // a battle to spectate in-world (your own invasions auto-open), or null
   pendingBattle: BattleReport | null;
   clearPendingBattle: () => void;
@@ -130,6 +135,9 @@ export const useGame = create<GameStore>((set, get) => ({
   setInHub: (v) => set({ inHub: v }),
   spinResult: null,
   spin: () => socket?.emit("spinner:spin"),
+  dailyState: null,
+  getDaily: () => socket?.emit("daily:get"),
+  claimDaily: (id) => socket?.emit("daily:claim", { id }),
   pendingBattle: null,
   clearPendingBattle: () => set({ pendingBattle: null }),
   watchBattle: (report) => set({ pendingBattle: report }),
@@ -210,6 +218,7 @@ export const useGame = create<GameStore>((set, get) => ({
     socket.on("spinner:result", (r: { ok: boolean; index?: number; reward?: string; error?: string }) =>
       set({ spinResult: { ...r, nonce: (get().spinResult?.nonce ?? 0) + 1 } }),
     );
+    socket.on("daily:state", (d: DailyState) => set({ dailyState: d }));
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.
