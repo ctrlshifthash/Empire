@@ -80,12 +80,13 @@ function ShopGrid() {
       else pushToast({ kind: "warn", text: res.error ?? "Purchase failed." });
     } catch (e) {
       const msg = String((e as Error)?.message ?? e);
+      console.error("[shop buy] failed:", e);
       // user closing the wallet popup isn't an error worth shouting about
-      if (/disconnect/i.test(msg)) {
-        pushToast({ kind: "warn", text: "Wallet disconnected — reconnect and try again." });
+      if (/disconnect|not connected|wallet not/i.test(msg)) {
+        pushToast({ kind: "warn", text: "Wallet not connected — reconnect and try again." });
         setVisible(true);
-      } else if (/reject|denied|cancel|closed/i.test(msg)) pushToast({ kind: "warn", text: "Payment cancelled." });
-      else pushToast({ kind: "warn", text: "Couldn’t complete the payment." });
+      } else if (/reject|denied|cancel|closed|user rejected/i.test(msg)) pushToast({ kind: "warn", text: "Payment cancelled." });
+      else pushToast({ kind: "warn", text: msg.slice(0, 160) || "Couldn’t complete the payment." });
     } finally {
       setBusy(null);
     }

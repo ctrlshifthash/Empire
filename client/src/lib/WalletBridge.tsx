@@ -1,14 +1,13 @@
 // Wraps the app in the standard Solana wallet adapter (Phantom, Solflare, and any
 // wallet-standard wallet) and syncs the connected address into the wallet store.
 // No third-party account/SDK, no MAU cap — wallet connect + signing are free.
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
   useWallet as useSolWallet,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { SOLANA_RPC, useWallet } from "./web3";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
@@ -24,12 +23,13 @@ function WalletSync() {
 }
 
 export default function WalletBridge({ children }: { children: React.ReactNode }) {
-  // Phantom + Solflare are listed explicitly; other wallet-standard wallets
-  // (Backpack, etc.) are auto-detected and also appear in the modal.
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
+  // No explicit adapters: Phantom, Solflare, Backpack etc. now register
+  // themselves as wallet-standard wallets and are auto-detected. Passing the
+  // legacy adapters too caused a duplicate-Phantom conflict (sign would fail
+  // with no popup), which the console explicitly warned about.
   return (
     <ConnectionProvider endpoint={SOLANA_RPC}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>
           <WalletSync />
           {children}
