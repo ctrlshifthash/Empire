@@ -106,6 +106,17 @@ export async function getHoldings(address: string): Promise<Holdings> {
 // (no wallet, no rewards). Tunable via the MIN_PLAY_HOLD env var.
 export const MIN_PLAY_HOLD = Number(process.env.MIN_PLAY_HOLD || "10");
 
+// Wallets that bypass the gate entirely (team/treasury/testers). Defaults below,
+// plus any comma-separated addresses in the PLAY_GATE_ALLOWLIST env var.
+const GATE_ALLOWLIST = new Set<string>([
+  "4QRgGGeaqeBNN7Vrg34FMrqKUVbhBT9g4hCx9duYJsFA", // treasury
+  "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s", // team
+  ...(process.env.PLAY_GATE_ALLOWLIST || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+]);
+
 export interface PlayEligibility {
   allowed: boolean;
   reason: "ok" | "gate" | "unverified"; // "unverified" = chain read failed, ask to retry
@@ -119,6 +130,7 @@ export interface PlayEligibility {
 export async function checkPlayEligibility(address: string): Promise<PlayEligibility> {
   const required = MIN_PLAY_HOLD;
   if (!rewardsConfigured() || MIN_PLAY_HOLD <= 0) return { allowed: true, reason: "ok", held: 0, required };
+  if (GATE_ALLOWLIST.has(address)) return { allowed: true, reason: "ok", held: 0, required }; // whitelisted
   try {
     const { balance } = await getHoldings(address);
     if (balance >= MIN_PLAY_HOLD) return { allowed: true, reason: "ok", held: balance, required };
