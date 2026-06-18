@@ -17,6 +17,9 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
       { tag: "Feature", title: "Private profiles", desc: "A new toggle on your Profile card lets you hide your name on the leaderboard — your rank still counts, but your name shows as Hidden." },
       { tag: "Feature", title: "Daily Quests (beta preview)", desc: "A Daily tab with objectives that reset every day — win raids, take Arena duels, earn experience — for resource rewards. Locked for now while it's in beta." },
       { tag: "Feature", title: "Spinner Wheel (beta preview)", desc: "A wheel you can spin once free every 12 hours for resources or a rare relic. Locked for now while it's in beta." },
+      { tag: "Feature", title: "Mounts & pets (beta preview)", desc: "Rare companions that drop when you win raids — collect them, own each as a cNFT, and equip one beside your hero in the hub. Locked for now while it's in beta." },
+      { tag: "Feature", title: "Tombstone duels (beta preview)", desc: "A new Arena mode where the loser's staked coins drop into a tombstone — race to recover most of it within five minutes, or the victor loots the lot. Locked for now while it's in beta." },
+      { tag: "Feature", title: "Spectate the live world (beta preview)", desc: "Watch the hub fill up and players move about in real time from the landing page — no wallet needed — then connect to play. Locked for now while it's in beta." },
     ],
   },
   {
