@@ -13,6 +13,10 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     date: "June 19, 2026",
     items: [
       { tag: "Improvement", title: "Coin Exchange priced in USD", desc: "Sell your coins at a stable dollar price — paid to your wallet in $RUMBLE at the live token rate (5% burned), with a one-tap 'Cash out → SOL'. And the token shop no longer sells coins, so the Exchange is now the single free market for them — real, player-set prices." },
+      { tag: "Improvement", title: "Standout nameplates in the Hub", desc: "Players in the Hub now show a bigger name and a bold level tag above their hero, and higher-level rulers glow gold so the strongest players stand out in the plaza." },
+      { tag: "Feature", title: "Private profiles", desc: "A new toggle on your Profile card lets you hide your name on the leaderboard — your rank still counts, but your name shows as Hidden." },
+      { tag: "Feature", title: "Daily Quests (beta preview)", desc: "A Daily tab with objectives that reset every day — win raids, take Arena duels, earn experience — for resource rewards. Locked for now while it's in beta." },
+      { tag: "Feature", title: "Spinner Wheel (beta preview)", desc: "A wheel you can spin once free every 12 hours for resources or a rare relic. Locked for now while it's in beta." },
     ],
   },
   {
