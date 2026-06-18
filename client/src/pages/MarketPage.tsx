@@ -19,7 +19,7 @@ export default function MarketPage() {
         <div className="text-center">
           <span className="kicker">🏛️ Player marketplace</span>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
-            The <span className="text-gold-gradient">Bazaar</span>
+            <span className="text-gold-gradient">Marketplace</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
             Trade scarce, limited-supply <strong className="text-parchment-200">relics</strong> with other rulers — paid
