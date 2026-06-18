@@ -67,7 +67,7 @@ import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires } from "./presence.ts";
-import { rankForPower } from "../../shared/gamedata.ts";
+import { rankForPower, COLORS_BANNER } from "../../shared/gamedata.ts";
 import {
   actAdvanceAge,
   actAttack,
@@ -753,6 +753,25 @@ io.on("connection", (socket) => {
       socket.emit("toast", { kind: "success", text: "Name updated!" });
       pushSnapshot(id);
       io.to("hub").emit("hub:online", hubOnline()); // reflect the new name in the lobby
+    }),
+  );
+
+  // Set the empire's crest/banner colour (profile customisation).
+  socket.on("empire:banner", (p: { banner?: string }) =>
+    withEmpire((id) => {
+      const e = state.empires[id];
+      const banner = String(p?.banner ?? "");
+      if (!COLORS_BANNER.includes(banner)) {
+        socket.emit("toast", { kind: "warn", text: "Pick a valid crest colour." });
+        return;
+      }
+      e.banner = banner;
+      const av = hubAvatars.get(id);
+      if (av) av.banner = banner;
+      scheduleSave(0);
+      socket.emit("toast", { kind: "success", text: "Crest colour updated!" });
+      pushSnapshot(id);
+      io.to("hub").emit("hub:online", hubOnline());
     }),
   );
 

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import ProfileCard from "../game/ProfileCard";
 import RewardsPanel from "../game/RewardsPanel";
 import InventoryDashboard from "../game/InventoryDashboard";
 
@@ -14,6 +15,7 @@ export default function DashboardPage() {
         transition={{ duration: 0.4 }}
         className="relative mx-auto w-full max-w-4xl"
       >
+        <ProfileCard />
         <RewardsPanel />
         <InventoryDashboard />
       </motion.div>
