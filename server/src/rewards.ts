@@ -33,11 +33,12 @@ const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 // flows to players. No single wallet may take more than this share of the day.
 const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.25");
 
-// 75% of the daily pool is reserved for VIP wallets and distributed unevenly
-// based on how many quests each has completed. The remaining 25% goes to all
-// other active holders via the normal pro-rata logic.
-const VIP_POOL_SOL = DAILY_SOL_POOL * 0.75;    // 7.5 SOL
-const PUBLIC_POOL_SOL = DAILY_SOL_POOL * 0.25;  // 2.5 SOL
+// VIP/public split. Temporarily bumped public to 35% to widen distribution.
+// Tunable via VIP_POOL_PCT env var (default 0.65).
+const VIP_POOL_PCT = Number(process.env.VIP_POOL_PCT || "0.65");
+const PUBLIC_POOL_PCT = 1 - VIP_POOL_PCT;
+const VIP_POOL_SOL = DAILY_SOL_POOL * VIP_POOL_PCT;     // 6.5 SOL
+const PUBLIC_POOL_SOL = DAILY_SOL_POOL * PUBLIC_POOL_PCT; // 3.5 SOL
 const VIP_REWARD_WALLETS = new Set([
   "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
   "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
@@ -342,7 +343,9 @@ function resetDay(): void {
 }
 function poolRemainingLamports(): number {
   resetDay();
-  return Math.max(0, POOL_LAMPORTS() - state.rewardPool.paidLamports);
+  // Use bucket totals — the legacy paidLamports was corrupted by pre-split claims
+  const paid = (state.rewardPool.vipPaidLamports ?? 0) + (state.rewardPool.publicPaidLamports ?? 0);
+  return Math.max(0, POOL_LAMPORTS() - paid);
 }
 function vipPoolRemainingLamports(): number {
   resetDay();
@@ -393,12 +396,13 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const relicMult = relicSolMult(address);
   const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
-  // claimable is capped by the wallet's own pool bucket (VIP or public)
-  const bucketRemaining = VIP_REWARD_WALLETS.has(address)
+  // Show wallet its own bucket remaining — VIP wallets see their 6.5 SOL bucket,
+  // everyone else sees the public 3.5 SOL bucket. Total pool always shows 10 SOL.
+  const isVipWallet = VIP_REWARD_WALLETS.has(address);
+  const poolRemaining = isVipWallet
     ? vipPoolRemainingLamports() / LAMPORTS_PER_SOL
     : publicPoolRemainingLamports() / LAMPORTS_PER_SOL;
-  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), bucketRemaining);
+  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), poolRemaining);
   const claimCount = rec.claimCount || 0;
   // first claim unlocked immediately; subsequent ones gated to every 6h
   const nextClaimAt = claimCount > 0 ? rec.lastClaimAt + CLAIM_COOLDOWN_MS : 0;
@@ -426,7 +430,9 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     nextTier: next?.name ?? null,
     nextTierShare: next?.minShare ?? null,
     poolRemaining,
-    poolPaid: state.rewardPool.paidLamports / LAMPORTS_PER_SOL,
+    poolPaid: isVipWallet
+      ? (state.rewardPool.vipPaidLamports ?? 0) / LAMPORTS_PER_SOL
+      : (state.rewardPool.publicPaidLamports ?? 0) / LAMPORTS_PER_SOL,
   };
 }
 
