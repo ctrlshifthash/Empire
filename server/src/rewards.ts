@@ -295,6 +295,7 @@ function poolRemainingLamports(): number {
   if (state.rewardPool.day !== day) {
     state.rewardPool.day = day;
     state.rewardPool.paidLamports = 0;
+    scheduleSave(0); // persist the daily reset so it can't silently re-accumulate
   }
   return Math.max(0, POOL_LAMPORTS() - state.rewardPool.paidLamports);
 }

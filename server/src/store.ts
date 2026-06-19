@@ -148,6 +148,16 @@ export function loadState(): boolean {
       state.marketActivity ??= [];
       state.burns ??= [];
       state.totalBurned ??= 0;
+      // Reward pool: a drifted daily-spent counter had wedged the pool at "used
+      // up", blocking ALL claims. Clear it once, then re-anchor to today on each
+      // boot (and on day rollover) so it can never get stuck again.
+      {
+        const today = Math.floor(Date.now() / 86_400_000);
+        if (state.mintCounts.__poolFixV !== 1 || state.rewardPool.day !== today) {
+          state.rewardPool = { day: today, paidLamports: 0 };
+          state.mintCounts.__poolFixV = 1;
+        }
+      }
       // migrate: drop pre-USD coin listings (refund their escrowed coins)
       for (const [id, l] of Object.entries(state.coinListings)) {
         if (typeof (l as { usdPrice?: number }).usdPrice !== "number") {
