@@ -36,6 +36,7 @@ import {
   allianceLeaderboard,
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
+import { seedVipAccounts } from "./seedVip.ts";
 import {
   createDuel,
   acceptDuel,
@@ -137,6 +138,7 @@ function bootstrap(): void {
     console.log(`[boot] world loaded (tick ${state.world.tick}, ${Object.keys(state.empires).length} empires)`);
   }
   ensureBots(TARGET_BOTS);
+  seedVipAccounts(); // create boosted VIP wallet empires if SEED_VIP_ACCOUNTS=true
   seedGovernance(); // ensure there's always a community poll to vote on
   ensureTournament(); // ensure the rolling arena tournament is open
   seedMarket(); // stock the Bazaar with starter listings so it's never empty

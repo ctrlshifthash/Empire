@@ -25,7 +25,7 @@ const FEATURES = [
   {
     icon: "💰",
     title: "Earn Solana",
-    body: "Hold the game token and a daily 3 SOL pool accrues to your wallet, split pro-rata with a bigger multiplier for bigger holders. Claim SOL — or play free in demo mode.",
+    body: "Hold the game token and a daily 10 SOL pool accrues to your wallet, split pro-rata with a bigger multiplier for bigger holders. Claim SOL — or play free in demo mode.",
   },
   {
     icon: "🎖️",
@@ -89,7 +89,7 @@ export function PlayAndEarn() {
             Hold the token, earn <span className="text-gold-gradient">Solana</span>
           </h2>
           <p className="mt-4 text-parchment-300/70">
-            A single pool of <b className="text-gold-light">3 SOL every day</b> is shared among all token holders — split
+            A single pool of <b className="text-gold-light">10 SOL every day</b> is shared among all token holders — split
             pro-rata to how much you hold, then boosted by your holder tier. Claim SOL straight to your wallet.
           </p>
         </Reveal>
@@ -100,7 +100,7 @@ export function PlayAndEarn() {
               <div className="text-2xl">📈</div>
               <h3 className="mt-3 font-semibold text-parchment-100">Pro-rata, every day</h3>
               <p className="mt-2 text-sm text-parchment-300/70">
-                Your share of the 3 SOL pool tracks your share of supply, read live on-chain. Rewards accrue continuously,
+                Your share of the 10 SOL pool tracks your share of supply, read live on-chain. Rewards accrue continuously,
                 even while you’re offline.
               </p>
             </div>

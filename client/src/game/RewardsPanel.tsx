@@ -120,7 +120,7 @@ export default function RewardsPanel() {
   const playedMs = empire ? Math.max(0, (serverTime ?? nowTs) - empire.createdAt) : 0;
 
   // ── derived reward state ─────────────────────────────────────────────────
-  const holds = (status?.holdings.balance ?? 0) > 0;
+  const holds = (status?.holdings.balance ?? 0) > 0 || (status?.dailySol ?? 0) > 0;
   const cooldownLeft = status?.nextClaimAt ? Math.max(0, status.nextClaimAt - nowTs) : 0;
   const onCooldown = cooldownLeft > 0;
   const hasClaimable = (status?.claimableSol ?? 0) >= 0.000001;

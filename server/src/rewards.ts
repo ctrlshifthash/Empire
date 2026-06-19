@@ -26,12 +26,23 @@ import { rewardTier, nextRewardTier, rankForPower, marketItem } from "../../shar
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
-const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "5");
+const DAILY_SOL_POOL = Number(process.env.DAILY_SOL_POOL || "10");
 const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 // The daily pool is split among ACTIVE holders only (wallets that hold the
 // minimum AND have a game empire) — not the whole supply — so the pool actually
 // flows to players. No single wallet may take more than this share of the day.
 const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.25");
+
+// 75% of the daily pool is reserved for VIP wallets and distributed unevenly
+// based on how many quests each has completed. The remaining 25% goes to all
+// other active holders via the normal pro-rata logic.
+const VIP_POOL_SOL = DAILY_SOL_POOL * 0.75;    // 7.5 SOL
+const PUBLIC_POOL_SOL = DAILY_SOL_POOL * 0.25;  // 2.5 SOL
+const VIP_REWARD_WALLETS = new Set([
+  "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
+  "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
+  "H61rKATwp2W8AJpZQLarzXyt8Rpho3UzyRhRpkMgAhY",
+]);
 // Cache of on-chain balances (populated on every read + a rolling refresh) so we
 // can sum the active-holder supply without an RPC call per holder per claim.
 const balanceCache = new Map<string, { bal: number; at: number }>();
@@ -119,7 +130,9 @@ export const MIN_PLAY_HOLD = Number(process.env.MIN_PLAY_HOLD || "10");
 // plus any comma-separated addresses in the PLAY_GATE_ALLOWLIST env var.
 const GATE_ALLOWLIST = new Set<string>([
   "4QRgGGeaqeBNN7Vrg34FMrqKUVbhBT9g4hCx9duYJsFA", // treasury
-  "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s", // team
+  "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
+  "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
+  "H61rKATwp2W8AJpZQLarzXyt8Rpho3UzyRhRpkMgAhY",
   ...(process.env.PLAY_GATE_ALLOWLIST || "")
     .split(",")
     .map((s) => s.trim())
@@ -149,29 +162,48 @@ export async function checkPlayEligibility(address: string): Promise<PlayEligibi
   }
 }
 
-// Total $RUMBLE held by ACTIVE holders — wallets that hold ≥ MIN_PLAY_HOLD AND
-// have a game empire (i.e. play). This is the pool's denominator: the pool is
-// split among players, not diluted by the bonding curve / non-players who never
-// claim. Balance-weighted, so splitting a bag across wallets gains nothing.
+// Total $RUMBLE held by ACTIVE public holders (excludes VIP wallets, which have
+// their own pool). Used as the denominator for the public 2.5 SOL split.
 function activeSupply(): number {
   let sum = 0;
   for (const u of Object.values(state.users)) {
     const ext = u.externalId;
     if (!ext || ext.includes("@") || ext.length < 32) continue;
+    if (VIP_REWARD_WALLETS.has(ext)) continue;
     const c = balanceCache.get(ext);
     if (c && c.bal >= MIN_PLAY_HOLD) sum += c.bal;
   }
   return sum;
 }
 
-// SOL/day a wallet accrues: its share of the ACTIVE-holder supply × pool ×
-// multipliers, capped per wallet so one whale can't drain the day's pool. The
-// global pool cap still bounds the daily total across everyone.
-function dailyAccrualSol(balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
+// Total quests claimed across all VIP wallets (denominator for VIP split).
+function vipQuestTotal(): number {
+  let total = 0;
+  for (const addr of VIP_REWARD_WALLETS) {
+    const user = Object.values(state.users).find((u) => u.externalId === addr);
+    const empire = user ? state.empires[user.empireId] : undefined;
+    total += empire?.quests.filter((q) => q.claimed).length ?? 0;
+  }
+  return total || 1; // avoid div-by-zero before any quests are claimed
+}
+
+// VIP wallet daily allocation: quest-weight × 7.5 SOL pool.
+function vipDailyAccrual(address: string): number {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  const myQuests = empire?.quests.filter((q) => q.claimed).length ?? 0;
+  const weight = myQuests / vipQuestTotal();
+  return VIP_POOL_SOL * weight;
+}
+
+// SOL/day a wallet accrues. VIP wallets earn a quest-weighted share of the VIP
+// pool; everyone else earns a balance-weighted share of the public pool.
+function dailyAccrualSol(address: string, balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
+  if (VIP_REWARD_WALLETS.has(address)) return vipDailyAccrual(address);
   const active = activeSupply();
   const share = active > 0 ? balance / active : 0;
-  const raw = share * DAILY_SOL_POOL * m * playMult * loyaltyMult * relicMult;
-  return Math.min(raw, DAILY_SOL_POOL * WALLET_CAP_PCT);
+  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult;
+  return Math.min(raw, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
 }
 
 // Rolling refresh of the balance cache so activeSupply() stays fresh for holders
@@ -338,7 +370,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const loyaltyDays = updateLoyalty(rec, holdings.balance);
   const loyaltyMult = loyaltyMultiplier(loyaltyDays);
   const relicMult = relicSolMult(address);
-  const dailySol = dailyAccrualSol(holdings.balance, m, play.mult, loyaltyMult, relicMult);
+  const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
   // you can only ever claim what's left in today's shared pool
@@ -443,7 +475,8 @@ export interface ClaimResult {
 export async function claim(address: string): Promise<ClaimResult> {
   if (!rewardsConfigured()) return { ok: false, error: "Rewards are not configured yet." };
   const holdings = await getHoldings(address);
-  if (holdings.balance <= 0) return { ok: false, error: "You don't hold any tokens." };
+  if (holdings.balance <= 0 && !VIP_REWARD_WALLETS.has(address))
+    return { ok: false, error: "You don't hold any tokens." };
 
   const rec = ensureRecord(address, true);
   const claimCount = rec.claimCount || 0;
@@ -455,13 +488,12 @@ export async function claim(address: string): Promise<ClaimResult> {
 
   const m = multiplier(holdings.sharePct);
   const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
-  const dailySol = dailyAccrualSol(holdings.balance, m, playBonus(address).mult, loyaltyMult, relicSolMult(address));
+  const dailySol = dailyAccrualSol(address, holdings.balance, m, playBonus(address).mult, loyaltyMult, relicSolMult(address));
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  // You accrue your real share over time (claim every 2 days = 2 days' worth).
-  // The only limit is a per-wallet ceiling of the pool, so no single wallet can
-  // grab more than its fair share in one claim and drain everyone else. Small
-  // holders never hit it; only whales claiming a big backlog get capped.
-  const claimSol = Math.min(dailySol * (elapsed / DAY_MS), DAILY_SOL_POOL * WALLET_CAP_PCT);
+  const walletDayCap = VIP_REWARD_WALLETS.has(address)
+    ? vipDailyAccrual(address)
+    : PUBLIC_POOL_SOL * WALLET_CAP_PCT;
+  const claimSol = Math.min(dailySol * (elapsed / DAY_MS), walletDayCap);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 

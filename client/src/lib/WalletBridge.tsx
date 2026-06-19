@@ -1,7 +1,7 @@
 // Wraps the app in the standard Solana wallet adapter (Phantom, Solflare, and any
 // wallet-standard wallet) and syncs the connected address into the wallet store.
 // No third-party account/SDK, no MAU cap — wallet connect + signing are free.
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
@@ -9,6 +9,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { SOLANA_RPC, useWallet } from "./web3";
+import { useGame } from "./store";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 // Push the connected wallet's address into our own wallet store (which drives
@@ -22,6 +23,21 @@ function WalletSync() {
   return null;
 }
 
+// When the user logs out (game token goes from set → null), disconnect the
+// wallet adapter so it clears its localStorage state and won't auto-reconnect
+// on the next page load. Without this, autoConnect silently re-connects the
+// same wallet and clicking "Sign in" never shows the wallet picker.
+function WalletLogoutSync() {
+  const { disconnect } = useSolWallet();
+  const token = useGame((s) => s.token);
+  const prev = useRef(token);
+  useEffect(() => {
+    if (prev.current && !token) disconnect().catch(() => {});
+    prev.current = token;
+  }, [token, disconnect]);
+  return null;
+}
+
 export default function WalletBridge({ children }: { children: React.ReactNode }) {
   // No explicit adapters: Phantom, Solflare, Backpack etc. now register
   // themselves as wallet-standard wallets and are auto-detected. Passing the
@@ -32,6 +48,7 @@ export default function WalletBridge({ children }: { children: React.ReactNode }
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>
           <WalletSync />
+          <WalletLogoutSync />
           {children}
         </WalletModalProvider>
       </WalletProvider>

@@ -41,7 +41,7 @@ const ROADMAP: { phase: string; name: string; tagline: string; status: "complete
     items: [
       "Persistent world: build, gather, four ages, hero, army, quests",
       "Fair-bracket raiding, new-player shield, armour tiers, demolish",
-      "SOL holder rewards — 3 SOL/day pool, holder tiers, play bonus",
+      "SOL holder rewards — 10 SOL/day pool, holder tiers, play bonus",
       "Token shop — spend the token on packs, boosts, armies, traits, crests",
       "Alliances with war-room chat, ally protection & alliance leaderboard",
       "World Boss co-op events",
@@ -107,7 +107,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         </p>
         <p>
           It is also <strong>token-gated with real rewards</strong>. Hold the game token and a slice of a daily{" "}
-          <strong>3 SOL</strong> pool accrues to your wallet, claimable as Solana. Don’t hold the token? You can still
+          <strong>10 SOL</strong> pool accrues to your wallet, claimable as Solana. Don’t hold the token? You can still
           play the full game in <strong>demo mode</strong> with worthless in-game coins.
         </p>
         <p>
@@ -216,7 +216,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           <li><strong>Spoils on the kill</strong> — in-game coins &amp; resources split by damage dealt, with a bonus for the top dealer. A tougher boss respawns minutes later.</li>
         </ul>
         <p className="rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
-          World Boss spoils are <strong>in-game only</strong> (coins &amp; resources). No SOL is paid here — the 3 SOL/day
+          World Boss spoils are <strong>in-game only</strong> (coins &amp; resources). No SOL is paid here — the 10 SOL/day
           token pool is never touched by the boss.
         </p>
       </>
@@ -419,12 +419,12 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
     body: (
       <>
         <p>
-          A total pool of <strong className="text-gold-light">3 SOL per day</strong> is shared among all token holders —
+          A total pool of <strong className="text-gold-light">10 SOL per day</strong> is shared among all token holders —
           one pool for everyone, not per player. Your slice is <strong>pro-rata</strong> to how much of the supply you
           hold, then boosted by your holder tier:
         </p>
         <div className="rounded-xl border border-gold/25 bg-black/30 p-4 text-center font-mono text-sm text-parchment-100">
-          your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(tokens&nbsp;÷&nbsp;supply)&nbsp;×&nbsp;3&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;×&nbsp;play&nbsp;bonus&nbsp;×&nbsp;diamond&nbsp;hands
+          your&nbsp;daily&nbsp;SOL&nbsp;=&nbsp;(tokens&nbsp;÷&nbsp;supply)&nbsp;×&nbsp;10&nbsp;SOL&nbsp;×&nbsp;tier&nbsp;×&nbsp;play&nbsp;bonus&nbsp;×&nbsp;diamond&nbsp;hands
         </div>
         <p>
           <strong>Reward for playing, not just holding.</strong> Your accrual is also boosted by a <strong>play bonus</strong>{" "}
@@ -437,7 +437,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           the longer you hold, the bigger your share of the daily pool.
         </p>
         <p>
-          The total paid out is still <strong>hard-capped at 3 SOL per day</strong> across everyone — the tier and play
+          The total paid out is still <strong>hard-capped at 10 SOL per day</strong> across everyone — the tier and play
           multipliers only set how fast you accrue, never extra SOL on top of the pool. Once the day’s pool is used up,
           claims resume the next day.
         </p>
@@ -544,7 +544,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
       <ul className="ml-5 list-disc space-y-2">
         <li>Everything runs on <strong>Solana mainnet</strong> — clearly badged on the dashboard.</li>
         <li>Payouts come from a dedicated <strong>treasury wallet</strong> that funds the daily pool.</li>
-        <li>The pool is fixed at 3 SOL/day total and split pro-rata, so rewards scale fairly with real on-chain holdings.</li>
+        <li>The pool is fixed at 10 SOL/day total and split pro-rata, so rewards scale fairly with real on-chain holdings.</li>
         <li>Non-holders and demo players earn no SOL — the in-game economy stays separate from real rewards.</li>
       </ul>
     ),
