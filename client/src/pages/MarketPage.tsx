@@ -18,7 +18,7 @@ export default function MarketPage() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)]">
       <div className="absolute inset-0 bg-grid opacity-10" />
-      <div className="container-x relative max-w-5xl py-14">
+      <div className="container-x relative max-w-7xl py-14">
         <div className="text-center">
           <span className="kicker">🏛️ Player marketplace</span>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
@@ -133,11 +133,23 @@ function Market() {
     </div>
 
     <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
-      {/* live activity — a sticky sidebar (top of page on mobile) so it's actually seen */}
-      <aside className="w-full lg:order-last lg:w-80 lg:shrink-0">
-        <div className="lg:sticky lg:top-20">
-          <MarketActivity category={activeCategory} />
-        </div>
+      {/* far-right sidebar: your inventory (relics) + the live activity feed */}
+      <aside className="w-full space-y-5 lg:order-last lg:w-80 lg:shrink-0">
+        {tab === "relics" && (
+          <div>
+            <h2 className="font-display text-lg font-semibold">
+              Your inventory <span className={inventory.length >= RELIC_CAP ? "text-blood-light" : "text-parchment-300/45"}>({inventory.length}/{RELIC_CAP})</span>
+            </h2>
+            <p className="mb-3 text-xs text-parchment-300/55">
+              Hold up to {RELIC_CAP}. {inventory.length >= RELIC_CAP ? "Full — sell or forge to make room. " : ""}Tap <b className="text-parchment-200">Sell</b> to list a relic.
+            </p>
+            <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+              {inventory.length === 0 && <div className="panel p-6 text-center text-sm text-parchment-300/55">No relics yet — win tournaments, bosses &amp; quests, or rank up to earn drops.</div>}
+              {inventory.map((it) => <InventoryRow key={it.instanceId} it={it} />)}
+            </div>
+          </div>
+        )}
+        <MarketActivity category={activeCategory} />
       </aside>
       <div className="min-w-0 flex-1">
     {tab === "coins" ? (
@@ -146,9 +158,7 @@ function Market() {
       <CharacterShop />
     ) : (
      <>
-    <div className="mt-6 grid gap-6 lg:grid-cols-3">
-      {/* listings */}
-      <div className="lg:col-span-2">
+    <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">On sale</h2>
           {address ? (
@@ -157,7 +167,7 @@ function Market() {
             <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>Connect wallet</button>
           )}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {listings === null && <div className="panel p-8 text-center text-sm text-parchment-300/60">Loading…</div>}
           {listings?.length === 0 && <div className="panel p-8 text-center text-sm text-parchment-300/60">Nothing listed yet. List one from your inventory.</div>}
           {listings?.map((l) => (
@@ -183,21 +193,6 @@ function Market() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* inventory */}
-      <div>
-        <h2 className="font-display text-lg font-semibold">
-          Your inventory <span className={inventory.length >= RELIC_CAP ? "text-blood-light" : "text-parchment-300/45"}>({inventory.length}/{RELIC_CAP})</span>
-        </h2>
-        <p className="mb-3 text-xs text-parchment-300/55">
-          Hold up to {RELIC_CAP}. {inventory.length >= RELIC_CAP ? "Full — sell or forge to make room. " : ""}Tap <b className="text-parchment-200">Sell</b> to list a relic.
-        </p>
-        <div className="space-y-2">
-          {inventory.length === 0 && <div className="panel p-6 text-center text-sm text-parchment-300/55">No relics yet — win tournaments, bosses &amp; quests, or rank up to earn drops.</div>}
-          {inventory.map((it) => <InventoryRow key={it.instanceId} it={it} />)}
-        </div>
-      </div>
     </div>
 
     {/* forge + how-to-collect */}
