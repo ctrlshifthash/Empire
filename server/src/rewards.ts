@@ -18,7 +18,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, createBurnCheckedInstruction } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, createBurnCheckedInstruction, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
@@ -409,11 +409,12 @@ export async function burnTreasuryRumble(): Promise<number> {
   if (!kp || !MINT) return 0;
   try {
     const mint = new PublicKey(MINT);
-    const ata = getAssociatedTokenAddressSync(mint, kp.publicKey);
+    // $RUMBLE is a Token-2022 mint — derive the ATA and burn with that program id.
+    const ata = getAssociatedTokenAddressSync(mint, kp.publicKey, false, TOKEN_2022_PROGRAM_ID);
     const bal = await rpc().getTokenAccountBalance(ata);
     const amount = BigInt(bal.value.amount);
     if (amount <= 0n) return 0;
-    const tx = new Transaction().add(createBurnCheckedInstruction(ata, mint, kp.publicKey, amount, bal.value.decimals));
+    const tx = new Transaction().add(createBurnCheckedInstruction(ata, mint, kp.publicKey, amount, bal.value.decimals, [], TOKEN_2022_PROGRAM_ID));
     const signature = await sendAndConfirmTransaction(rpc(), tx, [kp]);
     const burned = Number(bal.value.uiAmount ?? 0);
     // record it so the site can show the running total + per-tx Solscan links

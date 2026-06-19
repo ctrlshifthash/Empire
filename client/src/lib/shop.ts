@@ -3,7 +3,7 @@
 // posts the resulting signature back for the server to verify & grant. The
 // actual signing happens in the component via the wallet adapter's sendTransaction.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, createAssociatedTokenAccountIdempotentInstruction, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
 import { SERVER_URL } from "./config";
 import { priorityFeeIxs } from "./payments";
@@ -46,14 +46,16 @@ export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens
   const mint = new PublicKey(cfg.mint);
   const buyerPk = new PublicKey(buyer);
   const treasuryPk = new PublicKey(cfg.treasury);
-  const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk);
-  const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPk);
+  // $RUMBLE is a Token-2022 mint — every instruction must use that program id,
+  // and Token-2022 ATAs derive differently, so pass it to the address derivation too.
+  const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk, false, TOKEN_2022_PROGRAM_ID);
+  const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPk, false, TOKEN_2022_PROGRAM_ID);
   const amount = BigInt(Math.round(priceTokens)) * 10n ** BigInt(cfg.decimals);
 
   const tx = new Transaction();
   tx.add(...priorityFeeIxs());
-  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, treasuryAta, treasuryPk, mint));
-  tx.add(createTransferCheckedInstruction(buyerAta, mint, treasuryAta, buyerPk, amount, cfg.decimals));
+  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, treasuryAta, treasuryPk, mint, TOKEN_2022_PROGRAM_ID));
+  tx.add(createTransferCheckedInstruction(buyerAta, mint, treasuryAta, buyerPk, amount, cfg.decimals, [], TOKEN_2022_PROGRAM_ID));
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;

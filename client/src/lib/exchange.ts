@@ -7,6 +7,7 @@ import {
   createAssociatedTokenAccountIdempotentInstruction,
   createTransferCheckedInstruction,
   createBurnCheckedInstruction,
+  TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
 import { SERVER_URL } from "./config";
@@ -75,14 +76,15 @@ export async function buildExchangeTx(p: ExPayment, buyer: string): Promise<Tran
   const mint = new PublicKey(p.mint);
   const buyerPk = new PublicKey(buyer);
   const sellerPk = new PublicKey(p.seller);
-  const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk);
-  const sellerAta = getAssociatedTokenAddressSync(mint, sellerPk);
+  // $RUMBLE is a Token-2022 mint — derive ATAs and build every instruction with that program id.
+  const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk, false, TOKEN_2022_PROGRAM_ID);
+  const sellerAta = getAssociatedTokenAddressSync(mint, sellerPk, false, TOKEN_2022_PROGRAM_ID);
 
   const tx = new Transaction();
   tx.add(...priorityFeeIxs()); // make the tx land on a busy network
-  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, sellerAta, sellerPk, mint));
-  if (BigInt(p.sellerBase) > 0n) tx.add(createTransferCheckedInstruction(buyerAta, mint, sellerAta, buyerPk, BigInt(p.sellerBase), p.decimals));
-  if (BigInt(p.burnBase) > 0n) tx.add(createBurnCheckedInstruction(buyerAta, mint, buyerPk, BigInt(p.burnBase), p.decimals));
+  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, sellerAta, sellerPk, mint, TOKEN_2022_PROGRAM_ID));
+  if (BigInt(p.sellerBase) > 0n) tx.add(createTransferCheckedInstruction(buyerAta, mint, sellerAta, buyerPk, BigInt(p.sellerBase), p.decimals, [], TOKEN_2022_PROGRAM_ID));
+  if (BigInt(p.burnBase) > 0n) tx.add(createBurnCheckedInstruction(buyerAta, mint, buyerPk, BigInt(p.burnBase), p.decimals, [], TOKEN_2022_PROGRAM_ID));
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;
