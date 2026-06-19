@@ -20,11 +20,6 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
       { tag: "Feature", title: "Mounts & pets (beta preview)", desc: "Rare companions that drop when you win raids — collect them, own each as a cNFT, and equip one beside your hero in the hub. Locked for now while it's in beta." },
       { tag: "Feature", title: "Tombstone duels (beta preview)", desc: "A new Arena mode where the loser's staked coins drop into a tombstone — race to recover most of it within five minutes, or the victor loots the lot. Locked for now while it's in beta." },
       { tag: "Feature", title: "Spectate the live world (beta preview)", desc: "Watch the hub fill up and players move about in real time from the landing page — no wallet needed — then connect to play. Locked for now while it's in beta." },
-    ],
-  },
-  {
-    date: "June 17, 2026",
-    items: [
       { tag: "Feature", title: "Marketplace activity feeds", desc: "Every relic and coin listing, purchase and sale now appears in a live Activity feed on its Marketplace tab." },
       { tag: "Feature", title: "Characters (beta preview)", desc: "A new Characters tab in the Marketplace — preview the character roster you'll be able to buy, wear as your hub avatar, and own as a compressed NFT you can resell. Locked for now while the artwork and on-chain minting are finished." },
       { tag: "Improvement", title: "Rewards go to active players", desc: "The daily SOL pool now splits among active holders — people who hold $RUMBLE and actually play — instead of being diluted across the whole token supply. Far bigger, real rewards for players in the game, with a per-wallet cap so no whale drains the day. Daily pool raised to 5 SOL." },
@@ -50,7 +45,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     ],
   },
   {
-    date: "June 16, 2026",
+    date: "June 17, 2026",
     items: [
       { tag: "Feature", title: "Wagered Arena (PvP)", desc: "Stake coins and commit an army; anyone can accept and fight you. Winner takes the pot (minus a burned rake). In-game coins only." },
       { tag: "Feature", title: "Diamond Hands rewards", desc: "Holding without selling grows a loyalty multiplier on your SOL accrual (up to 2×); selling resets it." },
@@ -71,7 +66,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     ],
   },
   {
-    date: "June 15, 2026",
+    date: "June 16, 2026",
     items: [
       { tag: "Improvement", title: "Reward playing hard", desc: "Your empire's renown rank now boosts SOL accrual — within the same fixed daily pool." },
       { tag: "Improvement", title: "Themed home page", desc: "Per-section backdrops: sky, world map, night town, the ages, and the kingdom." },
