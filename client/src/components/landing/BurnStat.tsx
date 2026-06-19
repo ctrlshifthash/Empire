@@ -27,15 +27,15 @@ export default function BurnStat() {
 
       {open && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
-          <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl border border-parchment-300/15 bg-ink-800/95 p-6 shadow-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="flex max-h-[88vh] w-full max-w-md flex-col rounded-2xl border border-parchment-300/15 bg-ink-800/95 p-5 shadow-panel" onClick={(e) => e.stopPropagation()}>
             <div className="shrink-0 text-center">
-              <div className="text-4xl">🔥</div>
-              <div className="mt-2 font-display text-3xl font-bold text-gold-gradient">{fmt(total)}</div>
-              <div className="text-xs uppercase tracking-[0.18em] text-parchment-300/60">$RUMBLE burned forever</div>
-              <p className="mt-2 text-[11px] text-parchment-300/55">The treasury burns what the shop collects every hour — removed from supply for good.</p>
+              <div className="text-3xl">🔥</div>
+              <div className="mt-1 font-display text-3xl font-bold text-gold-gradient">{fmt(total)}</div>
+              <div className="mt-0.5 text-xs uppercase tracking-[0.18em] text-parchment-300/60">$RUMBLE burned forever</div>
+              <p className="mx-auto mt-1.5 max-w-xs text-[11px] leading-snug text-parchment-300/55">The treasury burns what the shop collects every hour — removed from supply for good.</p>
             </div>
 
-            <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-parchment-300/10">
+            <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-parchment-300/10">
               {/* column header */}
               <div className="grid shrink-0 grid-cols-[1fr_auto] items-center gap-3 border-b border-parchment-300/10 bg-black/30 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-parchment-300/45">
                 <span>Amount burned</span>
@@ -66,7 +66,7 @@ export default function BurnStat() {
               </div>
             </div>
 
-            <div className="mt-4 flex shrink-0 flex-wrap items-center justify-center gap-4 border-t border-parchment-300/10 pt-3 text-[11px]">
+            <div className="mt-3 flex shrink-0 flex-wrap items-center justify-center gap-4 border-t border-parchment-300/10 pt-3 text-[11px]">
               {data?.mint && (
                 <a href={`https://solscan.io/token/${data.mint}`} target="_blank" rel="noreferrer" className="text-sky-300 hover:underline">
                   Token supply ↗
@@ -78,7 +78,7 @@ export default function BurnStat() {
                 </a>
               )}
             </div>
-            <button className="btn-ghost btn-sm mt-4 w-full shrink-0" onClick={() => setOpen(false)}>
+            <button className="btn-ghost btn-sm mt-3 w-full shrink-0" onClick={() => setOpen(false)}>
               Close
             </button>
           </div>
