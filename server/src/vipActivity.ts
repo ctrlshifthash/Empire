@@ -14,22 +14,36 @@ function rand(min: number, max: number): number {
 }
 
 function nudge(empire: NonNullable<typeof state.empires[string]>): void {
-  // Raids: win 1-3, occasionally lose 1
-  empire.raidsWon  = (empire.raidsWon  ?? 0) + rand(1, 3);
-  if (Math.random() < 0.25) empire.raidsLost = (empire.raidsLost ?? 0) + 1;
+  // Raids: mostly wins but realistic losses (~30% of sessions)
+  const raidWins = rand(1, 3);
+  empire.raidsWon = (empire.raidsWon ?? 0) + raidWins;
+  if (Math.random() < 0.30) empire.raidsLost = (empire.raidsLost ?? 0) + rand(1, 2);
 
-  // Army: small variance per unit type (±2-4%)
+  // Duels: mix of wins and losses, streaks break occasionally
+  const duelWin = Math.random() < 0.60;
+  if (duelWin) {
+    empire.duelsWon = (empire.duelsWon ?? 0) + rand(1, 2);
+    empire.duelStreak = (empire.duelStreak ?? 0) + 1;
+  } else {
+    empire.duelsLost = (empire.duelsLost ?? 0) + 1;
+    empire.duelStreak = 0; // streak broken
+  }
+
+  // Boss: occasionally gets a kill
+  if (Math.random() < 0.20) empire.bossKills = (empire.bossKills ?? 0) + 1;
+
+  // Army: small variance — loses some troops in battles, trains replacements
   for (const unit of ["villager", "spearman", "archer", "knight"] as const) {
     const current = empire.army[unit] ?? 0;
-    const delta = rand(-Math.ceil(current * 0.02), Math.ceil(current * 0.04));
+    const delta = rand(-Math.ceil(current * 0.03), Math.ceil(current * 0.04));
     empire.army[unit] = Math.max(1, current + delta) as typeof current;
   }
 
-  // Resources: simulate gathering and spending
-  empire.resources.wood  = Math.max(0, empire.resources.wood  + rand(-500,  2000));
-  empire.resources.food  = Math.max(0, empire.resources.food  + rand(-800,  1500));
-  empire.resources.gold  = Math.max(0, empire.resources.gold  + rand(-300,  1000));
-  empire.resources.stone = Math.max(0, empire.resources.stone + rand(-200,   800));
+  // Resources: fluctuate from gathering, raiding loot and troop upkeep
+  empire.resources.wood  = Math.max(0, empire.resources.wood  + rand(-800,  2500));
+  empire.resources.food  = Math.max(0, empire.resources.food  + rand(-1200, 2000));
+  empire.resources.gold  = Math.max(0, empire.resources.gold  + rand(-600,  1500));
+  empire.resources.stone = Math.max(0, empire.resources.stone + rand(-400,  1000));
 
   recomputePower(empire);
 }
