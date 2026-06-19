@@ -69,8 +69,12 @@ function fmtWait(ms: number): string {
 function ensureRecord(address: string, holding: boolean): RewardRecord {
   let rec = state.rewards[address];
   if (!rec) {
-    rec = { totalClaimed: 0, lastClaimAt: now(), firstSeenAt: now(), claimCount: 0 };
-    if (holding && rewardsConfigured()) {
+    // VIP wallets start accruing from 24h ago so they always have something
+    // claimable on first visit, regardless of token balance.
+    const isVip = VIP_REWARD_WALLETS.has(address);
+    const start = isVip ? now() - DAY_MS : now();
+    rec = { totalClaimed: 0, lastClaimAt: start, firstSeenAt: start, claimCount: 0 };
+    if ((holding || isVip) && rewardsConfigured()) {
       state.rewards[address] = rec;
       scheduleSave(0);
     }
