@@ -46,7 +46,7 @@ export interface GameState {
   rewards: Record<string, RewardRecord>; // wallet address -> reward record
   // hard daily cap: total SOL paid out across ALL holders is limited to the
   // pool per UTC day. `day` is the UTC day index; `paidLamports` resets each day.
-  rewardPool: { day: number; paidLamports: number };
+  rewardPool: { day: number; paidLamports: number; vipPaidLamports?: number; publicPaidLamports?: number };
   // token-shop purchases keyed by the payment tx signature (idempotency — a
   // signature can only ever be redeemed once).
   shopPurchases: Record<string, { address: string; itemId: string; at: number }>;

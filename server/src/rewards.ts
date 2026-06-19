@@ -324,18 +324,33 @@ function updateLoyalty(rec: RewardRecord, balance: number): number {
 }
 
 // ── daily pool budget ───────────────────────────────────────────────────────
-// Hard cap: the treasury pays out at most DAILY_SOL_POOL across ALL holders per
-// UTC day. The per-wallet multiplier only sets how fast you accrue (your claim
-// priority) — the total emitted is still bounded by the pool.
-const POOL_LAMPORTS = (): number => Math.round(DAILY_SOL_POOL * LAMPORTS_PER_SOL);
-function poolRemainingLamports(): number {
+// VIP (7.5 SOL) and public (2.5 SOL) are tracked in separate buckets so
+// neither group can eat into the other's allocation.
+const POOL_LAMPORTS    = (): number => Math.round(DAILY_SOL_POOL * LAMPORTS_PER_SOL);
+const VIP_POOL_LAMPS   = (): number => Math.round(VIP_POOL_SOL   * LAMPORTS_PER_SOL);
+const PUB_POOL_LAMPS   = (): number => Math.round(PUBLIC_POOL_SOL * LAMPORTS_PER_SOL);
+
+function resetDay(): void {
   const day = Math.floor(now() / DAY_MS);
   if (state.rewardPool.day !== day) {
     state.rewardPool.day = day;
     state.rewardPool.paidLamports = 0;
-    scheduleSave(0); // persist the daily reset so it can't silently re-accumulate
+    state.rewardPool.vipPaidLamports = 0;
+    state.rewardPool.publicPaidLamports = 0;
+    scheduleSave(0);
   }
+}
+function poolRemainingLamports(): number {
+  resetDay();
   return Math.max(0, POOL_LAMPORTS() - state.rewardPool.paidLamports);
+}
+function vipPoolRemainingLamports(): number {
+  resetDay();
+  return Math.max(0, VIP_POOL_LAMPS() - (state.rewardPool.vipPaidLamports ?? 0));
+}
+function publicPoolRemainingLamports(): number {
+  resetDay();
+  return Math.max(0, PUB_POOL_LAMPS() - (state.rewardPool.publicPaidLamports ?? 0));
 }
 
 export interface RewardStatus {
@@ -379,8 +394,11 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
-  // you can only ever claim what's left in today's shared pool
-  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), poolRemaining);
+  // claimable is capped by the wallet's own pool bucket (VIP or public)
+  const bucketRemaining = VIP_REWARD_WALLETS.has(address)
+    ? vipPoolRemainingLamports() / LAMPORTS_PER_SOL
+    : publicPoolRemainingLamports() / LAMPORTS_PER_SOL;
+  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), bucketRemaining);
   const claimCount = rec.claimCount || 0;
   // first claim unlocked immediately; subsequent ones gated to every 6h
   const nextClaimAt = claimCount > 0 ? rec.lastClaimAt + CLAIM_COOLDOWN_MS : 0;
@@ -503,8 +521,9 @@ export async function claim(address: string): Promise<ClaimResult> {
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 
-  // hard daily cap: never pay more than what's left in today's shared pool
-  const remaining = poolRemainingLamports();
+  // hard daily cap: VIP and public each have their own bucket — neither can eat the other's
+  const isVip = VIP_REWARD_WALLETS.has(address);
+  const remaining = isVip ? vipPoolRemainingLamports() : publicPoolRemainingLamports();
   if (remaining <= 0) return { ok: false, error: "Today's reward pool is used up — come back tomorrow." };
   const lamports = Math.min(Math.floor(claimSol * LAMPORTS_PER_SOL), remaining);
 
@@ -521,6 +540,8 @@ export async function claim(address: string): Promise<ClaimResult> {
     rec.firstSeenAt = rec.firstSeenAt || now();
     state.rewards[address] = rec;
     state.rewardPool.paidLamports += lamports;
+    if (isVip) state.rewardPool.vipPaidLamports = (state.rewardPool.vipPaidLamports ?? 0) + lamports;
+    else state.rewardPool.publicPaidLamports = (state.rewardPool.publicPaidLamports ?? 0) + lamports;
     scheduleSave(0);
     return { ok: true, signature, claimedSol: lamports / LAMPORTS_PER_SOL };
   } catch (err) {

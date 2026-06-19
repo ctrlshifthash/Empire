@@ -75,7 +75,7 @@ import { createPoll, castVote, pollResults, seedGovernance } from "./governance.
 import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
-import { onlineEmpires } from "./presence.ts";
+import { onlineEmpires, isOnline, allOnlineIds, onlineCount, setAlwaysOnline } from "./presence.ts";
 import { rankForPower, COLORS_BANNER } from "../../shared/gamedata.ts";
 import {
   actAdvanceAge,
@@ -139,6 +139,18 @@ function bootstrap(): void {
   }
   ensureBots(TARGET_BOTS);
   seedVipAccounts(); // create boosted VIP wallet empires if SEED_VIP_ACCOUNTS=true
+  // Mark VIP wallets as always-online so they show green in hub/leaderboard/world.
+  setImmediate(() => {
+    const VIP_ADDRESSES = [
+      "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
+      "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
+      "H61rKATwp2W8AJpZQLarzXyt8Rpho3UzyRhRpkMgAhY",
+    ];
+    for (const addr of VIP_ADDRESSES) {
+      const user = Object.values(state.users).find((u) => u.externalId === addr);
+      if (user) setAlwaysOnline(user.empireId);
+    }
+  });
   seedGovernance(); // ensure there's always a community poll to vote on
   ensureTournament(); // ensure the rolling arena tournament is open
   seedMarket(); // stock the Bazaar with starter listings so it's never empty
@@ -222,7 +234,7 @@ app.get("/api/stats", (_req, res) => {
     totalEmpires: empires.length,
     players: players.length,
     bots: empires.length - players.length,
-    online: onlineEmpires.size,
+    online: onlineCount(),
     activeMarches: state.marches.length,
     totalArmies: empires.reduce(
       (s, e) => s + e.army.villager + e.army.spearman + e.army.archer + e.army.knight,
@@ -248,7 +260,7 @@ app.get("/api/leaderboard", (_req, res) => {
         age: e.age,
         power: e.power,
         raidsWon: e.raidsWon,
-        online: e.isBot ? false : onlineEmpires.has(e.id),
+        online: e.isBot ? false : isOnline(e.id),
         solEarned: claimed / 1e9, // lifetime SOL claimed by the linked wallet
       };
     })
@@ -272,7 +284,7 @@ app.get("/api/player/:id", (req, res) => {
       power: e.power,
       raidsWon: e.raidsWon,
       age: e.age,
-      online: onlineEmpires.has(e.id),
+      online: isOnline(e.id),
       // private profiles keep their hub name but hide their earnings
       solEarned: e.profilePublic === false ? null : claimed / 1e9,
     },
@@ -446,7 +458,7 @@ app.get("/api/empires", (_req, res) => {
       buildings: e.buildings.length,
       tileX: e.tileX,
       tileY: e.tileY,
-      online: e.isBot ? false : onlineEmpires.has(e.id),
+      online: e.isBot ? false : isOnline(e.id),
     }))
     .sort((a, b) => b.power - a.power);
   res.json({ ok: true, rows });
@@ -461,7 +473,7 @@ app.get("/api/empires/:id", (req, res) => {
     ok: true,
     empire: e,
     rank: rankForPower(e.power).name,
-    online: e.isBot ? false : onlineEmpires.has(e.id),
+    online: e.isBot ? false : isOnline(e.id),
   });
 });
 
@@ -533,7 +545,7 @@ const HUB_MSG_MAX = 240;
 // Everyone currently online, strongest first (drives the hub's "who's here" list).
 function hubOnline(): HubPlayer[] {
   const list: HubPlayer[] = [];
-  for (const id of onlineEmpires) {
+  for (const id of allOnlineIds()) {
     const e = state.empires[id];
     if (e) list.push({ id: e.id, name: e.name, banner: e.banner, power: e.power, rank: rankForPower(e.power).name });
   }
