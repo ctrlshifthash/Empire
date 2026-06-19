@@ -273,6 +273,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         <li><strong>Armoury</strong> — spend coins on weapons (attack) and armour (defense) for your units, plus a helmet &amp; armour for your hero. Armour climbs to {MAX_ARMOUR} named tiers, so investing in defense really pays off.</li>
         <li><strong>Traits</strong> — learn perks: some are free (Hardy, Keen Eye, Brawler), others cost coins. They boost HP, harvest yield and hero damage. A few elite traits are token-only (see the Token Shop).</li>
         <li><strong>Hero customization</strong> — outfit the character you play as and see the look update live.</li>
+        <li><strong>Collectible characters (beta)</strong> — a growing roster of hand-made character cNFTs you can preview in the Marketplace, and will be able to wear as your hub avatar and own + resell as a compressed NFT. In beta for now — you're previewing the art while on-chain minting is finalized, so you can't play as them just yet.</li>
       </ul>
     ),
   },

@@ -22,6 +22,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
     date: "June 19, 2026",
     items: [
       { tag: "Feature", title: "The Hub is now a walkable village", desc: "The Hub has been rebuilt as a village you explore — wander your hero with WASD across a market square of stalls around the fountain, past dozens of houses, dirt roads out to open grassland and tree-lined fields, with everyone online beside you. Scroll or use the +/− buttons to zoom in and out." },
+      { tag: "Feature", title: "Collectible characters — preview (beta)", desc: "A new roster of hand-made character cNFTs is previewing in the Marketplace's Characters tab. You'll be able to buy them, wear them as your hub avatar, and own + resell each as a compressed NFT in your wallet. Locked for now while the artwork and on-chain minting are finalized — so you can't play as them just yet." },
     ],
   },
   {

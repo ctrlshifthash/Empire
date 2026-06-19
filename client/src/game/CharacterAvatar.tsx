@@ -10,14 +10,17 @@ export default function CharacterAvatar({
   hat,
   cape,
   size = 56,
+  image,
 }: {
   color: string;
   hat?: Hat;
   cape?: boolean;
   size?: number;
+  image?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
+    if (image) return; // real PNG art — skip the procedural canvas
     const c = ref.current;
     if (!c) return;
     const ctx = c.getContext("2d");
@@ -35,6 +38,7 @@ export default function CharacterAvatar({
       cape,
       phase: 0,
     });
-  }, [color, hat, cape, size]);
+  }, [color, hat, cape, size, image]);
+  if (image) return <img src={image} alt="" style={{ width: size, height: size, objectFit: "contain", imageRendering: "pixelated" }} />;
   return <canvas ref={ref} style={{ width: size, height: size }} />;
 }

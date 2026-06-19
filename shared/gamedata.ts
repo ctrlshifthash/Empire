@@ -934,10 +934,15 @@ export interface CharacterType {
   priceCoins: number; // buy with in-game coins
   priceRumble: number; // or buy with $RUMBLE (burned)
   maxSupply: number; // how many cNFTs of this character can ever mint
+  image?: string; // optional PNG art (overrides the procedural avatar)
   desc: string;
 }
 
 export const CHARACTERS: CharacterType[] = [
+  // featured / real-art characters — listed first
+  { id: "bloodsworn", name: "Toly", icon: "🩸", color: "#7a1f1f", hat: "cap", cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/lincoln/card.png", desc: "Marked by sorrow, cloaked in black — he weeps for the realm." },
+  { id: "alon", name: "Alon", icon: "🧢", color: "#d4a017", hat: "cap", cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/alon/card.png", desc: "Don't tread on him. Shades on, never off." },
+  { id: "frank", name: "Frank De Gods", icon: "🎨", color: "#3b5b8c", hat: null, cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/frank/card.png", desc: "Built different. Mints harder." },
   { id: "squire", name: "Squire", icon: "🧑‍🌾", color: "#8a8377", hat: "cap", cape: false, rarity: "common", priceCoins: 15000, priceRumble: 4000, maxSupply: 2000, desc: "Every legend starts somewhere." },
   { id: "azure_knight", name: "Azure Knight", icon: "🛡️", color: "#2980b9", hat: "helmet", cape: false, rarity: "common", priceCoins: 25000, priceRumble: 6000, maxSupply: 1000, desc: "Steadfast and blue-clad." },
   { id: "forest_ranger", name: "Forest Ranger", icon: "🏹", color: "#27ae60", hat: "hood", cape: false, rarity: "rare", priceCoins: 70000, priceRumble: 16000, maxSupply: 250, desc: "Swift, silent, deadly." },

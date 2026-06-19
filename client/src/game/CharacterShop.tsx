@@ -17,6 +17,7 @@ type CatalogItem = {
   priceCoins: number;
   priceRumble: number;
   maxSupply: number;
+  image?: string;
   minted: number;
   remaining: number;
   desc: string;
@@ -65,7 +66,7 @@ export default function CharacterShop() {
             <div key={c.id} className="panel flex flex-col p-4" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
               <div className="flex items-center gap-3">
                 <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: `${c.color}22`, border: `1px solid ${c.color}` }}>
-                  <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} size={52} />
+                  <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} image={c.image} size={52} />
                 </span>
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-parchment-100">{c.name}</div>
