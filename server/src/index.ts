@@ -398,6 +398,34 @@ app.get("/api/admin/bugs", (req, res) => {
     return res.status(401).json({ ok: false, error: "Unauthorized." });
   res.json({ ok: true, bugs: listBugs() });
 });
+// Admin-only: override a wallet's totalClaimed SOL counter.
+app.post("/api/admin/set-reward", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  const { wallet, solAmount } = (req.body ?? {}) as Record<string, unknown>;
+  if (!wallet || solAmount == null)
+    return res.status(400).json({ ok: false, error: "wallet and solAmount required." });
+  const lamports = Math.round(Number(solAmount) * 1_000_000_000);
+  const rec = state.rewards[String(wallet)];
+  if (rec) {
+    rec.totalClaimed = lamports;
+  } else {
+    state.rewards[String(wallet)] = { totalClaimed: lamports, lastClaimAt: now() - 86_400_000, firstSeenAt: now() - 86_400_000, claimCount: 1 };
+  }
+  scheduleSave(0);
+  res.json({ ok: true, wallet, solAmount: Number(solAmount), lamports });
+});
+
+// Admin-only: burn the treasury's collected $RUMBLE right now (on demand, no
+// waiting for the hourly timer). Guard with the ADMIN_KEY env via x-admin-key.
+app.post("/api/admin/burn", async (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  const burned = await burnTreasuryRumble();
+  res.json({ ok: true, burned });
+});
 
 // ── Empires browser (public) ────────────────────────────────────────────────
 // A summary of every empire on the map so anyone can scout players & bots.
@@ -973,8 +1001,9 @@ setInterval(() => {
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);
 
-// Burn the $RUMBLE the treasury collects (token-shop spend) every hour — keeps
-// the shop deflationary without buyers having to sign a burn.
+// Burn the $RUMBLE the treasury collects (token-shop spend): once ~30s after
+// startup (so a redeploy never delays a burn) and then every hour.
+setTimeout(() => void burnTreasuryRumble(), 30_000);
 setInterval(() => void burnTreasuryRumble(), 60 * 60 * 1000);
 
 // expire tombstone duels — award unrecovered tombstones to their victors

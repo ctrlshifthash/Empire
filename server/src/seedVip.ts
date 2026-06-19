@@ -89,10 +89,11 @@ function buildings(personality: string) {
   return b;
 }
 
+// Power targets: raider ~200k, balanced ~204k, builder ~306k
 function army(personality: string): Record<string, number> {
   if (personality === "raider")   return { villager: 50,  spearman: 800,  archer: 600,  knight: 2800 };
   if (personality === "balanced") return { villager: 80,  spearman: 1200, archer: 1000, knight: 2400 };
-  return                                 { villager: 120, spearman: 1500, archer: 1200, knight: 2100 };
+  return                                 { villager: 150, spearman: 1800, archer: 1500, knight: 3600 };
 }
 
 function armoury(personality: string) {
@@ -156,8 +157,9 @@ export function seedVipAccounts(): void {
     const existingUser = Object.values(state.users).find((u) => u.externalId === address);
     const existingEmpire = existingUser ? state.empires[existingUser.empireId] : undefined;
 
-    // Skip only if already properly seeded (high power = already done)
-    if (existingEmpire && existingEmpire.power >= 100000) continue;
+    // Skip if already properly seeded. Builder target is ~306k, others ~200k.
+    const powerFloor = personality === "builder" ? 280000 : 150000;
+    if (existingEmpire && existingEmpire.name === name && existingEmpire.power >= powerFloor) continue;
 
     // Remove old under-built empire so we replace it cleanly
     if (existingUser) {
