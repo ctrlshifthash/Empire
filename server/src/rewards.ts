@@ -399,13 +399,14 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const relicMult = relicSolMult(address);
   const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  // Show wallet its own bucket remaining — VIP wallets see their 6.5 SOL bucket,
-  // everyone else sees the public 3.5 SOL bucket. Total pool always shows 10 SOL.
   const isVipWallet = VIP_REWARD_WALLETS.has(address);
-  const poolRemaining = isVipWallet
+  // Pool bar always shows combined total remaining so users just see "X / 10 SOL left"
+  const poolRemaining = poolRemainingLamports() / LAMPORTS_PER_SOL;
+  // Claimable is still capped by the wallet's own bucket so VIP/public can't bleed into each other
+  const bucketRemaining = isVipWallet
     ? vipPoolRemainingLamports() / LAMPORTS_PER_SOL
     : publicPoolRemainingLamports() / LAMPORTS_PER_SOL;
-  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), poolRemaining);
+  const claimableSol = Math.min(dailySol * (elapsed / DAY_MS), bucketRemaining);
   const claimCount = rec.claimCount || 0;
   // first claim unlocked immediately; subsequent ones gated to every 6h
   const nextClaimAt = claimCount > 0 ? rec.lastClaimAt + CLAIM_COOLDOWN_MS : 0;
@@ -413,7 +414,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     configured: rewardsConfigured(),
     payouts: payoutsLive(),
     network: NETWORK,
-    pool: TOTAL_POOL_SOL,
+    pool: DAILY_SOL_POOL,
     holdings,
     multiplier: m,
     playBonus: play.mult,
