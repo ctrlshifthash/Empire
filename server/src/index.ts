@@ -255,6 +255,28 @@ app.get("/api/leaderboard", (_req, res) => {
   res.json({ ok: true, rows });
 });
 
+// Public profile for one player (used by the Hub roster's player card).
+app.get("/api/player/:id", (req, res) => {
+  const e = state.empires[String(req.params.id)];
+  if (!e || e.isBot) return res.status(404).json({ ok: false });
+  const wallet = Object.values(state.users).find((u) => u.empireId === e.id)?.externalId;
+  const claimed = wallet ? state.rewards[wallet]?.totalClaimed ?? 0 : 0;
+  res.json({
+    ok: true,
+    player: {
+      id: e.id,
+      name: e.name,
+      banner: e.banner,
+      power: e.power,
+      raidsWon: e.raidsWon,
+      age: e.age,
+      online: onlineEmpires.has(e.id),
+      // private profiles keep their hub name but hide their earnings
+      solEarned: e.profilePublic === false ? null : claimed / 1e9,
+    },
+  });
+});
+
 // Public alliance directory + leaderboard (chat stripped — that stays private).
 app.get("/api/alliances", (_req, res) => {
   const alliances = allianceLeaderboard().map(({ chat: _chat, ...rest }) => rest);

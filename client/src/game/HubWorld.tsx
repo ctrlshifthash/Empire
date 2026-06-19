@@ -4,6 +4,10 @@ import { worldToScreen, TILE_W, TILE_H } from "../world/iso";
 import { drawCharacter, drawBuilding } from "../world/draw";
 import { drawTile, TILES } from "../world/tiles";
 import type { BuildingView } from "../world/engine";
+import { SERVER_URL } from "../lib/config";
+import { rankForPower } from "@shared/gamedata";
+import { fmt } from "../lib/format";
+import SolanaIcon from "../components/SolanaIcon";
 
 // The spatial hub: a shared, walkable town. You spawn as your hero sprite and
 // stroll a real environment — grass, a cobblestone plaza, a fountain, houses and
@@ -50,6 +54,28 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const lobby = useGame((s) => s.hubAvatars); // everyone currently in the plaza
   const online = useGame((s) => s.hubOnline); // everyone online (broader count)
   const [chat, setChat] = useState("");
+
+  // player card: click a roster name to see their stats
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [card, setCard] = useState<{ power: number; raidsWon: number; solEarned: number | null; age: number } | null>(null);
+  const selectedAvatar = lobby.find((a) => a.id === selectedId);
+  useEffect(() => {
+    if (!selectedId) {
+      setCard(null);
+      return;
+    }
+    let alive = true;
+    setCard(null);
+    fetch(`${SERVER_URL}/api/player/${selectedId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive && d?.ok) setCard(d.player);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [selectedId]);
   const setInHub = useGame((s) => s.setInHub);
 
   const me = useRef<Local>({ x: 2, y: 2, facing: -1, moving: false, phase: 0 });
@@ -368,14 +394,19 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
             {[...lobby]
               .sort((a, b) => b.level - a.level)
               .map((a) => (
-                <div key={a.id} className="flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-white/5">
+                <button
+                  key={a.id}
+                  onClick={() => setSelectedId(a.id)}
+                  title="View player"
+                  className="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-white/10"
+                >
                   <span className="grid h-5 w-5 shrink-0 place-items-center rounded text-[10px] font-bold text-white" style={{ background: a.banner }}>
                     {(a.name[0] ?? "?").toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs text-parchment-100">{a.id === myId ? "You" : a.name}</span>
                   {a.character && <span className="shrink-0 text-xs">{a.character.icon}</span>}
                   <span className="shrink-0 text-[10px] font-bold text-gold-light">{a.level}</span>
-                </div>
+                </button>
               ))}
           </div>
         </div>
@@ -415,6 +446,43 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           </div>
         </div>
       </div>
+
+      {/* player card — opened by clicking a name in the roster */}
+      {selectedAvatar && (
+        <div className="absolute inset-0 z-30 grid place-items-center bg-black/60 p-4" onClick={() => setSelectedId(null)}>
+          <div className="w-72 rounded-xl border border-parchment-300/15 bg-ink-800/95 p-5 shadow-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg text-xl font-bold text-white" style={{ background: selectedAvatar.banner }}>
+                {(selectedAvatar.name[0] ?? "?").toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <div className="truncate font-display text-lg font-bold text-parchment-100">{selectedAvatar.id === myId ? "You" : selectedAvatar.name}</div>
+                <div className="text-xs text-parchment-300/60">
+                  Lvl {selectedAvatar.level}
+                  {card ? ` · ${rankForPower(card.power).name}` : ""}
+                </div>
+              </div>
+            </div>
+            {selectedAvatar.character && (
+              <div className="mt-3 flex items-center justify-center gap-2 text-3xl">
+                {selectedAvatar.character.icon}
+                {selectedAvatar.mount && <span>{selectedAvatar.mount}</span>}
+              </div>
+            )}
+            <div className="mt-4 space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-parchment-300/60">Power</span><span className="font-semibold text-gold-light">{card ? fmt(card.power) : "…"}</span></div>
+              <div className="flex justify-between"><span className="text-parchment-300/60">Raids won</span><span className="font-semibold text-parchment-100">{card ? card.raidsWon : "…"}</span></div>
+              <div className="flex justify-between">
+                <span className="text-parchment-300/60">SOL earned</span>
+                <span className="flex items-center gap-1 font-semibold text-gold-light">
+                  {!card ? "…" : card.solEarned == null ? <span className="text-parchment-300/45">Private</span> : <><SolanaIcon className="h-3 w-3" /> {card.solEarned.toFixed(3)}</>}
+                </span>
+              </div>
+            </div>
+            <button className="btn-ghost btn-sm mt-4 w-full" onClick={() => setSelectedId(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
