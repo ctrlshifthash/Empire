@@ -36,15 +36,13 @@ export async function shopConfig() {
   };
 }
 
-// Confirm `signature` moved at least `requiredRaw` base units of the mint into
-// the treasury, signed by `buyer`. Retries briefly because the client may post
-// before the tx has been seen by our RPC node.
-// Token-shop purchases BURN the token (deflationary sink) — the buyer burns the
-// price from their own wallet. We verify the tx contains a burn of the mint, by
-// the buyer, for at least the required amount.
-async function verifyBurn(signature: string, buyer: string, requiredRaw: bigint): Promise<boolean> {
+// Confirm `signature` moved at least `requiredRaw` base units of the mint INTO
+// the treasury's token account, signed by `buyer`. (The treasury burns what it
+// collects on a schedule.) Retries patiently because the client may post before
+// our RPC node has seen the tx.
+async function verifyTransfer(signature: string, buyer: string, treasury: string, requiredRaw: bigint): Promise<boolean> {
   const mint = tokenMint();
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     try {
       const tx = await sharedRpc().getParsedTransaction(signature, {
         maxSupportedTransactionVersion: 0,
@@ -53,21 +51,17 @@ async function verifyBurn(signature: string, buyer: string, requiredRaw: bigint)
       if (tx && !tx.meta?.err) {
         const keys = tx.transaction.message.accountKeys;
         if (!keys.some((k) => k.signer && k.pubkey.toBase58() === buyer)) return false;
-        let burned = 0n;
-        for (const ix of tx.transaction.message.instructions as Array<{ parsed?: { type?: string; info?: Record<string, unknown> } }>) {
-          const p = ix.parsed;
-          if (!p || (p.type !== "burnChecked" && p.type !== "burn")) continue;
-          if (p.info?.authority !== buyer) continue;
-          if (p.type === "burnChecked" && p.info?.mint !== mint) continue;
-          const amt = (p.info?.tokenAmount as { amount?: string } | undefined)?.amount ?? (p.info?.amount as string | undefined);
-          if (amt) burned += BigInt(amt);
-        }
-        return burned >= requiredRaw;
+        const bal = (arr: typeof tx.meta.preTokenBalances): bigint => {
+          const e = (arr ?? []).find((b) => b.owner === treasury && b.mint === mint);
+          return e ? BigInt(e.uiTokenAmount.amount) : 0n;
+        };
+        const gained = bal(tx.meta?.postTokenBalances) - bal(tx.meta?.preTokenBalances);
+        return gained >= requiredRaw;
       }
     } catch {
       /* transient RPC hiccup — retry */
     }
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 2000));
   }
   return false;
 }
@@ -93,11 +87,13 @@ export async function buyShopItem(address: string, signature: string, itemId: st
     return { ok: false, error: "No empire is linked to this wallet — open the game signed in with it first." };
   const empire = state.empires[user.empireId];
 
+  const treasury = treasuryPubkey();
+  if (!treasury) return { ok: false, error: "Shop treasury isn't configured." };
   const dec = await decimals();
   const requiredRaw = BigInt(Math.round(item.price)) * 10n ** BigInt(dec);
-  const paid = await verifyBurn(signature, address, requiredRaw);
+  const paid = await verifyTransfer(signature, address, treasury, requiredRaw);
   if (!paid)
-    return { ok: false, error: "Burn not confirmed yet — if you were charged, wait a few seconds and retry." };
+    return { ok: false, error: "Payment not confirmed yet — if you were charged, wait a few seconds and retry." };
 
   const res = applyShopItem(empire, item);
   if (!res.ok) return { ok: false, error: res.error };

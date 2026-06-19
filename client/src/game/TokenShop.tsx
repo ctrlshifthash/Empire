@@ -11,6 +11,7 @@ import {
   type ShopItem,
   type ShopCategory,
 } from "../lib/shop";
+import { confirmSignature } from "../lib/payments";
 
 const CATEGORY_META: Record<ShopCategory, { label: string; blurb: string }> = {
   pack: { label: "Resource Packs", blurb: "Instant resources & coins" },
@@ -74,7 +75,8 @@ function ShopGrid() {
     try {
       const tx = await buildPaymentTx(cfg, buyer, item.price);
       const signature = await sendTransaction(tx, connection);
-      pushToast({ kind: "success", text: "Payment sent — confirming…" });
+      pushToast({ kind: "info", text: "Payment sent — confirming…" });
+      await confirmSignature(connection, signature); // wait for it to land before verifying
       const res = await postPurchase(buyer, signature, item.id);
       if (res.ok) pushToast({ kind: "success", text: `${item.name} unlocked!` });
       else pushToast({ kind: "warn", text: res.error ?? "Purchase failed." });

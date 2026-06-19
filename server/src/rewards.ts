@@ -18,6 +18,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync, createBurnCheckedInstruction } from "@solana/spl-token";
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
@@ -397,6 +398,28 @@ function treasuryKeypair(): Keypair | null {
   } catch (err) {
     console.error("[rewards] invalid TREASURY_SECRET_KEY:", err);
     return null;
+  }
+}
+
+// Burn all the $RUMBLE the treasury has collected (token-shop spend, etc.).
+// Run on a schedule so the shop stays deflationary without buyers signing burns.
+// Returns the whole-token amount burned (0 if nothing/not configured).
+export async function burnTreasuryRumble(): Promise<number> {
+  const kp = treasuryKeypair();
+  if (!kp || !MINT) return 0;
+  try {
+    const mint = new PublicKey(MINT);
+    const ata = getAssociatedTokenAddressSync(mint, kp.publicKey);
+    const bal = await rpc().getTokenAccountBalance(ata);
+    const amount = BigInt(bal.value.amount);
+    if (amount <= 0n) return 0;
+    const tx = new Transaction().add(createBurnCheckedInstruction(ata, mint, kp.publicKey, amount, bal.value.decimals));
+    await sendAndConfirmTransaction(rpc(), tx, [kp]);
+    console.log(`[burn] burned ${bal.value.uiAmount} $RUMBLE from the treasury`);
+    return Number(bal.value.uiAmount ?? 0);
+  } catch (err) {
+    console.error("[burn] treasury burn failed:", err);
+    return 0;
   }
 }
 

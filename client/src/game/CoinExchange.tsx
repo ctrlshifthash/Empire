@@ -6,6 +6,7 @@ import { useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchCoinListings, fetchExchangeConfig, reserveCoin, buildExchangeTx, postBuyCoins, type ExchangeConfig } from "../lib/exchange";
 import SolanaIcon from "../components/SolanaIcon";
+import { confirmSignature } from "../lib/payments";
 
 const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 const fmtRumble = (n: number) => Math.round(n).toLocaleString("en-US");
@@ -57,7 +58,8 @@ export default function CoinExchange() {
       if (!r.ok || !r.payment) return pushToast({ kind: "warn", text: r.error ?? "Couldn't reserve." });
       const tx = await buildExchangeTx(r.payment, buyer);
       const signature = await sendTransaction(tx, connection);
-      pushToast({ kind: "success", text: "Payment sent — confirming…" });
+      pushToast({ kind: "info", text: "Payment sent — confirming…" });
+      await confirmSignature(connection, signature);
       const res = await postBuyCoins(l.id, buyer, signature);
       if (res.ok) {
         pushToast({ kind: "success", text: `Bought ${fmt(l.coinAmount)} coins!` });

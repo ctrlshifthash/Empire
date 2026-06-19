@@ -10,6 +10,7 @@ import {
 } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
 import { SERVER_URL } from "./config";
+import { priorityFeeIxs } from "./payments";
 import type { CoinListingPublic } from "@shared/types";
 
 export interface ExPayment {
@@ -78,6 +79,7 @@ export async function buildExchangeTx(p: ExPayment, buyer: string): Promise<Tran
   const sellerAta = getAssociatedTokenAddressSync(mint, sellerPk);
 
   const tx = new Transaction();
+  tx.add(...priorityFeeIxs()); // make the tx land on a busy network
   tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, sellerAta, sellerPk, mint));
   if (BigInt(p.sellerBase) > 0n) tx.add(createTransferCheckedInstruction(buyerAta, mint, sellerAta, buyerPk, BigInt(p.sellerBase), p.decimals));
   if (BigInt(p.burnBase) > 0n) tx.add(createBurnCheckedInstruction(buyerAta, mint, buyerPk, BigInt(p.burnBase), p.decimals));

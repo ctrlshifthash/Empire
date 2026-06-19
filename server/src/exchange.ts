@@ -105,7 +105,7 @@ export async function reserveCoinListing(listingId: string, buyer: string): Prom
 
 export async function verifyRumblePayment(signature: string, buyer: string, seller: string, sellerBase: bigint, burnBase: bigint): Promise<boolean> {
   const mint = tokenMint();
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     try {
       const tx = await sharedRpc().getParsedTransaction(signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" });
       if (tx && !tx.meta?.err) {
@@ -132,7 +132,7 @@ export async function verifyRumblePayment(signature: string, buyer: string, sell
     } catch {
       /* retry */
     }
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 2000));
   }
   return false;
 }

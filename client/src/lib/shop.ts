@@ -3,9 +3,10 @@
 // posts the resulting signature back for the server to verify & grant. The
 // actual signing happens in the component via the wallet adapter's sendTransaction.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, createBurnCheckedInstruction } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
 import { SOLANA_RPC } from "./web3";
 import { SERVER_URL } from "./config";
+import { priorityFeeIxs } from "./payments";
 
 export type ShopCategory = "pack" | "boost" | "army" | "trait" | "cosmetic";
 
@@ -36,17 +37,23 @@ export async function fetchShopConfig(): Promise<ShopConfig | null> {
 }
 
 // Build the (unsigned) payment transaction for the wallet to sign+send.
-// Shop purchases BURN the token — the buyer burns the price from their own
-// wallet (deflationary), so the tx is a single burnChecked instruction.
+// Shop purchases TRANSFER the token to the treasury (a plain, reliable SPL
+// transfer); the treasury then burns it periodically. A priority fee is
+// prepended so the tx lands on a busy network.
 export async function buildPaymentTx(cfg: ShopConfig, buyer: string, priceTokens: number): Promise<Transaction> {
   const conn = new Connection(SOLANA_RPC, "confirmed");
+  if (!cfg.treasury) throw new Error("Shop treasury isn't configured.");
   const mint = new PublicKey(cfg.mint);
   const buyerPk = new PublicKey(buyer);
+  const treasuryPk = new PublicKey(cfg.treasury);
   const buyerAta = getAssociatedTokenAddressSync(mint, buyerPk);
+  const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPk);
   const amount = BigInt(Math.round(priceTokens)) * 10n ** BigInt(cfg.decimals);
 
   const tx = new Transaction();
-  tx.add(createBurnCheckedInstruction(buyerAta, mint, buyerPk, amount, cfg.decimals));
+  tx.add(...priorityFeeIxs());
+  tx.add(createAssociatedTokenAccountIdempotentInstruction(buyerPk, treasuryAta, treasuryPk, mint));
+  tx.add(createTransferCheckedInstruction(buyerAta, mint, treasuryAta, buyerPk, amount, cfg.decimals));
   tx.feePayer = buyerPk;
   const { blockhash } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;

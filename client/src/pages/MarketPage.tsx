@@ -7,6 +7,7 @@ import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
 import { fetchExchangeConfig } from "../lib/exchange";
+import { confirmSignature } from "../lib/payments";
 import CoinExchange from "../game/CoinExchange";
 import CharacterShop from "../game/CharacterShop";
 import MarketActivity from "../game/MarketActivity";
@@ -89,7 +90,8 @@ function Market() {
       }
       const tx = await buildPaymentTx(r.payment, buyer);
       const signature = await sendTransaction(tx, connection);
-      pushToast({ kind: "success", text: "Payment sent — confirming…" });
+      pushToast({ kind: "info", text: "Payment sent — confirming…" });
+      await confirmSignature(connection, signature);
       const res = await postBuy(l.id, buyer, signature);
       if (res.ok) {
         pushToast({ kind: "success", text: `${l.name} #${l.serial} is yours!` });
