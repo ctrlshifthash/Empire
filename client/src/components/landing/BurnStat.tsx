@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { fmt } from "../../lib/format";
 import { fetchBurns, type BurnStats } from "../../lib/burns";
 
@@ -25,8 +26,9 @@ export default function BurnStat() {
         <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-parchment-300/60 group-hover:text-gold-light/80">$RUMBLE Burned</div>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div className="flex max-h-[88vh] w-full max-w-md flex-col rounded-2xl border border-parchment-300/15 bg-ink-800/95 p-5 shadow-panel" onClick={(e) => e.stopPropagation()}>
             <div className="shrink-0 text-center">
               <div className="text-3xl">🔥</div>
@@ -82,8 +84,9 @@ export default function BurnStat() {
               Close
             </button>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }
