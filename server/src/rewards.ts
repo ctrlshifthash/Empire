@@ -390,7 +390,11 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   const m = multiplier(holdings.sharePct);
   const play = playBonus(address);
   const rec = ensureRecord(address, holdings.balance > 0);
+  const hadHeldSince = rec.heldSince;
   const loyaltyDays = updateLoyalty(rec, holdings.balance);
+  // Persist heldSince the first time it gets set — without this a server restart
+  // before the next claim wipes it and resets the Diamond Hands counter to 0.
+  if (!hadHeldSince && rec.heldSince && rewardsConfigured()) scheduleSave(500);
   const loyaltyMult = loyaltyMultiplier(loyaltyDays);
   const relicMult = relicSolMult(address);
   const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
