@@ -212,6 +212,14 @@ export interface MarketActivity {
   text: string; // e.g. "Sol 4AEJ bought Eternal Crown #1 for 200 USDC"
 }
 
+// A treasury $RUMBLE burn (the hourly deflation job). Shown on the site with a
+// Solscan link per transaction.
+export interface BurnRecord {
+  signature: string;
+  amount: number; // whole $RUMBLE burned
+  at: number;
+}
+
 // Daily Quests (beta) — sent to the client per-empire.
 export interface DailyQuestView {
   id: string;

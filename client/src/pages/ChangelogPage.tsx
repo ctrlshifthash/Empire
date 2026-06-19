@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "Live burn counter", desc: "A $RUMBLE burned counter on the home page — click it for a breakdown of every hourly treasury burn, each linking to the transaction on Solscan, plus the token supply and treasury wallet. Fully verifiable." },
       { tag: "Improvement", title: "Marketplace settles in $RUMBLE", desc: "Relics are now listed at a stable USD price and bought with $RUMBLE at the live token rate — 95% to the seller, 5% burned. One token across the whole economy, paid straight to your wallet." },
       { tag: "Feature", title: "See any player in the Hub", desc: "Click a name in the Hub roster to open that player's card — their rank, power, raids won and lifetime SOL earned." },
       { tag: "Feature", title: "Hub lobby roster", desc: "A live 'In the Hub' panel shows everyone in the plaza right now — crest, name, level and equipped character — plus how many players are online." },

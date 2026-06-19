@@ -19,7 +19,7 @@ import { levelForXp } from "../../shared/progression.ts";
 import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
-import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint, burnTreasuryRumble } from "./rewards.ts";
+import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint, treasuryPubkey, burnTreasuryRumble } from "./rewards.ts";
 import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks, isLocked } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
@@ -292,6 +292,9 @@ app.get("/api/arena/rankings", (_req, res) => {
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
 app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
 app.get("/api/features", (_req, res) => res.json({ ok: true, locked: featureLocks() }));
+app.get("/api/burns", (_req, res) =>
+  res.json({ ok: true, totalBurned: state.totalBurned || 0, mint: tokenMint(), treasury: treasuryPubkey(), burns: state.burns ?? [] }),
+);
 app.get("/api/market/listings", (_req, res) => res.json({ ok: true, listings: activeListings() }));
 app.get("/api/market/activity", (req, res) => {
   const cat = String(req.query.category ?? "");
@@ -968,9 +971,9 @@ setInterval(() => {
 // periodic durable save as a safety net
 setInterval(() => save(), 30000);
 
-// Burn the $RUMBLE the treasury collects (token-shop spend) every 3 hours — keeps
+// Burn the $RUMBLE the treasury collects (token-shop spend) every hour — keeps
 // the shop deflationary without buyers having to sign a burn.
-setInterval(() => void burnTreasuryRumble(), 3 * 60 * 60 * 1000);
+setInterval(() => void burnTreasuryRumble(), 60 * 60 * 1000);
 
 // expire tombstone duels — award unrecovered tombstones to their victors
 setInterval(() => {

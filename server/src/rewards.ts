@@ -414,9 +414,15 @@ export async function burnTreasuryRumble(): Promise<number> {
     const amount = BigInt(bal.value.amount);
     if (amount <= 0n) return 0;
     const tx = new Transaction().add(createBurnCheckedInstruction(ata, mint, kp.publicKey, amount, bal.value.decimals));
-    await sendAndConfirmTransaction(rpc(), tx, [kp]);
-    console.log(`[burn] burned ${bal.value.uiAmount} $RUMBLE from the treasury`);
-    return Number(bal.value.uiAmount ?? 0);
+    const signature = await sendAndConfirmTransaction(rpc(), tx, [kp]);
+    const burned = Number(bal.value.uiAmount ?? 0);
+    // record it so the site can show the running total + per-tx Solscan links
+    state.burns.unshift({ signature, amount: burned, at: now() });
+    if (state.burns.length > 200) state.burns.length = 200;
+    state.totalBurned = (state.totalBurned || 0) + burned;
+    scheduleSave(0);
+    console.log(`[burn] burned ${burned} $RUMBLE from the treasury (${signature})`);
+    return burned;
   } catch (err) {
     console.error("[burn] treasury burn failed:", err);
     return 0;

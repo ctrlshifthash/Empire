@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import EmberCanvas from "./EmberCanvas";
+import BurnStat from "./BurnStat";
 import { fmt } from "../../lib/format";
 
 interface Stats {
@@ -114,10 +115,10 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           transition={{ duration: 0.7, delay: 0.35 }}
           className="mt-14 grid w-full max-w-2xl grid-cols-2 gap-6 rounded-2xl border border-parchment-300/10 bg-black/30 px-6 py-6 backdrop-blur-sm sm:grid-cols-4"
         >
+          <BurnStat />
           <Stat value={stats ? fmt(stats.totalEmpires) : "—"} label="Empires" />
           <Stat value={stats ? fmt(stats.players) : "—"} label="Rulers" />
           <Stat value={stats ? fmt(stats.totalArmies) : "—"} label="Units afield" />
-          <Stat value={stats ? fmt(stats.worldTick) : "—"} label="World ticks" />
         </motion.div>
 
         <div className="mt-12 flex items-center gap-2 text-xs text-parchment-300/50">

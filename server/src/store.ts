@@ -12,6 +12,7 @@ import type {
   ItemInstance,
   Listing,
   March,
+  BurnRecord,
   MarketActivity,
   MountInstance,
   Poll,
@@ -79,6 +80,9 @@ export interface GameState {
   mountMintCounts: Record<string, number>;
   // marketplace activity feed (listed / bought / sold), newest first
   marketActivity: MarketActivity[];
+  // treasury $RUMBLE burns (hourly job): recent records + lifetime total
+  burns: BurnRecord[];
+  totalBurned: number;
 }
 
 export const state: GameState = {
@@ -108,6 +112,8 @@ export const state: GameState = {
   mountInstances: {},
   mountMintCounts: {},
   marketActivity: [],
+  burns: [],
+  totalBurned: 0,
 };
 
 export function loadState(): boolean {
@@ -140,6 +146,8 @@ export function loadState(): boolean {
       state.mountInstances ??= {};
       state.mountMintCounts ??= {};
       state.marketActivity ??= [];
+      state.burns ??= [];
+      state.totalBurned ??= 0;
       // migrate: drop pre-USD coin listings (refund their escrowed coins)
       for (const [id, l] of Object.entries(state.coinListings)) {
         if (typeof (l as { usdPrice?: number }).usdPrice !== "number") {
