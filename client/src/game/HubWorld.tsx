@@ -4,6 +4,7 @@ import { worldToScreen, TILE_W, TILE_H } from "../world/iso";
 import { drawCharacter, drawBuilding } from "../world/draw";
 import { drawTile, TILES } from "../world/tiles";
 import type { BuildingView } from "../world/engine";
+import { loadVillage, villageReady, vimg, GROUND, OBJECTS, vToScreen, drawGround, drawObj, V_SCALE, V_TILE_W, V_TILE_H, V_BOUND } from "../world/village";
 import { SERVER_URL } from "../lib/config";
 import { rankForPower } from "@shared/gamedata";
 import { fmt } from "../lib/format";
@@ -14,9 +15,8 @@ import SolanaIcon from "../components/SolanaIcon";
 // trees — alongside everyone else online, each shown with their name + level.
 // Built from the game's own world art (tiles + building + character renderers).
 
-const SPEED = 4.6; // tiles / second
-const BOUND = 12; // how far you can walk from the centre
-const PLAZA_R = 3.5; // cobblestone plaza radius around the fountain
+const SPEED = 4.5; // tiles / second (village tile units)
+// walk-bound comes from the map size (V_BOUND) so you can reach the edges
 
 type B = { type: BuildingView["type"]; x: number; y: number };
 const BUILDINGS: B[] = [
@@ -78,8 +78,33 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   }, [selectedId]);
   const setInHub = useGame((s) => s.setInHub);
 
-  const me = useRef<Local>({ x: 2, y: 2, facing: -1, moving: false, phase: 0 });
+  const me = useRef<Local>({ x: 0, y: 2, facing: -1, moving: false, phase: 0 });
   const keys = useRef<Set<string>>(new Set());
+
+  // preload the village tileset once
+  useEffect(() => {
+    loadVillage();
+  }, []);
+
+  // live zoom for the village (scroll wheel over the canvas, or the +/− buttons)
+  const zoomRef = useRef(1);
+  const [zoom, setZoom] = useState(1);
+  const applyZoom = (z: number) => {
+    const c = Math.max(0.4, Math.min(1.4, Math.round(z * 100) / 100));
+    zoomRef.current = c;
+    setZoom(c);
+  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      applyZoom(zoomRef.current - e.deltaY * 0.0012);
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // join / leave the plaza (re-emit on (re)connect so the spawn isn't lost)
   useEffect(() => {
@@ -176,29 +201,32 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       ctx.shadowBlur = 0;
     };
 
+    // Your original fountain, kept — rescaled to sit in the village courtyard.
     const drawFountain = (cx: number, cy: number, t: number) => {
+      const rw = V_TILE_W * V_SCALE * 0.42;
+      const rh = V_TILE_H * V_SCALE * 0.42;
       ctx.fillStyle = "#6e675b";
       ctx.beginPath();
-      ctx.ellipse(cx, cy, TILE_W * 0.66, TILE_H * 0.66, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#564f45";
       ctx.beginPath();
-      ctx.ellipse(cx, cy, TILE_W * 0.58, TILE_H * 0.58, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, rw * 0.86, rh * 0.86, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#3f93c6";
       ctx.beginPath();
-      ctx.ellipse(cx, cy, TILE_W * 0.46, TILE_H * 0.46, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, rw * 0.68, rh * 0.68, 0, 0, Math.PI * 2);
       ctx.fill();
       // ripples + spout
       ctx.strokeStyle = "rgba(255,255,255,0.4)";
       ctx.lineWidth = 1.5;
       const r = (Math.sin(t / 600) + 1) * 0.5;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, TILE_W * (0.12 + r * 0.28), TILE_H * (0.12 + r * 0.28), 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, rw * (0.18 + r * 0.42), rh * (0.18 + r * 0.42), 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = "#bfe6f7";
       ctx.beginPath();
-      ctx.ellipse(cx, cy - 16, 4, 9, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy - rh * 0.7, 4, 11, 0, 0, Math.PI * 2);
       ctx.fill();
     };
 
@@ -220,8 +248,8 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       const moving = dx !== 0 || dy !== 0;
       if (moving) {
         const len = Math.hypot(dx, dy) || 1;
-        m.x = Math.max(-BOUND, Math.min(BOUND, m.x + (dx / len) * SPEED * dt));
-        m.y = Math.max(-BOUND, Math.min(BOUND, m.y + (dy / len) * SPEED * dt));
+        m.x = Math.max(-V_BOUND, Math.min(V_BOUND, m.x + (dx / len) * SPEED * dt));
+        m.y = Math.max(-V_BOUND, Math.min(V_BOUND, m.y + (dy / len) * SPEED * dt));
         const sdx = dx - dy;
         if (sdx !== 0) m.facing = sdx > 0 ? 1 : -1;
         m.phase += dt * 9;
@@ -236,30 +264,38 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         hubMove(m.x, m.y, m.facing, moving);
       }
 
-      // ── camera centred on me ──
-      const camS = worldToScreen(m.x, m.y);
+      // ── camera centred on me (village iso projection) ──
+      const VC = (GROUND.length - 1) / 2; // village-centre offset → avatar (0,0)
+      const camS = vToScreen(m.x, m.y);
       const ox = cw / 2 - camS.sx;
       const oy = ch / 2 - camS.sy + 30;
       const toScreen = (wx: number, wy: number) => {
-        const p = worldToScreen(wx, wy);
+        const p = vToScreen(wx, wy);
         return { x: p.sx + ox, y: p.sy + oy };
       };
 
-      // ── ground: real grass tiles + a cobblestone plaza ──
-      ctx.fillStyle = "#3f7a3a";
+      // live zoom — scales the whole scene about the screen centre. Cull margins
+      // grow as you zoom out so nothing pops in at the edges.
+      const z = zoomRef.current;
+      const cmx = (cw / 2) * (1 / z - 1);
+      const cmy = (ch / 2) * (1 / z - 1);
+
+      // ── ground: the village tilemap (grass field + dirt courtyard) ──
+      ctx.fillStyle = "#2f5a2a";
       ctx.fillRect(0, 0, cw, ch);
-      const R = 16;
-      for (let wx = -R; wx <= R; wx++) {
-        for (let wy = -R; wy <= R; wy++) {
-          const s = toScreen(wx, wy);
-          if (s.x < -TILE_W || s.x > cw + TILE_W || s.y < -TILE_H * 3 || s.y > ch + TILE_H) continue;
-          const inPlaza = Math.abs(wx) <= PLAZA_R && Math.abs(wy) <= PLAZA_R;
-          if (inPlaza) {
-            stoneDiamond(s.x, s.y, (wx + wy) % 2 === 0 ? "#9a9488" : "#8b857a");
-            continue;
+      ctx.save();
+      ctx.translate(cw / 2, ch / 2);
+      ctx.scale(z, z);
+      ctx.translate(-cw / 2, -ch / 2);
+      if (villageReady()) {
+        for (let gy = 0; gy < GROUND.length; gy++) {
+          const row = GROUND[gy];
+          for (let gx = 0; gx < row.length; gx++) {
+            const s = toScreen(gx - VC, gy - VC);
+            if (s.x < -V_TILE_W - cmx || s.x > cw + V_TILE_W + cmx || s.y < -V_TILE_H * 3 - cmy || s.y > ch + V_TILE_H * 2 + cmy) continue;
+            const img = vimg(row[gx]);
+            if (img && img.complete) drawGround(ctx, img, s.x, s.y);
           }
-          const gi = Math.abs(wx * 7 + wy * 13) % TILES.grassBase.length;
-          if (!drawTile(ctx, TILES.grassBase[gi], s.x, s.y)) stoneDiamond(s.x, s.y, (wx + wy) % 2 === 0 ? "#46863f" : "#3f7d39");
         }
       }
 
@@ -267,29 +303,24 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       type Obj = { d: number; draw: () => void };
       const objs: Obj[] = [];
 
-      objs.push({ d: 0.0, draw: () => drawFountain(toScreen(0, 0).x, toScreen(0, 0).y, t) });
+      // your original fountain, kept, at the village centre (avatar 0,0)
+      objs.push({ d: 0, draw: () => drawFountain(toScreen(0, 0).x, toScreen(0, 0).y, t) });
 
-      for (const b of BUILDINGS) {
-        const s = toScreen(b.x, b.y);
-        const view: BuildingView = { id: b.type + b.x, type: b.type, level: 2, x: b.x, y: b.y, constructing: false, completesAt: null };
-        objs.push({ d: b.x + b.y, draw: () => drawBuilding(ctx, s.x, s.y, view, t) });
-      }
-
-      for (const o of DECOR) {
-        const s = toScreen(o.x, o.y);
-        objs.push({
-          d: o.x + o.y,
-          draw: () => {
-            ctx.fillStyle = "rgba(0,0,0,0.22)";
-            ctx.beginPath();
-            ctx.ellipse(s.x, s.y, 16, 7, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.font = "42px serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "alphabetic";
-            ctx.fillText(o.g, s.x, s.y + 6);
-          },
-        });
+      // village sprites (houses, stalls, decor, animated windmill) depth-sorted
+      if (villageReady()) {
+        for (const o of OBJECTS) {
+          const ax = o.gx - VC;
+          const ay = o.gy - VC;
+          const s = toScreen(ax, ay);
+          if (s.x < -V_TILE_W - cmx || s.x > cw + V_TILE_W + cmx || s.y < -V_TILE_H * 3 - cmy || s.y > ch + V_TILE_H + cmy) continue; // cull off-screen
+          const name = o.anim ? o.anim[Math.floor(t / 110) % o.anim.length] : o.sprite;
+          const img = vimg(name);
+          if (!img || !img.complete) continue;
+          const dy = o.dy ?? 0;
+          const flat = o.flat ?? false;
+          // flat decals sort just behind their tile so uprights/avatars cover them
+          objs.push({ d: flat ? ax + ay - 0.45 : ax + ay, draw: () => drawObj(ctx, img, s.x, s.y, dy, flat) });
+        }
       }
 
       const remote = useGame.getState().hubAvatars;
@@ -346,6 +377,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
 
       objs.sort((a, b) => a.d - b.d);
       for (const o of objs) o.draw();
+      ctx.restore(); // end zoom transform
 
       raf = requestAnimationFrame(loop);
     };
@@ -367,6 +399,12 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#3f7a3a]">
       <canvas ref={canvasRef} className="h-full w-full" />
+
+      {/* zoom out / in (scroll wheel works too) */}
+      <div className="absolute bottom-[4.5rem] right-4 z-40 flex flex-col overflow-hidden rounded-full border border-gold/30 bg-ink-800/80 text-xl font-bold leading-none text-gold-light backdrop-blur-sm">
+        <button onClick={() => applyZoom(zoom + 0.12)} title="Zoom in" className="flex h-9 w-11 items-center justify-center transition-colors hover:bg-white/5 hover:text-gold">+</button>
+        <button onClick={() => applyZoom(zoom - 0.12)} title="Zoom out" className="flex h-9 w-11 items-center justify-center border-t border-gold/20 transition-colors hover:bg-white/5 hover:text-gold">−</button>
+      </div>
 
       {/* the one button players need — the rest of the game's nav is inside */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">

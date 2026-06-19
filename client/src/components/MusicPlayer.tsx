@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useGame } from "../lib/store";
 
 // Looping ambient soundtrack with a floating mute toggle. Plays a livelier track
@@ -9,20 +9,12 @@ const LS = "rr_music";
 const THEME = "/music/theme.m4a";
 const HUB = "/music/hub.mp3"; // upbeat CC0 hub track (public domain, no attribution)
 
-export default function MusicPlayer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const inHub = useGame((s) => s.inHub);
-  const [on, setOn] = useState(() => {
-    try {
-      const v = localStorage.getItem(LS);
-      return v === null ? true : v === "1";
-    } catch {
-      return true;
-    }
-  });
-
-  // create the audio element once, with a hub→theme fallback
-  useEffect(() => {
+// ONE shared <audio> for the whole app, held at module scope. React StrictMode,
+// route changes and HMR all reuse this exact element, so a second overlapping
+// track (e.g. the main-page theme bleeding into the hub) can never exist.
+let shared: HTMLAudioElement | null = null;
+function sharedAudio(): HTMLAudioElement {
+  if (!shared) {
     const a = new Audio();
     a.loop = true;
     a.volume = 0.32;
@@ -34,21 +26,36 @@ export default function MusicPlayer() {
         a.play().catch(() => {});
       }
     });
-    audioRef.current = a;
-    return () => a.pause();
-  }, []);
+    shared = a;
+  }
+  return shared;
+}
 
-  // pick the track for the current context (hub vs. elsewhere) + play/pause
+export default function MusicPlayer() {
+  const inHub = useGame((s) => s.inHub);
+  const [on, setOn] = useState(() => {
+    try {
+      const v = localStorage.getItem(LS);
+      return v === null ? true : v === "1";
+    } catch {
+      return true;
+    }
+  });
+
+  // pick the track for the current context (hub vs. elsewhere) + play/pause.
+  // Switching src on the single element guarantees the theme stops in the hub.
   useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
+    const a = sharedAudio();
     try {
       localStorage.setItem(LS, on ? "1" : "0");
     } catch {
       /* ignore */
     }
     const want = inHub ? HUB : THEME;
-    if (a.src.split("/").pop() !== want.split("/").pop()) a.src = want;
+    if (a.src.split("/").pop() !== want.split("/").pop()) {
+      a.pause(); // stop the outgoing track before loading the new one
+      a.src = want;
+    }
 
     if (!on) {
       a.pause();

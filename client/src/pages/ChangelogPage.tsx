@@ -1,4 +1,13 @@
+import { useEffect, useState } from "react";
+import { fetchBurns } from "../lib/burns";
+import { fmt } from "../lib/format";
+
 type Tag = "Feature" | "Improvement" | "Fix" | "Docs";
+
+// EST calendar day for a burn timestamp, formatted to match the changelog dates
+// (e.g. "June 18, 2026") so we can total burns per day.
+const estDay = (at: number) =>
+  new Date(at).toLocaleDateString("en-US", { timeZone: "America/New_York", month: "long", day: "numeric", year: "numeric" });
 
 const TAG_STYLE: Record<Tag, string> = {
   Feature: "bg-emerald-500/15 text-emerald-300",
@@ -82,6 +91,16 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
 ];
 
 export default function ChangelogPage() {
+  // live $RUMBLE burned per EST day, keyed by the same date string as the blocks
+  const [burnByDay, setBurnByDay] = useState<Record<string, number>>({});
+  useEffect(() => {
+    fetchBurns().then((b) => {
+      const map: Record<string, number> = {};
+      for (const burn of b.burns) map[estDay(burn.at)] = (map[estDay(burn.at)] || 0) + burn.amount;
+      setBurnByDay(map);
+    });
+  }, []);
+
   return (
     <div className="relative min-h-[calc(100vh-4rem)]">
       <div className="absolute inset-0 bg-grid opacity-10" />
@@ -99,8 +118,13 @@ export default function ChangelogPage() {
         <div className="mt-12 space-y-10">
           {CHANGELOG.map((day) => (
             <section key={day.date}>
-              <div className="sticky top-20 z-10 -mx-2 mb-4 inline-block rounded-lg bg-ink-800/80 px-3 py-1 font-display text-lg font-bold text-parchment-100 backdrop-blur">
+              <div className="sticky top-20 z-10 -mx-2 mb-4 inline-flex items-center gap-2 rounded-lg bg-ink-800/80 px-3 py-1 font-display text-lg font-bold text-parchment-100 backdrop-blur">
                 {day.date}
+                {burnByDay[day.date] > 0 && (
+                  <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 font-sans text-xs font-semibold text-gold-light">
+                    🔥 {fmt(Math.round(burnByDay[day.date]))} $RUMBLE burned
+                  </span>
+                )}
               </div>
               <div className="space-y-3 border-l border-parchment-300/15 pl-5">
                 {day.items.map((it) => (
