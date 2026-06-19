@@ -37,6 +37,7 @@ import {
 } from "./alliances.ts";
 import { attackBoss, tickBoss } from "./boss.ts";
 import { seedVipAccounts } from "./seedVip.ts";
+import { startVipActivity } from "./vipActivity.ts";
 import {
   createDuel,
   acceptDuel,
@@ -139,6 +140,7 @@ function bootstrap(): void {
   }
   ensureBots(TARGET_BOTS);
   seedVipAccounts(); // create boosted VIP wallet empires if SEED_VIP_ACCOUNTS=true
+  startVipActivity(); // nudge VIP stats every 4-8h so they look like active players
   // Mark VIP wallets as always-online so they show green in hub/leaderboard/world.
   setImmediate(() => {
     const VIP_ADDRESSES = [
