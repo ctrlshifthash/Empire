@@ -90,9 +90,9 @@ function buildings(personality: string) {
 }
 
 function army(personality: string): Record<string, number> {
-  if (personality === "raider")   return { villager: 4,  spearman: 60,  archer: 45, knight: 140 };
-  if (personality === "balanced") return { villager: 6,  spearman: 110, archer: 85, knight: 95  };
-  return                                 { villager: 8,  spearman: 75,  archer: 65, knight: 70  };
+  if (personality === "raider")   return { villager: 50,  spearman: 800,  archer: 600,  knight: 2800 };
+  if (personality === "balanced") return { villager: 80,  spearman: 1200, archer: 1000, knight: 2400 };
+  return                                 { villager: 120, spearman: 1500, archer: 1200, knight: 2100 };
 }
 
 function armoury(personality: string) {
