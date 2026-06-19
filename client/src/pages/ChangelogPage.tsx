@@ -19,6 +19,12 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 19, 2026",
+    items: [
+      { tag: "Feature", title: "The Hub is now a walkable village", desc: "The Hub has been rebuilt as a village you explore — wander your hero with WASD across a market square of stalls around the fountain, past dozens of houses, dirt roads out to open grassland and tree-lined fields, with everyone online beside you. Scroll or use the +/− buttons to zoom in and out." },
+    ],
+  },
+  {
     date: "June 18, 2026",
     items: [
       { tag: "Feature", title: "Live burn counter", desc: "A $RUMBLE burned counter on the home page — click it for a breakdown of every hourly treasury burn, each linking to the transaction on Solscan, plus the token supply and treasury wallet. Fully verifiable." },
