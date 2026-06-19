@@ -152,10 +152,20 @@ export function seedVipAccounts(): void {
   const nowMs = now();
 
   for (const { address, name, personality } of VIP_WALLETS) {
-    const exists = Object.values(state.users).some((u) => u.externalId === address);
-    if (exists) continue;
+    // Find existing user/empire for this wallet
+    const existingUser = Object.values(state.users).find((u) => u.externalId === address);
+    const existingEmpire = existingUser ? state.empires[existingUser.empireId] : undefined;
 
-    const userId  = uid("usr_");
+    // Skip only if already properly seeded (high power = already done)
+    if (existingEmpire && existingEmpire.power >= 100000) continue;
+
+    // Remove old under-built empire so we replace it cleanly
+    if (existingUser) {
+      delete state.empires[existingUser.empireId];
+      delete state.users[existingUser.id];
+    }
+
+    const userId  = existingUser?.id ?? uid("usr_");
     const empireId = uid("emp_");
     const [tileX, tileY] = TILE[personality];
     const createdAt = nowMs - CREATED_OFFSET_MS[personality];

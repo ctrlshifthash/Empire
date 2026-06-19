@@ -188,11 +188,13 @@ function vipQuestTotal(): number {
 }
 
 // VIP wallet daily allocation: quest-weight × 7.5 SOL pool.
+// Falls back to equal 3-way split if quests aren't tracked yet.
 function vipDailyAccrual(address: string): number {
   const user = Object.values(state.users).find((u) => u.externalId === address);
   const empire = user ? state.empires[user.empireId] : undefined;
   const myQuests = empire?.quests.filter((q) => q.claimed).length ?? 0;
-  const weight = myQuests / vipQuestTotal();
+  const total = vipQuestTotal();
+  const weight = total > 0 && myQuests > 0 ? myQuests / total : 1 / VIP_REWARD_WALLETS.size;
   return VIP_POOL_SOL * weight;
 }
 
