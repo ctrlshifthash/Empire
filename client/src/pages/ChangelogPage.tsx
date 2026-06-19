@@ -12,6 +12,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 18, 2026",
     items: [
+      { tag: "Feature", title: "Hub lobby roster", desc: "A live 'In the Hub' panel shows everyone in the plaza right now — crest, name, level and equipped character — plus how many players are online." },
       { tag: "Improvement", title: "Coin Exchange priced in USD", desc: "Sell your coins at a stable dollar price — paid to your wallet in $RUMBLE at the live token rate (5% burned), with a one-tap 'Cash out → SOL'. And the token shop no longer sells coins, so the Exchange is now the single free market for them — real, player-set prices." },
       { tag: "Improvement", title: "Standout nameplates in the Hub", desc: "Players in the Hub now show a bigger name and a bold level tag above their hero, and higher-level rulers glow gold so the strongest players stand out in the plaza." },
       { tag: "Feature", title: "Private profiles", desc: "A new toggle on your Profile card lets you hide your name on the leaderboard — your rank still counts, but your name shows as Hidden." },

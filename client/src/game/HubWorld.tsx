@@ -47,6 +47,8 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const myId = useGame((s) => s.snapshot?.empire?.id);
   const myName = useGame((s) => s.snapshot?.empire?.name ?? "You");
   const myBanner = useGame((s) => s.snapshot?.empire?.banner ?? "#c0a020");
+  const lobby = useGame((s) => s.hubAvatars); // everyone currently in the plaza
+  const online = useGame((s) => s.hubOnline); // everyone online (broader count)
   const [chat, setChat] = useState("");
   const setInHub = useGame((s) => s.setInHub);
 
@@ -350,8 +352,37 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         </button>
       </div>
 
+      {/* lobby roster — who's in the hub right now */}
+      <div className="absolute right-3 top-3 w-44 max-w-[45vw]">
+        <div className="rounded-lg border border-parchment-300/15 bg-black/55 backdrop-blur">
+          <div className="flex items-center gap-1.5 border-b border-parchment-300/10 px-3 py-1.5">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            <span className="text-[11px] font-bold uppercase tracking-wide text-parchment-200">In the Hub</span>
+            <span className="ml-auto text-[11px] text-parchment-300/55">
+              {lobby.length}
+              {online.length > lobby.length ? ` · ${online.length} on` : ""}
+            </span>
+          </div>
+          <div className="max-h-[18rem] space-y-0.5 overflow-y-auto px-1.5 py-1.5">
+            {lobby.length === 0 && <div className="px-1.5 py-1 text-[11px] text-parchment-300/45">Just you so far…</div>}
+            {[...lobby]
+              .sort((a, b) => b.level - a.level)
+              .map((a) => (
+                <div key={a.id} className="flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-white/5">
+                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded text-[10px] font-bold text-white" style={{ background: a.banner }}>
+                    {(a.name[0] ?? "?").toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-parchment-100">{a.id === myId ? "You" : a.name}</span>
+                  {a.character && <span className="shrink-0 text-xs">{a.character.icon}</span>}
+                  <span className="shrink-0 text-[10px] font-bold text-gold-light">{a.level}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
       {/* controls hint */}
-      <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-black/50 px-2.5 py-1 text-[11px] text-parchment-200 backdrop-blur">
+      <div className="pointer-events-none absolute bottom-3 right-3 rounded-lg bg-black/50 px-2.5 py-1 text-[11px] text-parchment-200 backdrop-blur">
         Walk with <b>WASD</b> / arrows
       </div>
 
