@@ -72,6 +72,7 @@ export default function LiveWorld({
   snapRef.current = snapshot;
   const [selBox, setSelBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [isFull, setIsFull] = useState(false);
+  const [pseudoFull, setPseudoFull] = useState(false); // CSS fallback for iOS Safari (no element Fullscreen API)
 
   const gather = useGame((s) => s.gather);
   const slay = useGame((s) => s.slay);
@@ -533,16 +534,35 @@ export default function LiveWorld({
   }, []);
 
   useEffect(() => {
-    const onFs = () => setIsFull(!!document.fullscreenElement);
+    const d = document as Document & { webkitFullscreenElement?: Element };
+    const onFs = () => setIsFull(!!(d.fullscreenElement || d.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
+    document.addEventListener("webkitfullscreenchange", onFs);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFs);
+      document.removeEventListener("webkitfullscreenchange", onFs);
+      document.body.style.overflow = ""; // restore if we unmount mid-pseudo-fullscreen
+    };
   }, []);
 
   const toggleFull = () => {
-    const el = rootRef.current;
+    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
     if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else el.requestFullscreen?.();
+    const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    const request = el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el);
+    if (request) {
+      // real Fullscreen API — desktop, Android Chrome, older Safari
+      if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen?.bind(d) ?? d.webkitExitFullscreen?.bind(d))?.();
+      else void request();
+    } else {
+      // iOS Safari exposes no element fullscreen → CSS pseudo-fullscreen instead
+      setPseudoFull((v) => {
+        const next = !v;
+        document.body.style.overflow = next ? "hidden" : "";
+        requestAnimationFrame(() => window.dispatchEvent(new Event("resize"))); // re-fit the canvas
+        return next;
+      });
+    }
   };
 
   const empire = snapshot.empire;
@@ -567,7 +587,11 @@ export default function LiveWorld({
   return (
     <div
       ref={rootRef}
-      className="relative h-[calc(100vh-10.5rem)] min-h-[440px] w-full overflow-hidden border-y border-parchment-300/10 bg-[#1a230f]"
+      className={
+        pseudoFull
+          ? "fixed inset-0 z-[60] h-[100dvh] w-screen overflow-hidden bg-[#1a230f]"
+          : "relative h-[calc(100vh-10.5rem)] min-h-[440px] w-full overflow-hidden border-y border-parchment-300/10 bg-[#1a230f]"
+      }
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full cursor-crosshair" />
 
@@ -615,9 +639,9 @@ export default function LiveWorld({
         <button
           className="flex h-8 w-8 items-center justify-center rounded-md border border-parchment-300/15 bg-ink-800/85 text-base text-parchment-100 backdrop-blur hover:border-gold/40"
           onClick={toggleFull}
-          title={isFull ? "Exit fullscreen" : "Fullscreen"}
+          title={isFull || pseudoFull ? "Exit fullscreen" : "Fullscreen"}
         >
-          {isFull ? "🗗" : "⛶"}
+          {isFull || pseudoFull ? "🗗" : "⛶"}
         </button>
         <button
           className="flex h-8 w-8 items-center justify-center rounded-md border border-parchment-300/15 bg-ink-800/85 text-base text-parchment-100 backdrop-blur hover:border-gold/40"
