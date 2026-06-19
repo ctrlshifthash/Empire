@@ -624,11 +624,12 @@ export interface Listing {
   sellerId: string; // empire id
   sellerName: string;
   sellerWallet: string; // payout address
-  price: number; // human units of the currency
-  currency: MarketCurrency;
+  price: number; // asking price in USD (settled in $RUMBLE at the live rate)
   status: "active" | "sold";
   reservedBy?: string; // buyer wallet during a pending purchase
   reservedUntil?: number;
+  reservedSellerBase?: string; // $RUMBLE base units locked at reserve (95% seller)
+  reservedBurnBase?: string; // $RUMBLE base units locked at reserve (5% burned)
   createdAt: number;
 }
 export interface ListingPublic {
@@ -638,8 +639,8 @@ export interface ListingPublic {
   icon: string;
   rarity: string;
   serial: number;
-  price: number;
-  currency: MarketCurrency;
+  price: number; // USD
+  rumbleAmount?: number | null; // ≈ $RUMBLE at the live rate (preview), null if unavailable
   sellerName: string;
   effect: string; // what the relic does when equipped
   reserved: boolean;

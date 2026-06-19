@@ -77,7 +77,7 @@ interface GameStore {
   recoverTombstone: (tombId: string) => void;
   joinTournament: () => void;
   leaveTournament: () => void;
-  listItem: (instanceId: string, price: number, currency: "SOL" | "USDC") => void;
+  listItem: (instanceId: string, price: number) => void;
   delistItem: (instanceId: string) => void;
   equipItem: (instanceId: string) => void;
   fuseRelics: (rarity: string) => void;
@@ -267,7 +267,7 @@ export const useGame = create<GameStore>((set, get) => ({
   recoverTombstone: (tombId) => socket?.emit("tombstone:recover", { tombId }),
   joinTournament: () => socket?.emit("tournament:join"),
   leaveTournament: () => socket?.emit("tournament:leave"),
-  listItem: (instanceId, price, currency) => socket?.emit("market:list", { instanceId, price, currency }),
+  listItem: (instanceId, price) => socket?.emit("market:list", { instanceId, price }),
   delistItem: (instanceId) => socket?.emit("market:delist", { instanceId }),
   equipItem: (instanceId) => socket?.emit("market:equip", { instanceId }),
   fuseRelics: (rarity) => socket?.emit("market:fuse", { rarity }),

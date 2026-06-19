@@ -17,7 +17,7 @@ export const EXCHANGE_BURN_PCT = 5; // % of the $RUMBLE price that's burned
 export const exchangeLive = (): boolean => tokenMint().length > 0;
 
 let cachedDec: number | null = null;
-async function decimals(): Promise<number> {
+export async function rumbleDecimals(): Promise<number> {
   if (cachedDec != null) return cachedDec;
   const sup = await sharedRpc().getTokenSupply(new PublicKey(tokenMint()));
   cachedDec = sup.value.decimals;
@@ -71,7 +71,7 @@ export function delistCoins(empireId: string, listingId: string): ExResult {
 
 // Convert a USD price to on-chain $RUMBLE base units at the live token price,
 // split 95% seller / 5% burned.
-function amountsFromUsd(usdPrice: number, rumbleUsd: number, dec: number): { sellerBase: bigint; burnBase: bigint; rumbleAmount: number } {
+export function amountsFromUsd(usdPrice: number, rumbleUsd: number, dec: number): { sellerBase: bigint; burnBase: bigint; rumbleAmount: number } {
   const rumbleAmount = usdPrice / rumbleUsd; // $RUMBLE tokens (fractional)
   const totalBase = BigInt(Math.round(rumbleAmount * 10 ** dec));
   const burnBase = (totalBase * BigInt(EXCHANGE_BURN_PCT)) / 100n;
@@ -89,7 +89,7 @@ export async function reserveCoinListing(listingId: string, buyer: string): Prom
     return { ok: false, error: "Someone is buying this right now — try again in a moment." };
   const rumbleUsd = await rumbleUsdPrice();
   if (!rumbleUsd) return { ok: false, error: "$RUMBLE price unavailable — try again in a moment." };
-  const dec = await decimals();
+  const dec = await rumbleDecimals();
   const { sellerBase, burnBase, rumbleAmount } = amountsFromUsd(l.usdPrice, rumbleUsd, dec);
   // lock the $RUMBLE amount for the reservation so the price can't move mid-buy
   l.reservedBy = buyer;
@@ -103,7 +103,7 @@ export async function reserveCoinListing(listingId: string, buyer: string): Prom
   };
 }
 
-async function verifyPayment(signature: string, buyer: string, seller: string, sellerBase: bigint, burnBase: bigint): Promise<boolean> {
+export async function verifyRumblePayment(signature: string, buyer: string, seller: string, sellerBase: bigint, burnBase: bigint): Promise<boolean> {
   const mint = tokenMint();
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
@@ -151,7 +151,7 @@ export async function buyCoins(listingId: string, buyer: string, signature: stri
 
   const sellerBase = BigInt(l.reservedSellerBase);
   const burnBase = BigInt(l.reservedBurnBase);
-  const paid = await verifyPayment(signature, buyer, l.sellerWallet, sellerBase, burnBase);
+  const paid = await verifyRumblePayment(signature, buyer, l.sellerWallet, sellerBase, burnBase);
   if (!paid) return { ok: false, error: "Payment not confirmed — if you were charged, wait a few seconds and retry." };
 
   buyerEmpire.coins += l.coinAmount; // deliver the coins

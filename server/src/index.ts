@@ -298,10 +298,10 @@ app.get("/api/market/activity", (req, res) => {
   const items = cat ? state.marketActivity.filter((a) => a.category === cat) : state.marketActivity;
   res.json({ ok: true, activity: items.slice(0, 40) });
 });
-app.post("/api/market/:id/reserve", (req, res) => {
+app.post("/api/market/:id/reserve", async (req, res) => {
   const { address } = (req.body ?? {}) as Record<string, unknown>;
   if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
-  res.json(reserveListing(req.params.id, String(address)));
+  res.json(await reserveListing(req.params.id, String(address)));
 });
 app.post("/api/market/:id/buy", async (req, res) => {
   try {
@@ -635,8 +635,8 @@ io.on("connection", (socket) => {
   );
 
   // ── Marketplace (sell side; buying is HTTP + on-chain) ──────────────────────
-  socket.on("market:list", (p: { instanceId: string; price: number; currency: any }) =>
-    withEmpire((id) => handleArena(listItem(id, externalId, String(p?.instanceId || ""), Number(p?.price), p?.currency), "Item listed!")),
+  socket.on("market:list", (p: { instanceId: string; price: number }) =>
+    withEmpire((id) => handleArena(listItem(id, externalId, String(p?.instanceId || ""), Number(p?.price)), "Item listed for $RUMBLE!")),
   );
   socket.on("market:delist", (p: { instanceId: string }) =>
     withEmpire((id) => handleArena(delistItem(id, String(p?.instanceId || "")), "Listing removed.")),

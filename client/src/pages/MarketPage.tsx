@@ -6,6 +6,7 @@ import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, RELIC_CA
 import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
 import { fetchListings, reserve, buildPaymentTx, postBuy } from "../lib/market";
+import { fetchExchangeConfig } from "../lib/exchange";
 import CoinExchange from "../game/CoinExchange";
 import CharacterShop from "../game/CharacterShop";
 import MarketActivity from "../game/MarketActivity";
@@ -24,7 +25,7 @@ export default function MarketPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-parchment-300/70">
             Trade scarce, limited-supply <strong className="text-parchment-200">relics</strong> with other rulers — paid
-            wallet-to-wallet in SOL or USDC. Items go straight to your inventory; the coins go straight to the seller.
+            wallet-to-wallet in $RUMBLE — priced in USD, settled at the live token rate. Items go straight to your inventory; the token goes straight to the seller.
           </p>
           <div className="mx-auto mt-5 grid max-w-3xl gap-2 text-left text-sm sm:grid-cols-3">
             <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
@@ -33,7 +34,7 @@ export default function MarketPage() {
             </div>
             <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
               <div className="font-semibold text-gold-light">💰 Or sell for real money</div>
-              <div className="mt-0.5 text-xs text-parchment-300/65">Scarce relics hold value — list yours below for SOL or USDC, paid straight to your wallet.</div>
+              <div className="mt-0.5 text-xs text-parchment-300/65">Scarce relics hold value — list yours at a USD price, paid in $RUMBLE straight to your wallet.</div>
             </div>
             <div className="rounded-xl border border-parchment-300/12 bg-black/20 p-3">
               <div className="font-semibold text-gold-light">🎁 Earned, not bought</div>
@@ -60,10 +61,12 @@ function Market() {
   const [listings, setListings] = useState<ListingPublic[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [tab, setTab] = useState<"relics" | "characters" | "coins">("relics");
+  const [rumbleUsd, setRumbleUsd] = useState<number | null>(null); // live $RUMBLE price (for the ≈ preview)
 
   const refresh = () => fetchListings().then(setListings);
   useEffect(() => {
     refresh();
+    fetchExchangeConfig().then((c) => setRumbleUsd(c.rumbleUsd));
     const id = setInterval(refresh, 8000);
     return () => clearInterval(id);
   }, []);
@@ -167,7 +170,10 @@ function Market() {
               <div className="mt-1.5 text-xs text-emerald-300/80">{l.effect}</div>
               <div className="mt-1 text-xs text-parchment-300/55">Seller: {l.sellerName}</div>
               <div className="mt-3 flex items-center justify-between">
-                <div className="font-display text-lg font-bold text-gold-light">{l.price} {l.currency}</div>
+                <div>
+                  <div className="font-display text-lg font-bold text-gold-light">${l.price}</div>
+                  {rumbleUsd ? <div className="text-[10px] text-parchment-300/50">≈ {Math.round(l.price / rumbleUsd).toLocaleString()} $RUMBLE</div> : <div className="text-[10px] text-parchment-300/40">paid in $RUMBLE</div>}
+                </div>
                 <button className="btn-gold btn-sm" disabled={busy !== null || l.reserved} onClick={() => buy(l)}>
                   {busy === l.id ? "…" : l.reserved ? "Reserved" : "Buy"}
                 </button>
@@ -239,7 +245,7 @@ function Market() {
           <li>👹 <strong>World Boss</strong> — the top damage dealer can score a relic.</li>
           <li>🏆 <strong>Win tournaments</strong> — the champion gets a relic drop.</li>
           <li>🔨 <strong>Forge &amp; craft</strong> — fuse spares into rarer relics, or craft from materials.</li>
-          <li>🏛️ <strong>Buy on the market</strong> — purchase from other players in SOL or USDC.</li>
+          <li>🏛️ <strong>Buy on the market</strong> — purchase from other players in $RUMBLE (priced in USD).</li>
         </ul>
         <p className="mt-3 text-xs text-parchment-300/50">Equip up to 3 for stacking power, harvest, speed — and the rarest for a SOL-yield boost.</p>
       </div>
@@ -258,7 +264,6 @@ function InventoryRow({ it }: { it: InventoryItem }) {
   const delistItem = useGame((s) => s.delistItem);
   const equipItem = useGame((s) => s.equipItem);
   const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState<"SOL" | "USDC">("USDC");
   const [selling, setSelling] = useState(false);
 
   return (
@@ -283,11 +288,11 @@ function InventoryRow({ it }: { it: InventoryItem }) {
         <button className="btn-ghost btn-sm mt-2 w-full" onClick={() => delistItem(it.instanceId)}>Listed — withdraw</button>
       ) : selling ? (
         <div className="mt-2 flex items-center gap-1.5">
-          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Price" className="w-16 rounded-md border border-parchment-300/15 bg-black/30 px-2 py-1 text-xs focus:outline-none" />
-          <select value={currency} onChange={(e) => setCurrency(e.target.value as "SOL" | "USDC")} className="rounded-md border border-parchment-300/15 bg-black/30 px-1 py-1 text-xs">
-            <option>SOL</option><option>USDC</option>
-          </select>
-          <button className="btn-gold btn-sm px-2" disabled={!(Number(price) > 0)} onClick={() => { listItem(it.instanceId, Number(price), currency); setSelling(false); setPrice(""); }}>List</button>
+          <div className="flex flex-1 items-center gap-1 rounded-md border border-parchment-300/15 bg-black/30 px-2 py-1 text-xs">
+            <span className="text-parchment-300/50">$</span>
+            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Price in USD" className="w-full bg-transparent focus:outline-none" />
+          </div>
+          <button className="btn-gold btn-sm px-2" disabled={!(Number(price) > 0)} onClick={() => { listItem(it.instanceId, Number(price)); setSelling(false); setPrice(""); }}>List</button>
           <button className="chip py-0.5 text-[10px]" onClick={() => setSelling(false)}>✕</button>
         </div>
       ) : (

@@ -6,11 +6,9 @@
 // listed item is escrow-locked; a pending purchase reserves it briefly so it
 // can't be double-sold. Each payment signature is single-use.
 // ─────────────────────────────────────────────────────────────────────────────
-import { PublicKey } from "@solana/web3.js";
 import {
   MARKET_ITEMS,
   MARKET_FEE,
-  USDC_MINT,
   RARITY_META,
   EQUIP_SLOTS,
   FUSE_COUNT,
@@ -24,10 +22,12 @@ import {
   minRankNameForRarity,
   rankIndex,
 } from "../../shared/gamedata.ts";
-import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic, MarketCurrency } from "../../shared/types.ts";
+import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic } from "../../shared/types.ts";
 import { state, scheduleSave, pushActivity } from "./store.ts";
 import { recomputePower } from "./engine.ts";
-import { sharedRpc, treasuryPubkey } from "./rewards.ts";
+import { treasuryPubkey, tokenMint } from "./rewards.ts";
+import { rumbleUsdPrice } from "./price.ts";
+import { amountsFromUsd, rumbleDecimals, verifyRumblePayment, EXCHANGE_BURN_PCT } from "./exchange.ts";
 import { now, uid } from "./util.ts";
 
 const RARITY_RANK: Record<string, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
@@ -132,8 +132,7 @@ export function activeListings(): ListingPublic[] {
         icon: def?.icon ?? "📦",
         rarity: def?.rarity ?? "common",
         serial: inst?.serial ?? 0,
-        price: l.price,
-        currency: l.currency,
+        price: l.price, // USD; client shows ≈ $RUMBLE at the live rate
         sellerName: l.sellerName,
         effect: def ? itemEffectSummary(def) : "Collectible",
         reserved: !!(l.reservedBy && (l.reservedUntil ?? 0) > now()),
@@ -159,22 +158,22 @@ export function seedMarket(): void {
   if (!treasury) return; // need the treasury wallet to receive payment (retry next boot)
   // Priced in USDC (dollars), scaled to each relic's utility & scarcity — starter
   // anchors; players set the real price by supply & demand from here.
-  const seeds: { typeId: string; price: number; currency: MarketCurrency }[] = [
-    { typeId: "iron_chalice", price: 2, currency: "USDC" },
-    { typeId: "lucky_coin", price: 3, currency: "USDC" },
-    { typeId: "oak_charm", price: 2, currency: "USDC" },
-    { typeId: "wolf_totem", price: 8, currency: "USDC" },
-    { typeId: "silver_fang", price: 7, currency: "USDC" },
-    { typeId: "blood_ruby", price: 12, currency: "USDC" },
-    { typeId: "merchants_seal", price: 10, currency: "USDC" },
-    { typeId: "frost_aegis", price: 35, currency: "USDC" },
-    { typeId: "storm_crown", price: 30, currency: "USDC" },
-    { typeId: "warlords_pennant", price: 45, currency: "USDC" },
-    { typeId: "obsidian_blade", price: 40, currency: "USDC" },
-    { typeId: "harvest_crown", price: 38, currency: "USDC" },
-    { typeId: "titan_heart", price: 150, currency: "USDC" },
-    { typeId: "kings_ransom", price: 180, currency: "USDC" },
-    { typeId: "eternal_crown", price: 200, currency: "USDC" },
+  const seeds: { typeId: string; price: number }[] = [
+    { typeId: "iron_chalice", price: 2 },
+    { typeId: "lucky_coin", price: 3 },
+    { typeId: "oak_charm", price: 2 },
+    { typeId: "wolf_totem", price: 8 },
+    { typeId: "silver_fang", price: 7 },
+    { typeId: "blood_ruby", price: 12 },
+    { typeId: "merchants_seal", price: 10 },
+    { typeId: "frost_aegis", price: 35 },
+    { typeId: "storm_crown", price: 30 },
+    { typeId: "warlords_pennant", price: 45 },
+    { typeId: "obsidian_blade", price: 40 },
+    { typeId: "harvest_crown", price: 38 },
+    { typeId: "titan_heart", price: 150 },
+    { typeId: "kings_ransom", price: 180 },
+    { typeId: "eternal_crown", price: 200 },
   ];
   for (const s of seeds) {
     const inst = mintItem("house", s.typeId);
@@ -187,8 +186,7 @@ export function seedMarket(): void {
       sellerId: "house",
       sellerName: "The Bazaar",
       sellerWallet: treasury,
-      price: s.price,
-      currency: s.currency,
+      price: s.price, // USD
       status: "active",
       createdAt: now(),
     };
@@ -201,7 +199,7 @@ export function marketConfig() {
   return {
     ok: true,
     treasury: treasuryPubkey(),
-    usdcMint: USDC_MINT,
+    mint: tokenMint(), // relics settle in $RUMBLE now
     feePct: MARKET_FEE,
     rarities: RARITY_META,
     items: MARKET_ITEMS,
@@ -219,16 +217,15 @@ export function listItem(
   empireId: string,
   sellerWallet: string | undefined,
   instanceId: string,
-  price: number,
-  currency: MarketCurrency,
+  usdPrice: number,
 ): MarketResult {
   if (!sellerWallet || sellerWallet.includes("@") || sellerWallet.startsWith("did:"))
     return { ok: false, error: "Connect a Solana wallet to sell items." };
   const inst = state.itemInstances[instanceId];
   if (!inst || inst.ownerId !== empireId) return { ok: false, error: "You don't own that item." };
   if (isListed(instanceId)) return { ok: false, error: "That item is already listed." };
-  if (!(price > 0)) return { ok: false, error: "Set a price." };
-  if (currency !== "SOL" && currency !== "USDC") return { ok: false, error: "Pick SOL or USDC." };
+  const price = Math.round((Number(usdPrice) || 0) * 100) / 100; // USD, cent precision
+  if (!(price > 0)) return { ok: false, error: "Set a price in USD." };
   const seller = state.empires[empireId];
   const listing: Listing = {
     id: uid("list_"),
@@ -238,12 +235,11 @@ export function listItem(
     sellerName: seller?.name ?? "Seller",
     sellerWallet,
     price,
-    currency,
     status: "active",
     createdAt: now(),
   };
   state.listings[listing.id] = listing;
-  pushActivity("relic", "listed", `${seller?.name ?? "A ruler"} listed ${marketItem(inst.typeId)?.name ?? "a relic"} #${inst.serial} for ${price} ${currency}`);
+  pushActivity("relic", "listed", `${seller?.name ?? "A ruler"} listed ${marketItem(inst.typeId)?.name ?? "a relic"} #${inst.serial} for $${price.toFixed(2)} in $RUMBLE`);
   // a listed item can't stay equipped
   if (seller?.equipped?.includes(instanceId)) {
     seller.equipped = seller.equipped.filter((x) => x !== instanceId);
@@ -285,95 +281,37 @@ export function equipItem(empireId: string, instanceId: string): MarketResult {
   return { ok: true, members: [empireId] };
 }
 
-// ── buying (wallet-to-wallet, verified on-chain) ─────────────────────────────
-function payAmounts(price: number, currency: MarketCurrency): { decimals: number; sellerBase: bigint; feeBase: bigint } {
-  const decimals = currency === "SOL" ? 9 : 6;
-  const total = BigInt(Math.round(price * 10 ** decimals));
-  const feeBase = (total * BigInt(Math.round(MARKET_FEE * 1000))) / 1000n;
-  return { decimals, sellerBase: total - feeBase, feeBase };
-}
-
-export function reserveListing(listingId: string, buyer: string): {
+// ── buying ($RUMBLE, USD-priced, verified on-chain) ──────────────────────────
+// The buyer pays the seller 95% in $RUMBLE at the live rate and BURNS 5%
+// (deflationary). The $RUMBLE amount is locked at reserve so the price can't move
+// mid-buy; the server verifies on-chain, then transfers the item. No custody.
+export async function reserveListing(listingId: string, buyer: string): Promise<{
   ok: boolean;
   error?: string;
-  payment?: {
-    currency: MarketCurrency;
-    seller: string;
-    treasury: string;
-    sellerBase: string;
-    feeBase: string;
-    decimals: number;
-    usdcMint?: string;
-  };
-} {
+  payment?: { mint: string; seller: string; sellerBase: string; burnBase: string; decimals: number; rumbleAmount: number };
+}> {
   const l = state.listings[listingId];
   if (!l || l.status !== "active") return { ok: false, error: "That listing is gone." };
   if (l.reservedBy && l.reservedBy !== buyer && (l.reservedUntil ?? 0) > now())
     return { ok: false, error: "Someone is buying this right now — try again in a moment." };
-  const treasury = treasuryPubkey();
-  if (!treasury) return { ok: false, error: "Marketplace not configured." };
   // make sure the buyer has room before they pay
   const buyerUser = Object.values(state.users).find((u) => u.externalId === buyer);
   if (buyerUser && inventoryCount(buyerUser.empireId) >= RELIC_CAP)
     return { ok: false, error: `Your inventory is full (${RELIC_CAP}) — sell or forge a relic to make room first.` };
+  const rumbleUsd = await rumbleUsdPrice();
+  if (!rumbleUsd) return { ok: false, error: "$RUMBLE price unavailable — try again in a moment." };
+  const dec = await rumbleDecimals();
+  const { sellerBase, burnBase, rumbleAmount } = amountsFromUsd(l.price, rumbleUsd, dec);
+  // lock the $RUMBLE amount for the reservation so the price can't move mid-buy
   l.reservedBy = buyer;
   l.reservedUntil = now() + RESERVE_MS;
+  l.reservedSellerBase = sellerBase.toString();
+  l.reservedBurnBase = burnBase.toString();
   scheduleSave();
-  const { decimals, sellerBase, feeBase } = payAmounts(l.price, l.currency);
   return {
     ok: true,
-    payment: {
-      currency: l.currency,
-      seller: l.sellerWallet,
-      treasury,
-      sellerBase: sellerBase.toString(),
-      feeBase: feeBase.toString(),
-      decimals,
-      usdcMint: l.currency === "USDC" ? USDC_MINT : undefined,
-    },
+    payment: { mint: tokenMint(), seller: l.sellerWallet, sellerBase: sellerBase.toString(), burnBase: burnBase.toString(), decimals: dec, rumbleAmount },
   };
-}
-
-async function verifyPayment(
-  signature: string,
-  buyer: string,
-  seller: string,
-  treasury: string,
-  currency: MarketCurrency,
-  sellerBase: bigint,
-  feeBase: bigint,
-): Promise<boolean> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      const tx = await sharedRpc().getParsedTransaction(signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" });
-      if (tx && !tx.meta?.err) {
-        const keys = tx.transaction.message.accountKeys;
-        if (!keys.some((k) => k.signer && k.pubkey.toBase58() === buyer)) return false;
-        if (currency === "SOL") {
-          const idx = (addr: string) => keys.findIndex((k) => k.pubkey.toBase58() === addr);
-          const delta = (addr: string): bigint => {
-            const i = idx(addr);
-            if (i < 0) return 0n;
-            return BigInt(tx.meta!.postBalances[i]) - BigInt(tx.meta!.preBalances[i]);
-          };
-          return delta(seller) >= sellerBase && delta(treasury) >= feeBase;
-        } else {
-          const pre = tx.meta?.preTokenBalances ?? [];
-          const post = tx.meta?.postTokenBalances ?? [];
-          const bal = (arr: typeof pre, owner: string): bigint => {
-            const e = arr.find((b) => b.owner === owner && b.mint === USDC_MINT);
-            return e ? BigInt(e.uiTokenAmount.amount) : 0n;
-          };
-          const gained = (owner: string) => bal(post, owner) - bal(pre, owner);
-          return gained(seller) >= sellerBase && gained(treasury) >= feeBase;
-        }
-      }
-    } catch {
-      /* transient — retry */
-    }
-    await new Promise((r) => setTimeout(r, 1500));
-  }
-  return false;
 }
 
 export async function buyListing(listingId: string, buyer: string, signature: string): Promise<MarketResult & { buyerEmpireId?: string }> {
@@ -384,11 +322,13 @@ export async function buyListing(listingId: string, buyer: string, signature: st
   const buyerEmpire = buyerUser ? state.empires[buyerUser.empireId] : undefined;
   if (!buyerEmpire) return { ok: false, error: "Open the game signed in with this wallet to receive the item." };
   if (l.sellerId === buyerEmpire.id) return { ok: false, error: "You can't buy your own listing." };
+  // verify against the $RUMBLE amount locked at reserve time (price-stable)
+  if (l.reservedBy !== buyer || !l.reservedSellerBase || !l.reservedBurnBase)
+    return { ok: false, error: "Your price quote expired — reopen and buy again." };
 
-  const treasury = treasuryPubkey();
-  if (!treasury) return { ok: false, error: "Marketplace not configured." };
-  const { sellerBase, feeBase } = payAmounts(l.price, l.currency);
-  const paid = await verifyPayment(signature, buyer, l.sellerWallet, treasury, l.currency, sellerBase, feeBase);
+  const sellerBase = BigInt(l.reservedSellerBase);
+  const burnBase = BigInt(l.reservedBurnBase);
+  const paid = await verifyRumblePayment(signature, buyer, l.sellerWallet, sellerBase, burnBase);
   if (!paid) return { ok: false, error: "Payment not confirmed — if you were charged, wait a few seconds and retry." };
 
   // transfer the item to the buyer
@@ -399,22 +339,22 @@ export async function buyListing(listingId: string, buyer: string, signature: st
   delete state.listings[listingId];
   state.marketSignatures[signature] = { listingId, buyer, at: now() };
 
-  // trading record: buyer spent the price; seller earned it minus the fee
+  // trading record — USD value (tracked under the USDC/dollar bucket)
   const bs = ensureMarketStats(buyerEmpire);
   bs.bought += 1;
-  bs.spent[l.currency] += l.price;
+  bs.spent.USDC += l.price;
   if (sellerEmpire) {
     const ss = ensureMarketStats(sellerEmpire);
     ss.sold += 1;
-    ss.earned[l.currency] += l.price * (1 - MARKET_FEE);
+    ss.earned.USDC += l.price * (1 - MARKET_FEE);
   }
 
   const def = marketItem(l.typeId);
-  pushActivity("relic", "bought", `${buyerEmpire.name} bought ${def?.name ?? "a relic"} #${inst?.serial ?? "?"} for ${l.price} ${l.currency}`);
-  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for ${l.price} ${l.currency}.` });
+  pushActivity("relic", "bought", `${buyerEmpire.name} bought ${def?.name ?? "a relic"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE`);
+  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   if (sellerEmpire) {
-    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for ${l.price} ${l.currency}.` });
+    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE.` });
     if (sellerEmpire.log.length > 60) sellerEmpire.log.length = 60;
   }
   scheduleSave(0);
