@@ -33,12 +33,10 @@ const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 // flows to players. No single wallet may take more than this share of the day.
 const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.25");
 
-// VIP/public split. Temporarily bumped public to 35% to widen distribution.
-// Tunable via VIP_POOL_PCT env var (default 0.65).
-const VIP_POOL_PCT = Number(process.env.VIP_POOL_PCT || "0.65");
-const PUBLIC_POOL_PCT = 1 - VIP_POOL_PCT;
-const VIP_POOL_SOL = DAILY_SOL_POOL * VIP_POOL_PCT;     // 6.5 SOL
-const PUBLIC_POOL_SOL = DAILY_SOL_POOL * PUBLIC_POOL_PCT; // 3.5 SOL
+// VIP and public pools are tracked separately. VIP is fixed at 7.5 SOL;
+// public is temporarily 3.5 SOL (up from 2.5). Total treasury outlay = 11 SOL/day.
+const VIP_POOL_SOL    = 7.5;
+const PUBLIC_POOL_SOL = Number(process.env.PUBLIC_POOL_SOL || "3.5");
 const VIP_REWARD_WALLETS = new Set([
   "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
   "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
@@ -327,9 +325,10 @@ function updateLoyalty(rec: RewardRecord, balance: number): number {
 // ── daily pool budget ───────────────────────────────────────────────────────
 // VIP (7.5 SOL) and public (2.5 SOL) are tracked in separate buckets so
 // neither group can eat into the other's allocation.
-const POOL_LAMPORTS    = (): number => Math.round(DAILY_SOL_POOL * LAMPORTS_PER_SOL);
-const VIP_POOL_LAMPS   = (): number => Math.round(VIP_POOL_SOL   * LAMPORTS_PER_SOL);
-const PUB_POOL_LAMPS   = (): number => Math.round(PUBLIC_POOL_SOL * LAMPORTS_PER_SOL);
+const TOTAL_POOL_SOL   = VIP_POOL_SOL + PUBLIC_POOL_SOL;
+const POOL_LAMPORTS    = (): number => Math.round(TOTAL_POOL_SOL  * LAMPORTS_PER_SOL);
+const VIP_POOL_LAMPS   = (): number => Math.round(VIP_POOL_SOL    * LAMPORTS_PER_SOL);
+const PUB_POOL_LAMPS   = (): number => Math.round(PUBLIC_POOL_SOL  * LAMPORTS_PER_SOL);
 
 function resetDay(): void {
   const day = Math.floor(now() / DAY_MS);
@@ -410,7 +409,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
     configured: rewardsConfigured(),
     payouts: payoutsLive(),
     network: NETWORK,
-    pool: DAILY_SOL_POOL,
+    pool: TOTAL_POOL_SOL,
     holdings,
     multiplier: m,
     playBonus: play.mult,
