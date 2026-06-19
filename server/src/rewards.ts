@@ -457,10 +457,11 @@ export async function claim(address: string): Promise<ClaimResult> {
   const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
   const dailySol = dailyAccrualSol(holdings.balance, m, playBonus(address).mult, loyaltyMult, relicSolMult(address));
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
-  // Never pay more than ONE day's entitlement in a single claim. Without this, a
-  // wallet that hasn't claimed in days accrues days×dailyShare and drains the
-  // whole pool at once — instead of every holder getting their daily slice.
-  const claimSol = Math.min(dailySol * (elapsed / DAY_MS), dailySol);
+  // You accrue your real share over time (claim every 2 days = 2 days' worth).
+  // The only limit is a per-wallet ceiling of the pool, so no single wallet can
+  // grab more than its fair share in one claim and drain everyone else. Small
+  // holders never hit it; only whales claiming a big backlog get capped.
+  const claimSol = Math.min(dailySol * (elapsed / DAY_MS), DAILY_SOL_POOL * WALLET_CAP_PCT);
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 
