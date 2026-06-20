@@ -81,7 +81,17 @@ export default function LeaderboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/10 px-5 py-3">
-              <span className="font-display text-2xl leading-none text-gold-light">◎</span>
+              <svg viewBox="0 0 397.7 311.7" className="h-6 w-6 shrink-0" aria-label="Solana">
+                <defs>
+                  <linearGradient id="sol-mark" gradientUnits="userSpaceOnUse" x1="360" y1="-37" x2="141" y2="383">
+                    <stop stopColor="#9945FF" />
+                    <stop offset="1" stopColor="#14F195" />
+                  </linearGradient>
+                </defs>
+                <path fill="url(#sol-mark)" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H15.5c-5.8 0-8.7-7-4.6-11.1l53.7-62.7z" />
+                <path fill="url(#sol-mark)" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H15.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" />
+                <path fill="url(#sol-mark)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" />
+              </svg>
               <div className="text-left">
                 <div className="font-display text-2xl font-bold tabular-nums text-gold-light">{(board?.totalSolEarned ?? 0).toFixed(2)} SOL</div>
                 <div className="text-[10px] uppercase tracking-[0.16em] text-parchment-300/55">Total SOL earned by players</div>
