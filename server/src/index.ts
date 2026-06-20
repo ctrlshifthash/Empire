@@ -451,6 +451,40 @@ app.post("/api/admin/reset-pool", (req, res) => {
   res.json({ ok: true, reset: true, poolRefreshed: true });
 });
 
+// Admin-only: grant free resources / coins / a Harvest Surge to a player (comp or
+// goodwill). x-admin-key. Body: { address, wood?, food?, gold?, stone?, coins?, harvestSurge? }
+app.post("/api/admin/grant", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  const user = Object.values(state.users).find((u) => u.externalId === String(b.address ?? ""));
+  if (!user || !state.empires[user.empireId])
+    return res.status(404).json({ ok: false, error: "No empire linked to that wallet." });
+  const e = state.empires[user.empireId];
+  const granted: Record<string, unknown> = {};
+  for (const k of ["wood", "food", "gold", "stone"] as const) {
+    const v = Math.max(0, Math.floor(Number(b[k] ?? 0)));
+    if (v > 0) {
+      e.resources[k] += v;
+      granted[k] = v;
+    }
+  }
+  const coins = Math.max(0, Math.floor(Number(b.coins ?? 0)));
+  if (coins > 0) {
+    e.coins += coins;
+    granted.coins = coins;
+  }
+  if (b.harvestSurge) {
+    e.boosts = { gatherMult: 2, gatherUntil: now() + 2 * 3_600_000 };
+    granted.harvestSurge = "2x gather for 2h";
+  }
+  scheduleSave(0);
+  pushSnapshot(user.empireId);
+  io.to(`emp:${user.empireId}`).emit("toast", { kind: "success", text: "A gift from the team landed in your empire!" });
+  res.json({ ok: true, empireId: user.empireId, granted });
+});
+
 // Admin-only: burn the treasury's collected $RUMBLE right now (on demand, no
 // waiting for the hourly timer). Guard with the ADMIN_KEY env via x-admin-key.
 app.post("/api/admin/burn", async (req, res) => {
