@@ -39,9 +39,9 @@ export default function InventoryDashboard() {
           <div className="text-[10px] text-parchment-300/45">earned {fmtN(stats?.earned.SOL ?? 0, 3)} · spent {fmtN(stats?.spent.SOL ?? 0, 3)}</div>
         </div>
         <div className="rounded-lg border border-parchment-300/10 bg-black/20 p-3">
-          <div className="text-[11px] text-parchment-300/55">Net P/L · USDC</div>
+          <div className="text-[11px] text-parchment-300/55">Net P/L · USD</div>
           <div className={`font-display text-lg font-bold ${netUsdc >= 0 ? "text-emerald-400" : "text-blood-light"}`}>
-            {netUsdc >= 0 ? "+" : ""}{fmtN(netUsdc, 2)} USDC
+            {netUsdc >= 0 ? "+" : ""}{fmtN(netUsdc, 2)} USD
           </div>
           <div className="text-[10px] text-parchment-300/45">earned {fmtN(stats?.earned.USDC ?? 0, 2)} · spent {fmtN(stats?.spent.USDC ?? 0, 2)}</div>
         </div>
