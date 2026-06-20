@@ -22,7 +22,7 @@ import { getAssociatedTokenAddressSync, createBurnCheckedInstruction, TOKEN_2022
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
-import { rewardTier, nextRewardTier, rankForPower, RANKS, marketItem } from "../../shared/gamedata.ts";
+import { rewardTier, nextRewardTier, rankForPower, RANKS, marketItem, mountType } from "../../shared/gamedata.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
@@ -180,12 +180,11 @@ function holderWeight(externalId: string, empireId: string, balance: number): nu
   const rankMult = empire ? rankRewardMult(empire.power) : 1;
   const rec = state.rewards[externalId];
   const loyMult = loyaltyMultiplier(rec?.heldSince ? Math.max(0, (now() - rec.heldSince) / DAY_MS) : 0);
-  let relicMult = 1;
-  if (empire?.equipped) {
-    let pct = 0;
-    for (const id of empire.equipped) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
-    relicMult = 1 + pct;
-  }
+  let pct = 0;
+  for (const id of empire?.equipped ?? []) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
+  const petTrait = empire?.equippedMount ? mountType(state.mountInstances[empire.equippedMount]?.typeId ?? "")?.trait : undefined;
+  if (petTrait?.kind === "sol") pct += petTrait.value; // SOL-boost pet
+  const relicMult = 1 + pct;
   return balance * tierMult * rankMult * loyMult * relicMult;
 }
 
@@ -295,9 +294,10 @@ function playBonus(address: string): { mult: number; rank: string } {
 function relicSolMult(address: string): number {
   const user = Object.values(state.users).find((u) => u.externalId === address);
   const empire = user ? state.empires[user.empireId] : undefined;
-  if (!empire?.equipped) return 1;
   let pct = 0;
-  for (const id of empire.equipped) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
+  for (const id of empire?.equipped ?? []) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
+  const petTrait = empire?.equippedMount ? mountType(state.mountInstances[empire.equippedMount]?.typeId ?? "")?.trait : undefined;
+  if (petTrait?.kind === "sol") pct += petTrait.value; // SOL-boost pet
   return 1 + pct;
 }
 

@@ -1002,23 +1002,27 @@ export const SPIN_SEGMENTS: SpinSegment[] = [
 // ── Mounts & Pets (beta) ─────────────────────────────────────────────────────
 // Rare drops earned by winning raids — cNFT-style collectibles you own, equip
 // beside your hero, and (later) resell. No supply cap; rarity sets drop odds.
+// A pet/mount's equipped bonus — its "use". gather → +resource gathering,
+// speed → −build/training time, sol → +share of the daily SOL pool.
+export type MountTrait = { kind: "gather" | "speed" | "sol"; value: number; label: string };
 export interface MountType {
   id: string;
   name: string;
   icon: string;
   rarity: ItemRarity;
   dropWeight: number; // relative odds within a drop
-  priceCoins: number; // marketplace price in coins
+  priceUsd: number; // marketplace price in USD (settled in $RUMBLE, like relics)
   maxSupply: number; // total mintable across all players (scarcity)
+  trait: MountTrait; // the equipped bonus — the reason to own it
   desc: string;
 }
 export const MOUNTS: MountType[] = [
-  { id: "war_pony", name: "War Pony", icon: "🐴", rarity: "common", dropWeight: 100, priceCoins: 12_000, maxSupply: 5000, desc: "A sturdy, dependable steed." },
-  { id: "dire_wolf", name: "Dire Wolf", icon: "🐺", rarity: "rare", dropWeight: 42, priceCoins: 35_000, maxSupply: 1500, desc: "A fanged companion of the wild." },
-  { id: "war_boar", name: "War Boar", icon: "🐗", rarity: "rare", dropWeight: 36, priceCoins: 35_000, maxSupply: 1500, desc: "Tusked, armoured and tireless." },
-  { id: "royal_stag", name: "Royal Stag", icon: "🦌", rarity: "epic", dropWeight: 14, priceCoins: 90_000, maxSupply: 500, desc: "A noble mount of the high court." },
-  { id: "phoenix", name: "Phoenix", icon: "🦅", rarity: "legendary", dropWeight: 4, priceCoins: 300_000, maxSupply: 100, desc: "Reborn from its own ashes." },
-  { id: "dragonling", name: "Dragonling", icon: "🐉", rarity: "legendary", dropWeight: 1, priceCoins: 750_000, maxSupply: 50, desc: "The rarest beast in the realm." },
+  { id: "war_pony", name: "War Pony", icon: "🐴", rarity: "common", dropWeight: 100, priceUsd: 5, maxSupply: 1000, trait: { kind: "speed", value: 0.05, label: "−5% build & training time" }, desc: "A sturdy, dependable steed." },
+  { id: "dire_wolf", name: "Dire Wolf", icon: "🐺", rarity: "rare", dropWeight: 42, priceUsd: 14, maxSupply: 250, trait: { kind: "speed", value: 0.12, label: "−12% build & training time" }, desc: "A fanged companion of the wild." },
+  { id: "war_boar", name: "War Boar", icon: "🐗", rarity: "rare", dropWeight: 36, priceUsd: 12, maxSupply: 250, trait: { kind: "gather", value: 0.12, label: "+12% resource gathering" }, desc: "Tusked, armoured and tireless." },
+  { id: "royal_stag", name: "Royal Stag", icon: "🦌", rarity: "epic", dropWeight: 14, priceUsd: 45, maxSupply: 50, trait: { kind: "gather", value: 0.22, label: "+22% resource gathering" }, desc: "A noble mount of the high court." },
+  { id: "phoenix", name: "Phoenix", icon: "🦅", rarity: "legendary", dropWeight: 4, priceUsd: 180, maxSupply: 15, trait: { kind: "sol", value: 0.12, label: "+12% daily SOL reward share" }, desc: "Reborn from its own ashes." },
+  { id: "dragonling", name: "Dragonling", icon: "🐉", rarity: "legendary", dropWeight: 1, priceUsd: 350, maxSupply: 8, trait: { kind: "sol", value: 0.2, label: "+20% daily SOL reward share" }, desc: "The rarest beast in the realm." },
 ];
 export const mountType = (id: string): MountType | undefined => MOUNTS.find((m) => m.id === id);
 export const MOUNT_DROP_CHANCE = 0.06; // chance to drop a mount on a raid win

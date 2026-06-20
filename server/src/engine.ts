@@ -32,6 +32,7 @@ import {
   ageAtLeast,
   holderPerksForTier,
   marketItem,
+  mountType,
   rankIndex,
   type ShopItem,
 } from "../../shared/gamedata.ts";
@@ -125,6 +126,10 @@ function equippedEffect(e: Empire): { powerBonus: number; gatherPct: number; spe
     out.gatherPct += def.gatherPct ?? 0;
     out.speedPct += def.speedPct ?? 0;
   }
+  // equipped pet/mount trait (gather & speed; SOL-boost pets apply in rewards.ts)
+  const pet = e.equippedMount ? mountType(state.mountInstances[e.equippedMount]?.typeId ?? "")?.trait : undefined;
+  if (pet?.kind === "gather") out.gatherPct += pet.value;
+  else if (pet?.kind === "speed") out.speedPct += pet.value;
   return out;
 }
 
