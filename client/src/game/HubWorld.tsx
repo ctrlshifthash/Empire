@@ -9,6 +9,7 @@ import { SERVER_URL } from "../lib/config";
 import { rankForPower } from "@shared/gamedata";
 import { fmt } from "../lib/format";
 import SolanaIcon from "../components/SolanaIcon";
+import SpinnerWheel from "./SpinnerWheel";
 
 // The spatial hub: a shared, walkable town. You spawn as your hero sprite and
 // stroll a real environment — grass, a cobblestone plaza, a fountain, houses and
@@ -55,6 +56,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const online = useGame((s) => s.hubOnline); // everyone online (broader count)
   const [chat, setChat] = useState("");
   const [nearSpin, setNearSpin] = useState(false); // standing next to the plaza wheel
+  const [showSpin, setShowSpin] = useState(false); // the wheel overlay is open
 
   // player card: click a roster name to see their stats
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -527,11 +529,33 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       {nearSpin && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center">
           <button
-            onClick={() => onOpenTab("spinner")}
+            onClick={() => setShowSpin(true)}
             className="btn-gold pointer-events-auto animate-pulse px-6 py-2.5 text-base font-bold shadow-gold"
           >
             🎡 Spin the Wheel
           </button>
+        </div>
+      )}
+
+      {/* spin right here on the hub — overlay, no page change */}
+      {showSpin && (
+        <div
+          className="absolute inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setShowSpin(false)}
+        >
+          <div
+            className="relative rounded-2xl border border-gold/30 bg-ink-800 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowSpin(false)}
+              className="absolute right-3 top-3 z-10 text-xl text-parchment-300/70 hover:text-parchment-100"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <SpinnerWheel />
+          </div>
         </div>
       )}
 

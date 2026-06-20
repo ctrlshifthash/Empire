@@ -44,14 +44,15 @@ export default function SpinnerWheel() {
     }
     const idx = spinResult.index;
     const landing = 360 - (idx * SEG + SEG / 2); // bring this segment's centre to the top pointer
-    const base = (Math.floor(rotation / 360) + 6) * 360; // 6 extra turns
-    setRotation(base + landing);
+    // functional update so this effect doesn't depend on `rotation` — otherwise
+    // setting rotation re-runs the effect and its cleanup cancels the reveal timer
+    setRotation((r) => (Math.floor(r / 360) + 6) * 360 + landing); // 6 extra turns
     const reveal = setTimeout(() => {
       setSpinning(false);
       setReward(spinResult.reward ?? "a prize");
     }, 4200);
     return () => clearTimeout(reveal);
-  }, [spinResult, rotation]);
+  }, [spinResult]);
 
   const dial = useMemo(
     () => `conic-gradient(${SPIN_SEGMENTS.map((s, i) => `${s.color} ${i * SEG}deg ${(i + 1) * SEG}deg`).join(", ")})`,
