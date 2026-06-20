@@ -14,7 +14,7 @@ export type BetaFeature =
 
 // true = locked (hidden/disabled). Default state per feature.
 const DEFAULT_LOCKED: Record<BetaFeature, boolean> = {
-  spinner: true, // RE-LOCKED — rewards far too generous (passive farm + undercuts $RUMBLE crates); rebalancing before relaunch
+  spinner: false, // LIVE — rebalanced to modest resources only (no relic, no big haul); a daily top-up, not a farm
   dailyQuests: true, // kept in beta
   spectate: false, // LIVE
   mounts: true, // in-world gameplay stays beta; mounts/pets still appear in the Marketplace as collectibles

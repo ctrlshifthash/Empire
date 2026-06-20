@@ -974,10 +974,12 @@ export const DAILY_QUESTS: DailyQuestDef[] = [
   { id: "dq_xp", label: "Earn 800 XP", icon: "⭐", metric: "xp", target: 800, rewardText: "6,000 Wood + 6,000 Food", resources: { wood: 6000, food: 6000 } },
 ];
 
-// ── Spinner Wheel (beta) ─────────────────────────────────────────────────────
-// A free spin every 12h (paid spins that burn $RUMBLE come with the unlock).
-// Rewards are RESOURCES or a relic — never coins (coins have a free market, so
-// minting them would re-break the coin↔$RUMBLE price).
+// ── Spinner Wheel ────────────────────────────────────────────────────────────
+// A free spin every 12h. Rewards are MODEST RESOURCES only — kept small so it's
+// a daily top-up, not a farm (a whole day's spins ≈ a few building levels, well
+// below what one quest/raid pays). Never coins (would break the coin↔$RUMBLE
+// price) and never relics (would flood the marketplace + hand out free permanent
+// bonuses). Bigger prizes are reserved for future paid spins that burn $RUMBLE.
 export const SPIN_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 export interface SpinSegment {
   id: string;
@@ -989,14 +991,13 @@ export interface SpinSegment {
   relic?: boolean;
 }
 export const SPIN_SEGMENTS: SpinSegment[] = [
-  { id: "wood", label: "5,000 Wood", icon: "🪵", color: "#6e5a30", weight: 18, resources: { wood: 5000 } },
-  { id: "food", label: "5,000 Food", icon: "🍖", color: "#9c5a3c", weight: 18, resources: { food: 5000 } },
-  { id: "stone", label: "5,000 Stone", icon: "🪨", color: "#7c766b", weight: 16, resources: { stone: 5000 } },
-  { id: "gold", label: "5,000 Gold", icon: "🟡", color: "#c0a020", weight: 16, resources: { gold: 5000 } },
-  { id: "haul", label: "Resource Haul", icon: "🎁", color: "#2980b9", weight: 12, resources: { wood: 12000, food: 12000, gold: 12000, stone: 12000 } },
-  { id: "bigGold", label: "10,000 Gold", icon: "💰", color: "#d4af37", weight: 10, resources: { gold: 10000 } },
-  { id: "scraps", label: "2,000 Wood", icon: "🌿", color: "#27ae60", weight: 8, resources: { wood: 2000 } },
-  { id: "relic", label: "A Relic!", icon: "🏺", color: "#8e44ad", weight: 2, relic: true },
+  { id: "wood", label: "600 Wood", icon: "🪵", color: "#6e5a30", weight: 20, resources: { wood: 600 } },
+  { id: "food", label: "600 Food", icon: "🍖", color: "#9c5a3c", weight: 20, resources: { food: 600 } },
+  { id: "stone", label: "500 Stone", icon: "🪨", color: "#7c766b", weight: 16, resources: { stone: 500 } },
+  { id: "gold", label: "500 Gold", icon: "🟡", color: "#c0a020", weight: 16, resources: { gold: 500 } },
+  { id: "haul", label: "Lucky Crate", icon: "🎁", color: "#2980b9", weight: 7, resources: { wood: 800, food: 800, gold: 800, stone: 800 } },
+  { id: "bigGold", label: "1,200 Gold", icon: "💰", color: "#d4af37", weight: 10, resources: { gold: 1200 } },
+  { id: "scraps", label: "250 Wood", icon: "🌿", color: "#27ae60", weight: 11, resources: { wood: 250 } },
 ];
 
 // ── Mounts & Pets (beta) ─────────────────────────────────────────────────────
