@@ -10,6 +10,7 @@ import { fetchExchangeConfig } from "../lib/exchange";
 import { confirmSignature } from "../lib/payments";
 import CoinExchange from "../game/CoinExchange";
 import CharacterShop from "../game/CharacterShop";
+import MountShop from "../game/MountShop";
 import MarketActivity from "../game/MarketActivity";
 
 const rarityColor = (r: string) => (RARITY_META as Record<string, { color: string }>)[r]?.color ?? "#9aa4ad";
@@ -61,7 +62,7 @@ function Market() {
   const craftRelic = useGame((s) => s.craftRelic);
   const [listings, setListings] = useState<ListingPublic[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [tab, setTab] = useState<"relics" | "characters" | "coins">("relics");
+  const [tab, setTab] = useState<"relics" | "characters" | "mounts" | "coins">("relics");
   const [rumbleUsd, setRumbleUsd] = useState<number | null>(null); // live $RUMBLE price (for the ≈ preview)
 
   const refresh = () => fetchListings().then(setListings);
@@ -124,7 +125,7 @@ function Market() {
    <>
     <div className="mt-8 flex justify-center">
       <div className="inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
-        {([["relics", "🏺 Relics"], ["coins", "💱 Coins ⇄ $RUMBLE"], ["characters", "🎭 Characters"]] as [typeof tab, string][]).map(([t, label]) => (
+        {([["relics", "🏺 Relics"], ["coins", "💱 Coins ⇄ $RUMBLE"], ["characters", "🎭 Characters"], ["mounts", "🐎 Mounts & Pets"]] as [typeof tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${tab === t ? "bg-gold/15 text-gold-light" : "text-parchment-300/60 hover:text-parchment-100"}`}>
             {label}
           </button>
@@ -156,6 +157,8 @@ function Market() {
       <CoinExchange />
     ) : tab === "characters" ? (
       <CharacterShop />
+    ) : tab === "mounts" ? (
+      <MountShop />
     ) : (
      <>
     <div className="mt-6">

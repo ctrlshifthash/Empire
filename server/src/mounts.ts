@@ -12,6 +12,14 @@ import { now, uid } from "./util.ts";
 
 export const mountsLocked = (): boolean => isLocked("mounts");
 
+// Marketplace catalog: every mount/pet with how many have been minted + remaining.
+export function mountCatalog() {
+  return MOUNTS.map((m) => {
+    const minted = state.mountMintCounts[m.id] ?? 0;
+    return { ...m, minted, remaining: Math.max(0, m.maxSupply - minted) };
+  });
+}
+
 export function mintMount(empireId: string, typeId: string): MountInstance | null {
   const def = mountType(typeId);
   if (!def) return null;

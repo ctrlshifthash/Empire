@@ -24,7 +24,7 @@ import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks, isLocked } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
 import { dailyState, claimDaily } from "./daily.ts";
-import { ownedMounts, equipMount, equippedMountIcon, mountsLocked } from "./mounts.ts";
+import { ownedMounts, equipMount, equippedMountIcon, mountsLocked, mountCatalog } from "./mounts.ts";
 import { shopConfig, buyShopItem, settlePendingShopPurchases } from "./shop.ts";
 import {
   createAlliance,
@@ -317,6 +317,7 @@ app.get("/api/arena/rankings", (_req, res) => {
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
 app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
+app.get("/api/mounts/config", (_req, res) => res.json({ ok: true, locked: mountsLocked(), mounts: mountCatalog() }));
 app.get("/api/features", (_req, res) => res.json({ ok: true, locked: featureLocks() }));
 app.get("/api/burns", (_req, res) =>
   res.json({ ok: true, totalBurned: state.totalBurned || 0, mint: tokenMint(), treasury: treasuryPubkey(), burns: state.burns ?? [] }),

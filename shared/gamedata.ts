@@ -1008,15 +1008,17 @@ export interface MountType {
   icon: string;
   rarity: ItemRarity;
   dropWeight: number; // relative odds within a drop
+  priceCoins: number; // marketplace price in coins
+  maxSupply: number; // total mintable across all players (scarcity)
   desc: string;
 }
 export const MOUNTS: MountType[] = [
-  { id: "war_pony", name: "War Pony", icon: "🐴", rarity: "common", dropWeight: 100, desc: "A sturdy, dependable steed." },
-  { id: "dire_wolf", name: "Dire Wolf", icon: "🐺", rarity: "rare", dropWeight: 42, desc: "A fanged companion of the wild." },
-  { id: "war_boar", name: "War Boar", icon: "🐗", rarity: "rare", dropWeight: 36, desc: "Tusked, armoured and tireless." },
-  { id: "royal_stag", name: "Royal Stag", icon: "🦌", rarity: "epic", dropWeight: 14, desc: "A noble mount of the high court." },
-  { id: "phoenix", name: "Phoenix", icon: "🦅", rarity: "legendary", dropWeight: 4, desc: "Reborn from its own ashes." },
-  { id: "dragonling", name: "Dragonling", icon: "🐉", rarity: "legendary", dropWeight: 1, desc: "The rarest beast in the realm." },
+  { id: "war_pony", name: "War Pony", icon: "🐴", rarity: "common", dropWeight: 100, priceCoins: 12_000, maxSupply: 5000, desc: "A sturdy, dependable steed." },
+  { id: "dire_wolf", name: "Dire Wolf", icon: "🐺", rarity: "rare", dropWeight: 42, priceCoins: 35_000, maxSupply: 1500, desc: "A fanged companion of the wild." },
+  { id: "war_boar", name: "War Boar", icon: "🐗", rarity: "rare", dropWeight: 36, priceCoins: 35_000, maxSupply: 1500, desc: "Tusked, armoured and tireless." },
+  { id: "royal_stag", name: "Royal Stag", icon: "🦌", rarity: "epic", dropWeight: 14, priceCoins: 90_000, maxSupply: 500, desc: "A noble mount of the high court." },
+  { id: "phoenix", name: "Phoenix", icon: "🦅", rarity: "legendary", dropWeight: 4, priceCoins: 300_000, maxSupply: 100, desc: "Reborn from its own ashes." },
+  { id: "dragonling", name: "Dragonling", icon: "🐉", rarity: "legendary", dropWeight: 1, priceCoins: 750_000, maxSupply: 50, desc: "The rarest beast in the realm." },
 ];
 export const mountType = (id: string): MountType | undefined => MOUNTS.find((m) => m.id === id);
 export const MOUNT_DROP_CHANCE = 0.06; // chance to drop a mount on a raid win
