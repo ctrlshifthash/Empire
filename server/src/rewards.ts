@@ -31,7 +31,7 @@ const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 // The daily pool is split among ACTIVE holders only (wallets that hold the
 // minimum AND have a game empire) — not the whole supply — so the pool actually
 // flows to players. No single wallet may take more than this share of the day.
-const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.25");
+const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.15");
 
 // VIP and public pools are tracked separately. VIP is fixed at 7.5 SOL;
 // public is temporarily 3.5 SOL (up from 2.5). Total treasury outlay = 11 SOL/day.

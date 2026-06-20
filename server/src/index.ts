@@ -431,6 +431,20 @@ app.post("/api/admin/set-reward", (req, res) => {
   res.json({ ok: true, wallet, solAmount: Number(solAmount), lamports });
 });
 
+// Admin-only: clear today's reward-pool spend counters so the daily pool is fresh
+// again immediately (e.g. after a misconfig drained it) — no waiting for the
+// 00:00 UTC rollover. Guard with the ADMIN_KEY env via x-admin-key.
+app.post("/api/admin/reset-pool", (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  state.rewardPool.paidLamports = 0;
+  state.rewardPool.vipPaidLamports = 0;
+  state.rewardPool.publicPaidLamports = 0;
+  scheduleSave(0);
+  res.json({ ok: true, reset: true, poolRefreshed: true });
+});
+
 // Admin-only: burn the treasury's collected $RUMBLE right now (on demand, no
 // waiting for the hourly timer). Guard with the ADMIN_KEY env via x-admin-key.
 app.post("/api/admin/burn", async (req, res) => {
