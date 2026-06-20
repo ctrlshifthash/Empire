@@ -81,5 +81,7 @@ export const api = {
         online: boolean;
         solEarned: number;
       }>;
+      playersOnline?: number;
+      totalSolEarned?: number;
     }>("/api/leaderboard"),
 };

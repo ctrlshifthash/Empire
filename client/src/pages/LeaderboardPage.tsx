@@ -67,6 +67,28 @@ export default function LeaderboardPage() {
             Empires ranked by power across the living world. Rankings update live as realms rise and
             fall.
           </p>
+
+          {/* live headline stats — activity + cumulative rewards */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-3">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </span>
+              <div className="text-left">
+                <div className="font-display text-2xl font-bold tabular-nums text-emerald-300">{board?.playersOnline ?? "—"}</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-parchment-300/55">Players online</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/10 px-5 py-3">
+              <span className="font-display text-2xl leading-none text-gold-light">◎</span>
+              <div className="text-left">
+                <div className="font-display text-2xl font-bold tabular-nums text-gold-light">{(board?.totalSolEarned ?? 0).toFixed(2)} SOL</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-parchment-300/55">Total SOL earned by players</div>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6 inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
             {(["players", "alliances"] as View[]).map((v) => (
               <button

@@ -19,6 +19,15 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 20, 2026",
+    items: [
+      { tag: "Feature", title: "Live dashboard stats", desc: "The Leaderboard now shows two headline numbers at a glance: how many players are online right now, and the total SOL earned by players across the game — a running tally that only grows as the realm pays out." },
+      { tag: "Improvement", title: "Fairer SOL rewards", desc: "The daily SOL pool is now split as a true weighted share — your slice grows with your renown rank, holder tier, Diamond-hands loyalty and equipped relics, and the slices always add up to the pool so it can never be drained. Holding always pays your full share; playing and ranking just earn you a bigger one. No single wallet can take more than 15% of the day." },
+      { tag: "Improvement", title: "Army size cap", desc: "Empire armies are now capped at 10,000 population, so no one can stack endless houses to field a runaway army — battles stay competitive across the board." },
+      { tag: "Fix", title: "Token-shop purchases are guaranteed", desc: "Shop payments that confirm slowly are now retried and delivered automatically, so a purchase can never take your tokens without granting the item. Timed boosts like Harvest Surge also show an active badge so you can see them working." },
+    ],
+  },
+  {
     date: "June 19, 2026",
     items: [
       { tag: "Feature", title: "The Hub is now a walkable village", desc: "The Hub has been rebuilt as a village you explore — wander your hero with WASD across a market square of stalls around the fountain, past dozens of houses, dirt roads out to open grassland and tree-lined fields, with everyone online beside you. Scroll or use the +/− buttons to zoom in and out." },

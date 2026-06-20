@@ -274,7 +274,10 @@ app.get("/api/leaderboard", (_req, res) => {
     })
     .sort((a, b) => b.power - a.power)
     .slice(0, 2000); // effectively all players (safety cap); paginated client-side
-  res.json({ ok: true, rows });
+  // headline live stats for the dashboard
+  const playersOnline = onlineCount();
+  const totalSolEarned = Object.values(state.rewards).reduce((s, r) => s + (r.totalClaimed ?? 0), 0) / 1e9;
+  res.json({ ok: true, rows, playersOnline, totalSolEarned });
 });
 
 // Public profile for one player (used by the Hub roster's player card).
