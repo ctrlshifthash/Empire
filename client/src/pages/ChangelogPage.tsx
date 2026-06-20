@@ -19,12 +19,6 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
-    date: "June 20, 2026",
-    items: [
-      { tag: "Improvement", title: "Play and rank up to earn a bigger share", desc: "Holders who play now earn more, two ways. Your share of the daily SOL pool scales with your renown rank — up to 5× at Emperor — and playing each day adds a bonus on top, up to 2× while you're active, easing back to your normal share if you stop. Holding always pays your full share; playing and ranking just stack on top, never less for anyone. No single wallet can ever take more than its capped share of the pool." },
-    ],
-  },
-  {
     date: "June 19, 2026",
     items: [
       { tag: "Feature", title: "The Hub is now a walkable village", desc: "The Hub has been rebuilt as a village you explore — wander your hero with WASD across a market square of stalls around the fountain, past dozens of houses, dirt roads out to open grassland and tree-lined fields, with everyone online beside you. Scroll or use the +/− buttons to zoom in and out." },

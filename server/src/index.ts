@@ -627,7 +627,6 @@ io.on("connection", (socket) => {
       socket.emit("error", "Not authenticated.");
       return;
     }
-    state.empires[empireId].lastActiveAt = now(); // stamp real play (drives the daily-play bonus)
     fn(empireId);
   }
 

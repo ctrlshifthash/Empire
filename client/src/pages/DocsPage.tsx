@@ -107,10 +107,8 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         </p>
         <p>
           It is also <strong>token-gated with real rewards</strong>. Hold the game token and a slice of a daily{" "}
-          <strong>10 SOL</strong> pool accrues to your wallet, claimable as Solana — and the more you play, the bigger
-          your slice: climbing the renown ranks boosts your accrual up to <strong>5×</strong>, and playing each day adds
-          a bonus on top. Holding always pays your full share. Don’t hold the token? You can still play the full game in{" "}
-          <strong>demo mode</strong> with worthless in-game coins.
+          <strong>10 SOL</strong> pool accrues to your wallet, claimable as Solana. Don’t hold the token? You can still
+          play the full game in <strong>demo mode</strong> with worthless in-game coins.
         </p>
         <p>
           Around that core sit the systems that make the world feel alive: <strong>fair-bracket raiding</strong>,

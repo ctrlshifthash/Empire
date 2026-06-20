@@ -45,6 +45,9 @@ const VIP_REWARD_WALLETS = new Set([
 // Cache of on-chain balances (populated on every read + a rolling refresh) so we
 // can sum the active-holder supply without an RPC call per holder per claim.
 const balanceCache = new Map<string, { bal: number; at: number }>();
+// Last on-chain token supply, refreshed on every getHoldings read. Lets us weight
+// each holder's tier in the pool split without an RPC call per holder.
+let cachedSupply = 0;
 
 // First claim is allowed anytime; afterwards a wallet may claim every 6 hours
 // (4× per day). Accrual keeps running continuously between claims.
@@ -109,6 +112,7 @@ export async function getHoldings(address: string): Promise<Holdings> {
     }
     const supplyInfo = await rpc().getTokenSupply(mint);
     const supply = supplyInfo.value.uiAmount || 0;
+    cachedSupply = supply;
     balanceCache.set(address, { bal: balance, at: now() });
     return { balance, supply, sharePct: supply > 0 ? balance / supply : 0 };
   } catch (err) {
@@ -165,16 +169,37 @@ export async function checkPlayEligibility(address: string): Promise<PlayEligibi
   }
 }
 
-// Total $RUMBLE held by ACTIVE public holders (excludes VIP wallets, which have
-// their own pool). Used as the denominator for the public 2.5 SOL split.
-function activeSupply(): number {
+// A holder's POOL WEIGHT: their balance scaled by every boost they've earned —
+// tier (Bronze…Diamond), renown rank (1–5×), Diamond-hands loyalty and equipped
+// relics. The fixed pool is split in proportion to these weights, so a bigger
+// weight means a bigger SLICE of the same SOL — never more SOL emitted. Read-only
+// (no RPC, no lookup by address) so it's cheap to sum across every holder.
+function holderWeight(externalId: string, empireId: string, balance: number): number {
+  const empire = state.empires[empireId];
+  const tierMult = multiplier(cachedSupply > 0 ? balance / cachedSupply : 0);
+  const rankMult = empire ? rankRewardMult(empire.power) : 1;
+  const rec = state.rewards[externalId];
+  const loyMult = loyaltyMultiplier(rec?.heldSince ? Math.max(0, (now() - rec.heldSince) / DAY_MS) : 0);
+  let relicMult = 1;
+  if (empire?.equipped) {
+    let pct = 0;
+    for (const id of empire.equipped) pct += marketItem(state.itemInstances[id]?.typeId ?? "")?.solPct ?? 0;
+    relicMult = 1 + pct;
+  }
+  return balance * tierMult * rankMult * loyMult * relicMult;
+}
+
+// Sum of every active public holder's weight — the split denominator. Because the
+// fixed pool is divided by this total, the slices always add up to exactly the
+// pool: it can't be over-drawn, and one wallet can't farm it dry.
+function activeWeight(): number {
   let sum = 0;
   for (const u of Object.values(state.users)) {
     const ext = u.externalId;
     if (!ext || ext.includes("@") || ext.length < 32) continue;
     if (VIP_REWARD_WALLETS.has(ext)) continue;
     const c = balanceCache.get(ext);
-    if (c && c.bal >= MIN_PLAY_HOLD) sum += c.bal;
+    if (c && c.bal >= MIN_PLAY_HOLD) sum += holderWeight(ext, u.empireId, c.bal);
   }
   return sum;
 }
@@ -201,37 +226,22 @@ function vipDailyAccrual(address: string): number {
   return VIP_POOL_SOL * weight;
 }
 
-// Daily-play bonus: showing up tops up your accrual on top of everything else.
-// Pure upside — a wallet that played in the last day earns up to +100%, easing
-// back to its normal full share (never below) over a week if it stops. Not
-// playing is never a penalty; playing is the reward.
-const PLAY_BONUS_MAX = 1.0; // up to +100% (2x) while you're playing
-const PLAY_WINDOW_MS = 24 * 60 * 60 * 1000; // full bonus if you played in the last 24h
-const PLAY_FADE_MS = 7 * 24 * 60 * 60 * 1000; // then eases back to 0 over ~a week idle
-function dailyPlayBonus(address: string): number {
-  const user = Object.values(state.users).find((u) => u.externalId === address);
-  const empire = user ? state.empires[user.empireId] : undefined;
-  const last = empire?.lastActiveAt ?? 0;
-  if (!last) return 1; // hasn't played → full fair share, just no bonus (never a cut)
-  const idle = now() - last;
-  if (idle <= PLAY_WINDOW_MS) return 1 + PLAY_BONUS_MAX;
-  const t = Math.min(1, (idle - PLAY_WINDOW_MS) / PLAY_FADE_MS);
-  return 1 + PLAY_BONUS_MAX * (1 - t);
-}
-
 // SOL/day a wallet accrues. VIP wallets earn a quest-weighted share of the VIP
-// pool; everyone else earns a balance-weighted share of the public pool, scaled
-// up by rank (climbed only by playing) and a daily-play bonus on top. Holders
-// who play earn MORE; holders who don't still earn their full balance share.
-function dailyAccrualSol(address: string, balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
+// pool; every other holder earns their weighted SLICE of the fixed public pool —
+// (their weight ÷ the total weight) × pool — capped so no single wallet takes too
+// big a slice. The slices always sum to the pool, so it's split fully and fairly
+// and can never be over-drawn.
+function dailyAccrualSol(address: string, balance: number): number {
   if (VIP_REWARD_WALLETS.has(address)) return vipDailyAccrual(address);
-  const active = activeSupply();
-  const share = active > 0 ? balance / active : 0;
-  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult * dailyPlayBonus(address);
-  return Math.min(raw, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
+  if (balance < MIN_PLAY_HOLD) return 0;
+  const u = Object.values(state.users).find((x) => x.externalId === address);
+  if (!u) return 0;
+  const total = activeWeight();
+  const share = total > 0 ? holderWeight(address, u.empireId, balance) / total : 0;
+  return Math.min(share * PUBLIC_POOL_SOL, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
 }
 
-// Rolling refresh of the balance cache so activeSupply() stays fresh for holders
+// Rolling refresh of the balance cache so activeWeight() stays fresh for holders
 // who aren't currently online. Called in small batches from the world tick.
 let _refreshIdx = 0;
 export async function refreshActiveBalances(batch = 5): Promise<void> {
@@ -266,14 +276,18 @@ export function multiplier(sharePct: number): number {
 // conquering in-game. So climbing ranks earns you a bigger slice of the daily
 // pool (within the same fixed cap). A wallet with no empire (or a Peasant) gets
 // 1×. The empire is matched to the wallet via its external sign-in id.
+// Reward weight from renown rank: a wide 1× (Peasant) → 5× (Emperor) spread, so
+// climbing — which you only do by playing — earns you a bigger SLICE of the fixed
+// pool. Pure share-weighting; it never mints extra SOL.
+function rankRewardMult(power: number): number {
+  const idx = Math.max(0, RANKS.findIndex((x) => x.name === rankForPower(power).name));
+  return 1 + (idx / (RANKS.length - 1)) * 4;
+}
 function playBonus(address: string): { mult: number; rank: string } {
   const user = Object.values(state.users).find((u) => u.externalId === address);
   const empire = user ? state.empires[user.empireId] : undefined;
   if (!empire) return { mult: 1, rank: "Unranked" };
-  const r = rankForPower(empire.power);
-  // Wide reward spread so climbing ranks actually pays: 1× (Peasant) → 5× (Emperor).
-  const idx = Math.max(0, RANKS.findIndex((x) => x.name === r.name));
-  return { mult: 1 + (idx / (RANKS.length - 1)) * 4, rank: r.name };
+  return { mult: rankRewardMult(empire.power), rank: rankForPower(empire.power).name };
 }
 
 // Equipped relics with a SOL effect boost the wallet's accrual rate (a bigger
@@ -419,7 +433,7 @@ export async function rewardStatus(address: string): Promise<RewardStatus> {
   if (!hadHeldSince && rec.heldSince && rewardsConfigured()) scheduleSave(500);
   const loyaltyMult = loyaltyMultiplier(loyaltyDays);
   const relicMult = relicSolMult(address);
-  const dailySol = dailyAccrualSol(address, holdings.balance, m, play.mult, loyaltyMult, relicMult);
+  const dailySol = dailyAccrualSol(address, holdings.balance);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const isVipWallet = VIP_REWARD_WALLETS.has(address);
   // Pool bar always shows combined total remaining so users just see "X / 10 SOL left"
@@ -542,9 +556,8 @@ export async function claim(address: string): Promise<ClaimResult> {
     if (wait > 0) return { ok: false, error: `Next claim available in ${fmtWait(wait)}.` };
   }
 
-  const m = multiplier(holdings.sharePct);
-  const loyaltyMult = loyaltyMultiplier(updateLoyalty(rec, holdings.balance));
-  const dailySol = dailyAccrualSol(address, holdings.balance, m, playBonus(address).mult, loyaltyMult, relicSolMult(address));
+  updateLoyalty(rec, holdings.balance); // keep the Diamond-hands streak current
+  const dailySol = dailyAccrualSol(address, holdings.balance);
   const elapsed = Math.max(0, now() - rec.lastClaimAt);
   const walletDayCap = VIP_REWARD_WALLETS.has(address)
     ? vipDailyAccrual(address)
