@@ -234,6 +234,7 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         </p>
         <ul className="ml-5 list-disc space-y-2">
           <li><strong>Duels</strong> — winner takes the pot (both stakes minus a 5% burned rake). Both sides take casualties; survivors return home. Outcome is army strength (units + gear) with variance, so scout before you accept, and withdraw anytime before someone accepts.</li>
+          <li><strong>Tombstone duels</strong> — when a staked duel ends, the loser's lost coins drop into a tombstone on the field. They have five minutes to recover most of them; if they don't, the victor sweeps what's left — a comeback window on every fight.</li>
           <li><strong>Tournament</strong> — a rolling single-elimination bracket. Pay the coin entry fee; when it fills it runs instantly and the champion takes the pot.</li>
           <li><strong>Daily win bonus</strong> — your first Arena win each day pays a bonus coin reward.</li>
           <li><strong>Rankings</strong> — top duelists ranked by wins and best streak.</li>
@@ -242,6 +243,23 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           Arena wagers are <strong>in-game coins only</strong> — no SOL is staked or paid, so the reward pool is never
           touched.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "spinner",
+    title: "Spinner Wheel",
+    icon: "🎡",
+    body: (
+      <>
+        <p>
+          Take a <strong>free spin every 12 hours</strong> for a small resource reward — a daily helping hand toward your
+          next building or batch of troops.
+        </p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li><strong>Resources only</strong> — wood, food, stone or gold, with a rare “Lucky Crate” of a bit of everything. Kept deliberately modest, so it's a top-up and never a shortcut or a farm.</li>
+          <li><strong>Fair &amp; server-decided</strong> — the outcome is rolled on the server, so the wheel can't be gamed.</li>
+        </ul>
       </>
     ),
   },
@@ -298,6 +316,25 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
           <li><strong>Unlocked by rank</strong> — you can own &amp; trade any relic any time, but you can only <strong>equip</strong> it once you've earned the rank: Common (anyone), Rare (Footman), Epic (Knight), Legendary (Warlord). So power is something you grow into, not buy your way to.</li>
           <li><strong>Hold up to {15}</strong> — your inventory is capped, so you can't hoard endless power; when it's full you choose what to keep, sell or forge. (Burning relics for SOL is coming.)</li>
           <li>Your inventory, equipped relics and trading P/L (SOL &amp; USDC) all show on your <Link to="/dashboard" className="text-gold-light hover:underline">dashboard</Link>. A connected wallet is needed to trade.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: "mounts",
+    title: "Mounts & Pets",
+    icon: "🐎",
+    body: (
+      <>
+        <p>
+          <strong>Mounts &amp; Pets</strong> are collectible companions that ride beside your hero — and each gives a real{" "}
+          <strong>equipped perk</strong>. A pet is its own equip slot, so it stacks on top of your relics.
+        </p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li><strong>Each has a use</strong> — faster resource gathering, faster building &amp; training, and the rarest two boost your <strong>share of the daily SOL pool</strong>. Different pets suit different playstyles.</li>
+          <li><strong>Strictly scarce</strong> — hard supply caps (only 8 Dragonlings and 15 Phoenixes will ever exist), so the rare ones hold real value.</li>
+          <li><strong>Yours to own &amp; resell</strong> — each is a compressed NFT you hold in your wallet and can trade.</li>
+          <li><strong>Browse now, buy soon</strong> — preview the full roster and exactly what each pet does in the Marketplace's Mounts &amp; Pets tab; buying with $RUMBLE goes live shortly.</li>
         </ul>
       </>
     ),
