@@ -21,16 +21,24 @@ import {
   nextRarity,
   minRankNameForRarity,
   rankIndex,
+  MOUNTS,
+  mountType,
 } from "../../shared/gamedata.ts";
 import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic } from "../../shared/types.ts";
 import { state, scheduleSave, pushActivity } from "./store.ts";
 import { recomputePower } from "./engine.ts";
+import { mintMount } from "./mounts.ts";
 import { treasuryPubkey, tokenMint } from "./rewards.ts";
 import { rumbleUsdPrice } from "./price.ts";
 import { amountsFromUsd, rumbleDecimals, verifyRumblePayment, EXCHANGE_BURN_PCT } from "./exchange.ts";
 import { now, uid } from "./util.ts";
 
 const RARITY_RANK: Record<string, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
+// Pet/mount sales run through the SAME bazaar flow as relics (house listings,
+// treasury as seller, paid in $RUMBLE). Wired but gated off until launch — the
+// shop shows "Soon" and no pet listings are seeded. Flip FEATURE_PET_SALES=1.
+const PET_SALES_LIVE = (process.env.FEATURE_PET_SALES || "").trim() === "1";
 
 // Set the empire's banner to the highest-rarity equipped relic's colour.
 function refreshEquipBanner(e: Empire): void {
@@ -123,6 +131,23 @@ export function activeListings(): ListingPublic[] {
     .filter((l) => l.status === "active")
     .sort((a, b) => b.createdAt - a.createdAt)
     .map((l) => {
+      const reserved = !!(l.reservedBy && (l.reservedUntil ?? 0) > now());
+      if (l.kind === "mount") {
+        const m = mountType(l.typeId);
+        const mi = state.mountInstances[l.instanceId];
+        return {
+          id: l.id,
+          typeId: l.typeId,
+          name: m?.name ?? l.typeId,
+          icon: m?.icon ?? "🐎",
+          rarity: m?.rarity ?? "common",
+          serial: mi?.serial ?? 0,
+          price: l.price,
+          sellerName: l.sellerName,
+          effect: m?.trait.label ?? "Companion",
+          reserved,
+        };
+      }
       const def = marketItem(l.typeId);
       const inst = state.itemInstances[l.instanceId];
       return {
@@ -135,7 +160,7 @@ export function activeListings(): ListingPublic[] {
         price: l.price, // USD; client shows ≈ $RUMBLE at the live rate
         sellerName: l.sellerName,
         effect: def ? itemEffectSummary(def) : "Collectible",
-        reserved: !!(l.reservedBy && (l.reservedUntil ?? 0) > now()),
+        reserved,
       };
     });
 }
@@ -154,6 +179,12 @@ export function seedMarket(): void {
     }
   }
   for (const l of Object.values(state.listings)) if (l.sellerId === "house") delete state.listings[l.id];
+  for (const inst of Object.values(state.mountInstances)) {
+    if (inst.ownerId === "house") {
+      state.mountMintCounts[inst.typeId] = Math.max(0, (state.mountMintCounts[inst.typeId] ?? 1) - 1);
+      delete state.mountInstances[inst.id];
+    }
+  }
   const treasury = treasuryPubkey();
   if (!treasury) return; // need the treasury wallet to receive payment (retry next boot)
   // Priced in USDC (dollars), scaled to each relic's utility & scarcity — starter
@@ -190,6 +221,16 @@ export function seedMarket(): void {
       status: "active",
       createdAt: now(),
     };
+  }
+  // pets/mounts — house-listed in $RUMBLE through the same flow, gated until
+  // launch (set FEATURE_PET_SALES=1 and bump MARKET_SEED_VERSION to seed them).
+  if (PET_SALES_LIVE) {
+    for (const m of MOUNTS) {
+      const inst = mintMount("house", m.id);
+      if (!inst) continue;
+      const id = uid("list_");
+      state.listings[id] = { id, instanceId: inst.id, typeId: m.id, kind: "mount", sellerId: "house", sellerName: "The Bazaar", sellerWallet: treasury, price: m.priceUsd, status: "active", createdAt: now() };
+    }
   }
   state.mintCounts.__seedV = MARKET_SEED_VERSION;
   scheduleSave(0);
@@ -331,10 +372,31 @@ export async function buyListing(listingId: string, buyer: string, signature: st
   const paid = await verifyRumblePayment(signature, buyer, l.sellerWallet, sellerBase, burnBase);
   if (!paid) return { ok: false, error: "Payment not confirmed — if you were charged, wait a few seconds and retry." };
 
-  // transfer the item to the buyer
-  const inst = state.itemInstances[l.instanceId];
-  if (inst) inst.ownerId = buyerEmpire.id;
+  // transfer the item to the buyer — a relic, or a pet/mount house listing
   const sellerEmpire = state.empires[l.sellerId];
+  let dispName: string;
+  let serial = 0;
+  if (l.kind === "mount") {
+    const mi = state.mountInstances[l.instanceId];
+    if (mi) {
+      mi.ownerId = buyerEmpire.id;
+      serial = mi.serial;
+    }
+    dispName = mountType(l.typeId)?.name ?? "a pet";
+    // auto-relist the next one so the bazaar keeps stock until the supply cap
+    const next = PET_SALES_LIVE ? mintMount("house", l.typeId) : null;
+    if (next) {
+      const nid = uid("list_");
+      state.listings[nid] = { id: nid, instanceId: next.id, typeId: l.typeId, kind: "mount", sellerId: "house", sellerName: l.sellerName, sellerWallet: l.sellerWallet, price: l.price, status: "active", createdAt: now() };
+    }
+  } else {
+    const inst = state.itemInstances[l.instanceId];
+    if (inst) {
+      inst.ownerId = buyerEmpire.id;
+      serial = inst.serial;
+    }
+    dispName = marketItem(l.typeId)?.name ?? "a relic";
+  }
   l.status = "sold";
   delete state.listings[listingId];
   state.marketSignatures[signature] = { listingId, buyer, at: now() };
@@ -349,12 +411,11 @@ export async function buyListing(listingId: string, buyer: string, signature: st
     ss.earned.USDC += l.price * (1 - MARKET_FEE);
   }
 
-  const def = marketItem(l.typeId);
-  pushActivity("relic", "bought", `${buyerEmpire.name} bought ${def?.name ?? "a relic"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE`, l.id);
-  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE.` });
+  pushActivity("relic", "bought", `${buyerEmpire.name} bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE`, l.id);
+  buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   if (sellerEmpire) {
-    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${def?.name ?? "an item"} #${inst?.serial ?? "?"} for $${l.price.toFixed(2)} in $RUMBLE.` });
+    sellerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Sold ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE.` });
     if (sellerEmpire.log.length > 60) sellerEmpire.log.length = 60;
   }
   scheduleSave(0);

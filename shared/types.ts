@@ -636,6 +636,7 @@ export interface Listing {
   sellerWallet: string; // payout address
   price: number; // asking price in USD (settled in $RUMBLE at the live rate)
   status: "active" | "sold";
+  kind?: "relic" | "mount"; // default relic; "mount" = a pet/companion house listing
   reservedBy?: string; // buyer wallet during a pending purchase
   reservedUntil?: number;
   reservedSellerBase?: string; // $RUMBLE base units locked at reserve (95% seller)

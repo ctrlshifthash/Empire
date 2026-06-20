@@ -23,6 +23,7 @@ export function mountCatalog() {
 export function mintMount(empireId: string, typeId: string): MountInstance | null {
   const def = mountType(typeId);
   if (!def) return null;
+  if ((state.mountMintCounts[typeId] ?? 0) >= def.maxSupply) return null; // sold out — lifetime supply cap
   const serial = (state.mountMintCounts[typeId] ?? 0) + 1;
   state.mountMintCounts[typeId] = serial;
   const inst: MountInstance = { id: uid("mount_"), typeId, ownerId: empireId, serial, assetId: null, mintedAt: now() };
