@@ -14,11 +14,11 @@ export type BetaFeature =
 
 // true = locked (hidden/disabled). Default state per feature.
 const DEFAULT_LOCKED: Record<BetaFeature, boolean> = {
-  spinner: true,
-  dailyQuests: true,
-  spectate: true,
-  mounts: true,
-  wilderness: true,
+  spinner: false, // LIVE
+  dailyQuests: true, // kept in beta
+  spectate: false, // LIVE
+  mounts: true, // in-world gameplay stays beta; mounts/pets still appear in the Marketplace as collectibles
+  wilderness: false, // LIVE (Tombstone arena mode)
   publicProfile: false, // harmless privacy toggle — live by default
 };
 
