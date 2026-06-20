@@ -182,6 +182,7 @@ export interface Empire {
   // show your name publicly on the leaderboard (default true); private hides it
   profilePublic?: boolean;
   lastSpinAt?: number; // last free spinner spin (beta)
+  raidCooldowns?: Record<string, number>; // per-target last-raid timestamps (anti raid-spam farming)
   // daily-quest tracking (beta): baselines snapshot at day rollover
   daily?: { day: string; baseline: { raids: number; duels: number; xp: number }; claimed: string[] };
   // lifetime marketplace trading record

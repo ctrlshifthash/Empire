@@ -644,6 +644,9 @@ export function actAdvanceAge(e: Empire): ActionResult {
   return { ok: true };
 }
 
+// A target can only be raided once per this window by the same attacker — stops
+// farming a single weak bot (or player) over and over for loot.
+const RAID_COOLDOWN_MS = 5 * 60 * 1000;
 export function actAttack(
   attacker: Empire,
   targetId: string,
@@ -669,6 +672,13 @@ export function actAttack(
         ok: false,
         error: `${target.name} is too powerful to raid yet — grow your army and rank to reach them.`,
       };
+  }
+
+  // Per-target raid cooldown — can't spam the same target for loot.
+  const lastRaid = attacker.raidCooldowns?.[targetId];
+  if (lastRaid && now() - lastRaid < RAID_COOLDOWN_MS) {
+    const mins = Math.ceil((RAID_COOLDOWN_MS - (now() - lastRaid)) / 60_000);
+    return { ok: false, error: `You raided ${target.name} too recently — regroup or pick another target (~${mins}m).` };
   }
 
   // Sanitise the payload: only known unit types, integer counts, never more
@@ -701,6 +711,8 @@ export function actAttack(
     arrivesAt: now() + secs * 1000,
     kind: "attack",
   };
+  (attacker.raidCooldowns ??= {})[targetId] = now();
+  for (const [k, v] of Object.entries(attacker.raidCooldowns)) if (now() - v > RAID_COOLDOWN_MS) delete attacker.raidCooldowns[k]; // prune stale
   state.marches.push(march);
   log(attacker, "raid", `Your army marches on ${target.name} (arrives in ${Math.round(secs)}s).`);
   return { ok: true };
@@ -814,13 +826,16 @@ function resolveAttack(march: March, at: number): void {
   if (result.attackerWins) {
     attacker.raidsWon += 1;
     defender.raidsLost += 1;
-    attacker.coins += 5; // spoils of victory
+    // Coins are only minted by raiding REAL players — bot raids give resources/XP
+    // only, so bots can't be farmed for unlimited (sellable) coins.
+    const coinReward = defender.isBot ? 0 : 5;
+    attacker.coins += coinReward; // spoils of victory
     maybeDropMount(attacker.id); // rare mount drop (beta; no-op while locked)
     const lootTotal = result.loot.wood + result.loot.food + result.loot.gold + result.loot.stone;
     log(
       attacker,
       "battle",
-      `Victory at ${defender.name}! Lost ${attackerLost}, plundered ${lootTotal} resources, +5 coins.`,
+      `Victory at ${defender.name}! Lost ${attackerLost}, plundered ${lootTotal} resources${coinReward ? `, +${coinReward} coins` : ""}.`,
     );
     log(
       defender,
@@ -838,7 +853,7 @@ function resolveAttack(march: March, at: number): void {
         .filter((b) => b.type !== "town_center" && b.level >= 1 && b.completesAt == null)
         .sort((a, b) => a.level - b.level);
       for (const razed of razeable.slice(0, razeCount)) {
-        attacker.coins += 5; // bounty per structure wrecked
+        if (!defender.isBot) attacker.coins += 5; // raze bounty — real-player raids only (no bot coin farming)
         const name = BUILDINGS[razed.type].name;
         razedNames.push(name);
         if (razed.level <= 1) {

@@ -38,13 +38,18 @@ import { now, uid } from "./util.ts";
 type Army = Partial<Record<UnitType, number>>;
 const DAY_MS = 86_400_000;
 
-// Award win-streak + the once-daily win bonus to a duel/tournament winner.
-function recordWin(e: Empire): number {
+// Award win-streak + the once-daily win bonus to a duel/tournament winner. The
+// bonus is only paid for beating a real, comparable opponent (non-bot, at least
+// half your power) — so it can't be farmed off bots or a weak throwaway alt. The
+// streak always counts.
+const MIN_BONUS_OPP_RATIO = 0.5;
+function recordWin(e: Empire, opponent?: Empire): number {
   e.duelsWon = (e.duelsWon ?? 0) + 1;
   e.duelStreak = (e.duelStreak ?? 0) + 1;
   e.bestStreak = Math.max(e.bestStreak ?? 0, e.duelStreak);
+  const qualifies = !!opponent && !opponent.isBot && opponent.power >= e.power * MIN_BONUS_OPP_RATIO;
   const day = Math.floor(now() / DAY_MS);
-  if (e.lastArenaBonusDay !== day) {
+  if (qualifies && e.lastArenaBonusDay !== day) {
     e.lastArenaBonusDay = day;
     e.coins += ARENA_DAILY_BONUS;
     return ARENA_DAILY_BONUS;
@@ -168,7 +173,7 @@ export function acceptDuel(e: Empire, duelId: string, rawArmy: Army): ArenaResul
   let bonus = 0;
   if (winner) {
     winner.coins += tombstoneMode ? duel.stake : prize; // tombstone: only your own stake back now
-    bonus = recordWin(winner); // streak + once-daily win bonus
+    bonus = recordWin(winner, loser); // streak always; daily bonus needs a real, comparable opponent
   }
   if (loser) {
     loser.duelsLost = (loser.duelsLost ?? 0) + 1;
