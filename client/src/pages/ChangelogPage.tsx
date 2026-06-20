@@ -19,6 +19,16 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 21, 2026",
+    items: [
+      { tag: "Feature", title: "Spinner Wheel is live", desc: "The Spinner is out of beta — take a free spin every 12 hours for a resource top-up to help build and train. Tuned to modest, sustainable rewards so it's a daily helping hand, never a shortcut or a farm." },
+      { tag: "Feature", title: "Spectate the live world", desc: "Now live — watch the hub fill up and players move about in real time straight from the landing page, no wallet needed, then connect to play." },
+      { tag: "Feature", title: "Tombstone duels", desc: "The Arena's Tombstone mode is live — win a staked duel and the loser's coins drop into a tombstone; race to recover most of it within five minutes, or the victor loots the lot." },
+      { tag: "Feature", title: "Mounts & Pets in the Marketplace", desc: "A new Mounts & Pets tab previewing a roster of collectible companions — each gives a real equipped perk (faster gathering or building, and the rarest ones boost your daily SOL share), with strictly limited supply. Buying goes live soon; for now you can browse the roster and exactly what each one does." },
+      { tag: "Improvement", title: "Jump to listings from the activity feed", desc: "Click any entry in a Marketplace activity feed to jump straight to that item's listing — it switches to the right tab and highlights the card." },
+    ],
+  },
+  {
     date: "June 20, 2026",
     items: [
       { tag: "Feature", title: "Live dashboard stats", desc: "The Leaderboard now shows two headline numbers at a glance: how many players are online right now, and the total SOL earned by players across the game — a running tally that only grows as the realm pays out." },
