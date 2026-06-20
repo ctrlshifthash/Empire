@@ -50,6 +50,10 @@ export interface GameState {
   // token-shop purchases keyed by the payment tx signature (idempotency — a
   // signature can only ever be redeemed once).
   shopPurchases: Record<string, { address: string; itemId: string; at: number }>;
+  // shop payments submitted but not yet confirmed on-chain when the buy ran — a
+  // background sweep retries these until they confirm, then delivers the item, so
+  // a charged buyer is NEVER left without it.
+  pendingShopPurchases: Record<string, { address: string; itemId: string; at: number }>;
   // player alliances keyed by alliance id
   alliances: Record<string, Alliance>;
   // the current server-wide world boss (null until first spawned)
@@ -94,6 +98,7 @@ export const state: GameState = {
   rewards: {},
   rewardPool: { day: 0, paidLamports: 0 },
   shopPurchases: {},
+  pendingShopPurchases: {},
   alliances: {},
   boss: null,
   polls: {},
@@ -128,6 +133,7 @@ export function loadState(): boolean {
       state.rewards ??= {};
       state.rewardPool ??= { day: 0, paidLamports: 0 };
       state.shopPurchases ??= {};
+      state.pendingShopPurchases ??= {};
       state.alliances ??= {};
       state.boss ??= null;
       state.polls ??= {};

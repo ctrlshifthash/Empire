@@ -40,9 +40,9 @@ export async function shopConfig() {
 // the treasury's token account, signed by `buyer`. (The treasury burns what it
 // collects on a schedule.) Retries patiently because the client may post before
 // our RPC node has seen the tx.
-async function verifyTransfer(signature: string, buyer: string, treasury: string, requiredRaw: bigint): Promise<boolean> {
+async function verifyTransfer(signature: string, buyer: string, treasury: string, requiredRaw: bigint, attempts = 8): Promise<boolean> {
   const mint = tokenMint();
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       const tx = await sharedRpc().getParsedTransaction(signature, {
         maxSupportedTransactionVersion: 0,
@@ -61,7 +61,7 @@ async function verifyTransfer(signature: string, buyer: string, treasury: string
     } catch {
       /* transient RPC hiccup — retry */
     }
-    await new Promise((r) => setTimeout(r, 2000));
+    if (attempt < attempts - 1) await new Promise((r) => setTimeout(r, 2000));
   }
   return false;
 }
@@ -71,6 +71,7 @@ export interface BuyResult {
   error?: string;
   item?: string;
   empireId?: string;
+  pending?: boolean; // payment seen but not yet confirmed — it will deliver automatically
 }
 
 export async function buyShopItem(address: string, signature: string, itemId: string): Promise<BuyResult> {
@@ -92,13 +93,52 @@ export async function buyShopItem(address: string, signature: string, itemId: st
   const dec = await decimals();
   const requiredRaw = BigInt(Math.round(item.price)) * 10n ** BigInt(dec);
   const paid = await verifyTransfer(signature, address, treasury, requiredRaw);
-  if (!paid)
-    return { ok: false, error: "Payment not confirmed yet — if you were charged, wait a few seconds and retry." };
+  if (!paid) {
+    // The payment may simply not be confirmed yet (slow/throttled RPC). Queue it so
+    // the background sweep keeps retrying and delivers the moment it confirms — a
+    // charged buyer NEVER loses their item, even if this request gives up first.
+    if (!state.pendingShopPurchases[signature]) {
+      state.pendingShopPurchases[signature] = { address, itemId, at: now() };
+      scheduleSave(0);
+    }
+    return { ok: false, pending: true, error: "Payment is confirming on-chain — your item will arrive automatically within a minute." };
+  }
 
   const res = applyShopItem(empire, item);
   if (!res.ok) return { ok: false, error: res.error };
 
   state.shopPurchases[signature] = { address, itemId, at: now() };
+  delete state.pendingShopPurchases[signature];
   scheduleSave(0);
   return { ok: true, item: item.id, empireId: user.empireId };
+}
+
+// Background sweep: deliver shop payments that confirmed AFTER their buy request
+// gave up (slow RPC). Re-verifies each pending signature on-chain and applies the
+// item the instant it confirms, so a charged buyer is always made whole. Returns
+// the empireIds delivered to (caller pushes fresh snapshots). Entries expire after 2h.
+export async function settlePendingShopPurchases(): Promise<string[]> {
+  const delivered: string[] = [];
+  const treasury = treasuryPubkey();
+  if (!treasury || !tokenMint()) return delivered;
+  const dec = await decimals();
+  for (const [sig, p] of Object.entries(state.pendingShopPurchases)) {
+    if (state.shopPurchases[sig]) { delete state.pendingShopPurchases[sig]; continue; } // already delivered
+    if (now() - p.at > 2 * 60 * 60 * 1000) { delete state.pendingShopPurchases[sig]; continue; } // give up after 2h
+    const item = shopItem(p.itemId);
+    const user = Object.values(state.users).find((u) => u.externalId === p.address);
+    if (!item || !user || !state.empires[user.empireId]) continue;
+    try {
+      const requiredRaw = BigInt(Math.round(item.price)) * 10n ** BigInt(dec);
+      if (!(await verifyTransfer(sig, p.address, treasury, requiredRaw, 1))) continue; // not confirmed yet — next sweep
+      const res = applyShopItem(state.empires[user.empireId], item);
+      if (res.ok) {
+        state.shopPurchases[sig] = { address: p.address, itemId: p.itemId, at: now() };
+        delete state.pendingShopPurchases[sig];
+        delivered.push(user.empireId);
+      }
+    } catch { /* RPC hiccup — retry next sweep */ }
+  }
+  if (delivered.length) scheduleSave(0);
+  return delivered;
 }

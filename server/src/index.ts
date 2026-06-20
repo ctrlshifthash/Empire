@@ -25,7 +25,7 @@ import { featureLocks, isLocked } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
 import { dailyState, claimDaily } from "./daily.ts";
 import { ownedMounts, equipMount, equippedMountIcon, mountsLocked } from "./mounts.ts";
-import { shopConfig, buyShopItem } from "./shop.ts";
+import { shopConfig, buyShopItem, settlePendingShopPurchases } from "./shop.ts";
 import {
   createAlliance,
   joinAlliance,
@@ -538,6 +538,25 @@ app.post("/api/shop/buy", async (req, res) => {
   }
 });
 
+// Admin-only: force-deliver a shop purchase by its on-chain payment signature —
+// recovers a payment that confirmed but never delivered (verifies the transfer,
+// applies the item, idempotent). x-admin-key. Body: { address, signature, itemId }.
+app.post("/api/admin/deliver-purchase", async (req, res) => {
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey)
+    return res.status(401).json({ ok: false, error: "Unauthorized." });
+  try {
+    const { address, signature, itemId } = (req.body ?? {}) as Record<string, unknown>;
+    if (!address || !signature || !itemId)
+      return res.status(400).json({ ok: false, error: "address, signature and itemId required." });
+    const result = await buyShopItem(String(address), String(signature), String(itemId));
+    if (result.ok && result.empireId) pushSnapshot(result.empireId);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
+
 // Serve the built client in production (single-port deploy).
 const clientDist = join(__dirname, "..", "..", "client", "dist");
 if (existsSync(clientDist)) {
@@ -1026,6 +1045,14 @@ setInterval(() => io.to("hub").emit("hub:online", hubOnline()), 12000);
 
 // roll through holder balances so the active-supply denominator stays fresh
 setInterval(() => void refreshActiveBalances(5), 10000);
+
+// Settle shop payments that confirmed after their buy request gave up (slow RPC),
+// so a charged buyer always receives their item — automatically, no action needed.
+setInterval(() => {
+  void settlePendingShopPurchases().then((ids) => {
+    for (const id of ids) pushSnapshot(id);
+  });
+}, 30000);
 
 // stream avatar positions to everyone standing in the plaza (~10/sec)
 setInterval(() => {
