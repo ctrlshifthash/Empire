@@ -213,13 +213,14 @@ export function scheduleSave(delay = 1500): void {
 }
 
 // Record a marketplace activity event (listed / bought / sold), newest first.
-export function pushActivity(category: MarketActivity["category"], kind: MarketActivity["kind"], text: string): void {
+export function pushActivity(category: MarketActivity["category"], kind: MarketActivity["kind"], text: string, listingId?: string): void {
   const ev: MarketActivity = {
     id: `act_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
     at: Date.now(),
     category,
     kind,
     text,
+    listingId,
   };
   state.marketActivity.unshift(ev);
   if (state.marketActivity.length > 120) state.marketActivity.length = 120;

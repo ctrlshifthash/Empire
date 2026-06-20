@@ -211,6 +211,7 @@ export interface MarketActivity {
   category: "relic" | "coin" | "character";
   kind: "listed" | "bought" | "sold";
   text: string; // e.g. "Sol 4AEJ bought Eternal Crown #1 for 200 USDC"
+  listingId?: string; // the listing this refers to — click the feed entry to jump to it
 }
 
 // A treasury $RUMBLE burn (the hourly deflation job). Shown on the site with a

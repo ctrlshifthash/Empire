@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWallet as useSolWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import type { ListingPublic, InventoryItem } from "@shared/types";
+import type { ListingPublic, InventoryItem, MarketActivity } from "@shared/types";
 import { RARITY_META, MARKET_ITEMS, FUSE_COUNT, FUSE_COINS, CRAFT_COST, RELIC_CAP, nextRarity } from "@shared/gamedata";
 import { walletReady, useWallet } from "../lib/web3";
 import { useGame } from "../lib/store";
@@ -64,6 +64,19 @@ function Market() {
   const [busy, setBusy] = useState<string | null>(null);
   const [tab, setTab] = useState<"relics" | "characters" | "mounts" | "coins">("relics");
   const [rumbleUsd, setRumbleUsd] = useState<number | null>(null); // live $RUMBLE price (for the ≈ preview)
+  const [highlight, setHighlight] = useState<string | null>(null); // listing flashed after an activity-feed click
+
+  // click an activity-feed entry → switch to its category tab and jump to / flash the listing
+  const openActivity = (a: MarketActivity) => {
+    setTab(a.category === "coin" ? "coins" : a.category === "character" ? "characters" : "relics");
+    if (a.listingId) setHighlight(a.listingId);
+  };
+  useEffect(() => {
+    if (!highlight) return;
+    document.getElementById(`listing-${highlight}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setHighlight(null), 2600);
+    return () => clearTimeout(t);
+  }, [highlight, tab, listings]);
 
   const refresh = () => fetchListings().then(setListings);
   useEffect(() => {
@@ -150,7 +163,7 @@ function Market() {
             </div>
           </div>
         )}
-        <MarketActivity category={activeCategory} />
+        <MarketActivity category={activeCategory} onOpen={openActivity} />
       </aside>
       <div className="min-w-0 flex-1">
     {tab === "coins" ? (
@@ -174,7 +187,7 @@ function Market() {
           {listings === null && <div className="panel p-8 text-center text-sm text-parchment-300/60">Loading…</div>}
           {listings?.length === 0 && <div className="panel p-8 text-center text-sm text-parchment-300/60">Nothing listed yet. List one from your inventory.</div>}
           {listings?.map((l) => (
-            <div key={l.id} className="panel flex flex-col p-4" style={{ borderColor: `${rarityColor(l.rarity)}40` }}>
+            <div key={l.id} id={`listing-${l.id}`} className={`panel flex flex-col p-4 transition-shadow ${highlight === l.id ? "ring-2 ring-gold" : ""}`} style={{ borderColor: `${rarityColor(l.rarity)}40` }}>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{l.icon}</span>
                 <div className="min-w-0">

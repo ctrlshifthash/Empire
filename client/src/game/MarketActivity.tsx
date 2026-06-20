@@ -17,8 +17,9 @@ const dot: Record<Activity["kind"], string> = {
 };
 
 // Live feed of recent marketplace activity for one category (relic/coin/character)
-// — fires whenever something is listed, bought or sold.
-export default function MarketActivity({ category }: { category: Activity["category"] }) {
+// — fires whenever something is listed, bought or sold. Click an entry to jump to
+// that item's listing in the marketplace.
+export default function MarketActivity({ category, onOpen }: { category: Activity["category"]; onOpen?: (a: Activity) => void }) {
   const [items, setItems] = useState<Activity[] | null>(null);
 
   useEffect(() => {
@@ -43,11 +44,16 @@ export default function MarketActivity({ category }: { category: Activity["categ
         {items === null && <div className="text-sm text-parchment-300/50">Loading…</div>}
         {items?.length === 0 && <div className="text-sm text-parchment-300/50">No activity yet — be the first.</div>}
         {items?.map((a) => (
-          <div key={a.id} className="flex items-center gap-2 text-sm">
+          <button
+            key={a.id}
+            onClick={() => onOpen?.(a)}
+            className="group flex w-full items-center gap-2 rounded px-1 py-0.5 text-left text-sm transition-colors hover:bg-white/5"
+            title="Jump to this item"
+          >
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot[a.kind]}`} />
-            <span className="min-w-0 flex-1 truncate text-parchment-200">{a.text}</span>
+            <span className="min-w-0 flex-1 truncate text-parchment-200 group-hover:text-gold-light">{a.text}</span>
             <span className="shrink-0 text-[11px] text-parchment-300/45">{ago(a.at)}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
