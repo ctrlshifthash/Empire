@@ -54,6 +54,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const lobby = useGame((s) => s.hubAvatars); // everyone currently in the plaza
   const online = useGame((s) => s.hubOnline); // everyone online (broader count)
   const [chat, setChat] = useState("");
+  const [nearSpin, setNearSpin] = useState(false); // standing next to the plaza wheel
 
   // player card: click a roster name to see their stats
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -148,6 +149,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
     let raf = 0;
     let last = performance.now();
     let sendAcc = 0;
+    let lastNear = false; // proximity to the wheel — only setState when it flips
 
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -230,6 +232,103 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       ctx.fill();
     };
 
+    // ── the prize wheel: a polished "spin to win" centrepiece, slow idle spin ──
+    const WHEEL_COLORS = ["#e6443b", "#f0922f", "#f4c63d", "#5bbf4a", "#2fb3a8", "#3b82d6", "#8b54d6", "#d64f9e"];
+    const drawSpinner = (cx: number, cy: number, t: number) => {
+      const U = V_TILE_W * V_SCALE; // base unit (matches the fountain's scale)
+      const R = U * 0.62; // wheel radius
+      const wy = cy - R * 1.7; // wheel centre, raised on the post
+      const N = WHEEL_COLORS.length;
+      const SEG = (Math.PI * 2) / N;
+      const spin = (t / 5200) * Math.PI * 2; // slow idle rotation
+
+      // ground shadow
+      ctx.fillStyle = "rgba(0,0,0,0.22)";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, R * 0.62, R * 0.24, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // wooden post + a thin highlight down its centre
+      ctx.fillStyle = "#5d3f24";
+      ctx.beginPath();
+      ctx.moveTo(cx - R * 0.13, cy);
+      ctx.lineTo(cx + R * 0.13, cy);
+      ctx.lineTo(cx + R * 0.07, wy + R * 0.2);
+      ctx.lineTo(cx - R * 0.07, wy + R * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.fillRect(cx - R * 0.03, wy + R * 0.2, R * 0.05, cy - wy - R * 0.2);
+
+      // outer glow + gold rim
+      ctx.save();
+      ctx.shadowColor = "rgba(244,205,90,0.55)";
+      ctx.shadowBlur = U * 0.5;
+      ctx.fillStyle = "#caa53a";
+      ctx.beginPath();
+      ctx.arc(cx, wy, R * 1.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "#9a7820"; // inner rim ring
+      ctx.beginPath();
+      ctx.arc(cx, wy, R, 0, Math.PI * 2);
+      ctx.fill();
+
+      // colour segments
+      for (let i = 0; i < N; i++) {
+        const a0 = spin + i * SEG;
+        ctx.fillStyle = WHEEL_COLORS[i];
+        ctx.beginPath();
+        ctx.moveTo(cx, wy);
+        ctx.arc(cx, wy, R * 0.9, a0, a0 + SEG);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // segment dividers
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = Math.max(1, U * 0.03);
+      for (let i = 0; i < N; i++) {
+        const a = spin + i * SEG;
+        ctx.beginPath();
+        ctx.moveTo(cx, wy);
+        ctx.lineTo(cx + Math.cos(a) * R * 0.9, wy + Math.sin(a) * R * 0.9);
+        ctx.stroke();
+      }
+
+      // casino bulbs around the rim (twinkle)
+      const BULBS = 16;
+      for (let i = 0; i < BULBS; i++) {
+        const a = (i / BULBS) * Math.PI * 2;
+        const lit = (Math.floor(t / 170) + i) % 2 === 0;
+        ctx.fillStyle = lit ? "#fff4c2" : "#b9912f";
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * R, wy + Math.sin(a) * R, R * 0.055, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // hub cap
+      ctx.fillStyle = "#f4cd5a";
+      ctx.beginPath();
+      ctx.arc(cx, wy, R * 0.17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#7a5e1c";
+      ctx.beginPath();
+      ctx.arc(cx, wy, R * 0.075, 0, Math.PI * 2);
+      ctx.fill();
+
+      // top pointer (points down into the wheel)
+      ctx.fillStyle = "#e23b3b";
+      ctx.beginPath();
+      ctx.moveTo(cx, wy - R * 0.82);
+      ctx.lineTo(cx - R * 0.13, wy - R * 1.14);
+      ctx.lineTo(cx + R * 0.13, wy - R * 1.14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.stroke();
+    };
+
     const loop = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000);
       last = t;
@@ -262,6 +361,13 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       if (sendAcc >= 0.1) {
         sendAcc = 0;
         hubMove(m.x, m.y, m.facing, moving);
+      }
+
+      // walked up to the plaza wheel? (only setState when it flips)
+      const nearWheel = Math.hypot(m.x, m.y) < 1.7;
+      if (nearWheel !== lastNear) {
+        lastNear = nearWheel;
+        setNearSpin(nearWheel);
       }
 
       // ── camera centred on me (village iso projection) ──
@@ -303,8 +409,9 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       type Obj = { d: number; draw: () => void };
       const objs: Obj[] = [];
 
-      // your original fountain, kept, at the village centre (avatar 0,0)
-      objs.push({ d: 0, draw: () => drawFountain(toScreen(0, 0).x, toScreen(0, 0).y, t) });
+      // the prize wheel is the new plaza centrepiece; the fountain sits just behind it
+      objs.push({ d: -2.0, draw: () => drawFountain(toScreen(0, -2.0).x, toScreen(0, -2.0).y, t) });
+      objs.push({ d: 0, draw: () => drawSpinner(toScreen(0, 0).x, toScreen(0, 0).y, t) });
 
       // village sprites (houses, stalls, decor, animated windmill) depth-sorted
       if (villageReady()) {
@@ -415,6 +522,18 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
           🏰 Enter My Empire →
         </button>
       </div>
+
+      {/* walk up to the plaza wheel → prompt to spin */}
+      {nearSpin && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center">
+          <button
+            onClick={() => onOpenTab("spinner")}
+            className="btn-gold pointer-events-auto animate-pulse px-6 py-2.5 text-base font-bold shadow-gold"
+          >
+            🎡 Spin the Wheel
+          </button>
+        </div>
+      )}
 
       {/* lobby roster — who's in the hub right now */}
       <div className="absolute right-3 top-3 w-44 max-w-[45vw]">
