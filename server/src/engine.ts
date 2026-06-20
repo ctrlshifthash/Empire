@@ -25,6 +25,7 @@ import {
   nextAge,
   nextLevelCost,
   populationProvided,
+  MAX_POPULATION,
   productionPerMinute,
   rankForPower,
   rushCost,
@@ -163,7 +164,7 @@ export function populationCap(e: Empire): number {
     if (!isActive(b)) continue;
     cap += populationProvided(b.type, b.level);
   }
-  return cap;
+  return Math.min(cap, MAX_POPULATION); // hard ceiling — extra houses give no more capacity past this
 }
 
 export function usedPopulation(e: Empire): number {
@@ -171,6 +172,21 @@ export function usedPopulation(e: Empire): number {
   for (const u of Object.keys(e.army) as UnitType[]) used += e.army[u] * UNITS[u].population;
   for (const o of e.trainQueue) used += UNITS[o.unit].population * o.quantity;
   return used;
+}
+
+// Trim an empire's standing army down to the population ceiling, scaling every
+// unit type proportionally so the army mix is preserved. Used as a one-time
+// migration when the cap is introduced (and a safety clamp on load). Returns
+// true if it actually cut anything.
+export function clampArmyToCap(e: Empire): boolean {
+  let armyPop = 0;
+  for (const u of Object.keys(e.army) as UnitType[]) armyPop += e.army[u] * UNITS[u].population;
+  if (armyPop <= MAX_POPULATION) return false;
+  const scale = MAX_POPULATION / armyPop;
+  for (const u of Object.keys(e.army) as UnitType[]) e.army[u] = Math.floor(e.army[u] * scale);
+  e.trainQueue = []; // drop in-progress training that would push back over the cap
+  recomputePower(e);
+  return true;
 }
 
 function wallMultiplier(e: Empire): number {

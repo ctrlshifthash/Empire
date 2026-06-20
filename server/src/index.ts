@@ -77,7 +77,7 @@ import { submitBug, listBugs } from "./bugs.ts";
 import { spawnBot } from "./world.ts";
 import { authUser, demoLogin, login, privyLogin, register, userByToken } from "./auth.ts";
 import { onlineEmpires, isOnline, allOnlineIds, onlineCount, setAlwaysOnline } from "./presence.ts";
-import { rankForPower, COLORS_BANNER } from "../../shared/gamedata.ts";
+import { rankForPower, COLORS_BANNER, MAX_POPULATION } from "../../shared/gamedata.ts";
 import {
   actAdvanceAge,
   actAttack,
@@ -93,6 +93,7 @@ import {
   actUpgrade,
   actUpgradeTool,
   refreshEmpire,
+  clampArmyToCap,
   snapshotFor,
   tick,
 } from "./engine.ts";
@@ -156,8 +157,13 @@ function bootstrap(): void {
   seedGovernance(); // ensure there's always a community poll to vote on
   ensureTournament(); // ensure the rolling arena tournament is open
   seedMarket(); // stock the Bazaar with starter listings so it's never empty
-  // bring everyone current after any downtime
-  for (const e of Object.values(state.empires)) refreshEmpire(e);
+  // bring everyone current after any downtime + enforce the army population cap
+  let trimmedArmies = 0;
+  for (const e of Object.values(state.empires)) {
+    refreshEmpire(e);
+    if (clampArmyToCap(e)) trimmedArmies++;
+  }
+  if (trimmedArmies) console.log(`[boot] trimmed ${trimmedArmies} over-cap armies to ${MAX_POPULATION} population`);
   save();
 }
 

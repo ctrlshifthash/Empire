@@ -713,6 +713,10 @@ export function holderPerksForTier(tierName: string | undefined): HolderPerk {
   return (tierName && HOLDER_PERKS[tierName]) || EMPTY_HOLDER_PERK;
 }
 
+// Hard ceiling on an empire's population — caps army size no matter how many
+// houses are built (units consume population, so this bounds the whole army).
+export const MAX_POPULATION = 10_000;
+
 // ── Armoury (army equipment) & Hero gear (bought with coins) ────────────────
 export const MAX_GEAR = 8; // max weapon level per army unit type
 // Armour goes higher than weapons so a defender who invests can out-armour an

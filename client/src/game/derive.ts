@@ -6,6 +6,7 @@ import {
   RESOURCE_KINDS,
   TC_TRICKLE_PER_LEVEL,
   UNITS,
+  MAX_POPULATION,
   populationProvided,
   productionPerMinute,
 } from "@shared/gamedata";
@@ -25,7 +26,7 @@ export function warehouseCapacity(e: Empire): number {
 export function populationCap(e: Empire): number {
   let cap = 0;
   for (const b of e.buildings) if (isActive(b)) cap += populationProvided(b.type, b.level);
-  return cap;
+  return Math.min(cap, MAX_POPULATION); // mirror the server's hard ceiling
 }
 
 export function usedPopulation(e: Empire): number {
