@@ -201,16 +201,33 @@ function vipDailyAccrual(address: string): number {
   return VIP_POOL_SOL * weight;
 }
 
+// Daily-play bonus: showing up tops up your accrual on top of everything else.
+// Pure upside — a wallet that played in the last day earns up to +100%, easing
+// back to its normal full share (never below) over a week if it stops. Not
+// playing is never a penalty; playing is the reward.
+const PLAY_BONUS_MAX = 1.0; // up to +100% (2x) while you're playing
+const PLAY_WINDOW_MS = 24 * 60 * 60 * 1000; // full bonus if you played in the last 24h
+const PLAY_FADE_MS = 7 * 24 * 60 * 60 * 1000; // then eases back to 0 over ~a week idle
+function dailyPlayBonus(address: string): number {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  const last = empire?.lastActiveAt ?? 0;
+  if (!last) return 1; // hasn't played → full fair share, just no bonus (never a cut)
+  const idle = now() - last;
+  if (idle <= PLAY_WINDOW_MS) return 1 + PLAY_BONUS_MAX;
+  const t = Math.min(1, (idle - PLAY_WINDOW_MS) / PLAY_FADE_MS);
+  return 1 + PLAY_BONUS_MAX * (1 - t);
+}
+
 // SOL/day a wallet accrues. VIP wallets earn a quest-weighted share of the VIP
 // pool; everyone else earns a balance-weighted share of the public pool, scaled
-// up by rank. Climbing the ranks is something you can only do by playing, so
-// holders who play earn MORE — while holders who don't still earn their full
-// balance share. It's a reward for playing, never a penalty for not.
+// up by rank (climbed only by playing) and a daily-play bonus on top. Holders
+// who play earn MORE; holders who don't still earn their full balance share.
 function dailyAccrualSol(address: string, balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
   if (VIP_REWARD_WALLETS.has(address)) return vipDailyAccrual(address);
   const active = activeSupply();
   const share = active > 0 ? balance / active : 0;
-  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult;
+  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult * dailyPlayBonus(address);
   return Math.min(raw, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
 }
 

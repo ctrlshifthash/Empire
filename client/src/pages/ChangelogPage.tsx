@@ -21,7 +21,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 20, 2026",
     items: [
-      { tag: "Improvement", title: "Rank up to earn a bigger share of the pool", desc: "Holders who play now earn more. Your share of the daily SOL pool scales with your renown rank — climbing toward Emperor lifts your accrual up to 5×, and the only way up the ranks is to play. Holding still earns exactly as it did before; ranking up just adds more on top, never less for anyone. No single wallet can ever take more than its capped share of the pool." },
+      { tag: "Improvement", title: "Play and rank up to earn a bigger share", desc: "Holders who play now earn more, two ways. Your share of the daily SOL pool scales with your renown rank — up to 5× at Emperor — and playing each day adds a bonus on top, up to 2× while you're active, easing back to your normal share if you stop. Holding always pays your full share; playing and ranking just stack on top, never less for anyone. No single wallet can ever take more than its capped share of the pool." },
     ],
   },
   {
