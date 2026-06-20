@@ -9,6 +9,13 @@ export default function ResourceBar({ empire, onLocate }: { empire: Empire; onLo
   const popUsed = usedPopulation(empire);
   const popCap = populationCap(empire);
   const popFull = popUsed >= popCap;
+  // active Harvest Surge (token-shop gather buff) — show it so buyers can see what they bought
+  const boostMs = empire.boosts?.gatherUntil ? empire.boosts.gatherUntil - Date.now() : 0;
+  const boostActive = boostMs > 0;
+  const boostLeft =
+    boostMs >= 3_600_000
+      ? `${Math.floor(boostMs / 3_600_000)}h ${Math.round((boostMs % 3_600_000) / 60_000)}m`
+      : `${Math.max(1, Math.round(boostMs / 60_000))}m`;
 
   return (
     <div className="sticky top-16 z-30 border-b border-parchment-300/10 bg-ink-800/90 backdrop-blur-md">
@@ -43,6 +50,19 @@ export default function ResourceBar({ empire, onLocate }: { empire: Empire; onLo
           <span className="text-lg leading-none">🪙</span>
           <div className="font-semibold tabular-nums text-gold-light">{fmt(empire.coins)}</div>
         </div>
+
+        {boostActive && (
+          <div
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-3 py-1.5 shadow-[0_0_12px_rgba(52,211,153,0.25)]"
+            title={`Harvest Surge active — ${empire.boosts?.gatherMult ?? 2}× gather yield (from the token shop).`}
+          >
+            <span className="text-lg leading-none">🌾</span>
+            <div className="leading-tight">
+              <div className="font-semibold tabular-nums text-emerald-300">{empire.boosts?.gatherMult ?? 2}× Harvest</div>
+              <div className="text-[10px] font-medium text-emerald-400/80">{boostLeft} left</div>
+            </div>
+          </div>
+        )}
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <div
