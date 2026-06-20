@@ -201,32 +201,16 @@ function vipDailyAccrual(address: string): number {
   return VIP_POOL_SOL * weight;
 }
 
-// Activity bonus: you have to keep playing. Full credit if you've been in-game
-// in the last day, decaying to a floor the longer you idle — so a high-rank
-// player who walks away slides back toward baseline while an active one keeps
-// the full rate. A wallet never seen playing sits at the floor.
-const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000; // full while active in the last 24h
-const IDLE_DECAY_MS = 7 * 24 * 60 * 60 * 1000; // then fades over ~a week
-const IDLE_FLOOR = 0.2; // …down to 20%
-function activityMult(address: string): number {
-  const user = Object.values(state.users).find((u) => u.externalId === address);
-  const empire = user ? state.empires[user.empireId] : undefined;
-  const last = empire?.lastActiveAt ?? 0;
-  if (!last) return IDLE_FLOOR;
-  const idle = now() - last;
-  if (idle <= ACTIVE_WINDOW_MS) return 1;
-  const t = Math.min(1, (idle - ACTIVE_WINDOW_MS) / IDLE_DECAY_MS);
-  return Math.max(IDLE_FLOOR, 1 - t * (1 - IDLE_FLOOR));
-}
-
 // SOL/day a wallet accrues. VIP wallets earn a quest-weighted share of the VIP
 // pool; everyone else earns a balance-weighted share of the public pool, scaled
-// by rank (how hard you've played) and activity (whether you still play).
+// up by rank. Climbing the ranks is something you can only do by playing, so
+// holders who play earn MORE — while holders who don't still earn their full
+// balance share. It's a reward for playing, never a penalty for not.
 function dailyAccrualSol(address: string, balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
   if (VIP_REWARD_WALLETS.has(address)) return vipDailyAccrual(address);
   const active = activeSupply();
   const share = active > 0 ? balance / active : 0;
-  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult * activityMult(address);
+  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult;
   return Math.min(raw, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
 }
 

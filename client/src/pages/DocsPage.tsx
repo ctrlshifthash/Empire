@@ -107,9 +107,9 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
         </p>
         <p>
           It is also <strong>token-gated with real rewards</strong>. Hold the game token and a slice of a daily{" "}
-          <strong>10 SOL</strong> pool accrues to your wallet, claimable as Solana — and the harder you play, the bigger
-          your slice: climbing the renown ranks boosts your accrual up to <strong>5×</strong>, and staying active keeps it
-          at full while idle wallets taper off. Don’t hold the token? You can still play the full game in{" "}
+          <strong>10 SOL</strong> pool accrues to your wallet, claimable as Solana — and the more you play, the bigger
+          your slice: climbing the renown ranks boosts your accrual up to <strong>5×</strong>. Don’t hold the token? You
+          can still play the full game in{" "}
           <strong>demo mode</strong> with worthless in-game coins.
         </p>
         <p>

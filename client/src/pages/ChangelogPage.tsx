@@ -21,7 +21,7 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 20, 2026",
     items: [
-      { tag: "Improvement", title: "Rewards now pay players, not idle wallets", desc: "Your share of the daily SOL pool now scales with how hard you play. Climbing the renown ranks lifts your accrual up to 5×, and you have to keep showing up — your rate stays full while you're active and tapers off if a wallet sits idle for days. Holding still counts, but grinders now out-earn dormant bags. No single wallet can ever take more than its capped share of the pool." },
+      { tag: "Improvement", title: "Rank up to earn a bigger share of the pool", desc: "Holders who play now earn more. Your share of the daily SOL pool scales with your renown rank — climbing toward Emperor lifts your accrual up to 5×, and the only way up the ranks is to play. Holding still earns exactly as it did before; ranking up just adds more on top, never less for anyone. No single wallet can ever take more than its capped share of the pool." },
     ],
   },
   {

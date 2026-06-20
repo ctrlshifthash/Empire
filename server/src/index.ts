@@ -590,9 +590,6 @@ io.on("connection", (socket) => {
     empireId = user.empireId;
     externalId = user.externalId;
     socket.data.empireId = empireId;
-    // NB: do NOT mark active on mere connect — an open/AFK tab would otherwise
-    // keep full rate forever. Activity is stamped only on real game actions
-    // (withEmpire), so a connected-but-idle wallet still decays.
     socket.join(`emp:${empireId}`);
     socket.join("hub");
     onlineEmpires.add(empireId);
@@ -630,7 +627,6 @@ io.on("connection", (socket) => {
       socket.emit("error", "Not authenticated.");
       return;
     }
-    state.empires[empireId].lastActiveAt = now(); // mark the player active (drives reward activity bonus)
     fn(empireId);
   }
 
