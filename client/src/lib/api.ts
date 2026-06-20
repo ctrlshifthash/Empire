@@ -65,6 +65,7 @@ export const api = {
       players: number;
       bots: number;
       online: number;
+      totalSolEarned: number;
       activeMarches: number;
       totalArmies: number;
     }>("/api/stats"),

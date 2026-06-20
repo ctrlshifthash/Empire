@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import EmberCanvas from "./EmberCanvas";
 import BurnStat from "./BurnStat";
 import { fmt } from "../../lib/format";
+import SolanaIcon from "../SolanaIcon";
 
 interface Stats {
   players: number;
   totalEmpires: number;
   totalArmies: number;
   online: number;
+  totalSolEarned: number;
   worldTick: number;
 }
 
@@ -113,9 +115,26 @@ export default function Hero({ stats }: { stats: Stats | null }) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="mt-14 grid w-full max-w-2xl grid-cols-2 gap-6 rounded-2xl border border-parchment-300/10 bg-black/30 px-6 py-6 backdrop-blur-sm sm:grid-cols-4"
+          className="mt-14 grid w-full max-w-3xl grid-cols-2 gap-6 rounded-2xl border border-parchment-300/10 bg-black/30 px-6 py-6 backdrop-blur-sm sm:grid-cols-3"
         >
           <BurnStat />
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <div className="font-display text-2xl font-bold text-emerald-300 sm:text-3xl">{stats ? fmt(stats.online) : "—"}</div>
+            </div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-parchment-300/60">Players online</div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2">
+              <SolanaIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="font-display text-2xl font-bold text-gold-light sm:text-3xl">{stats ? stats.totalSolEarned.toFixed(2) : "—"}</div>
+            </div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-parchment-300/60">SOL earned by players</div>
+          </div>
           <Stat value={stats ? fmt(stats.totalEmpires) : "—"} label="Empires" />
           <Stat value={stats ? fmt(stats.players) : "—"} label="Rulers" />
           <Stat value={stats ? fmt(stats.totalArmies) : "—"} label="Units afield" />

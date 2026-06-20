@@ -243,6 +243,7 @@ app.get("/api/stats", (_req, res) => {
     players: players.length,
     bots: empires.length - players.length,
     online: onlineCount(),
+    totalSolEarned: Object.values(state.rewards).reduce((s, r) => s + (r.totalClaimed ?? 0), 0) / 1e9,
     activeMarches: state.marches.length,
     totalArmies: empires.reduce(
       (s, e) => s + e.army.villager + e.army.spearman + e.army.archer + e.army.knight,
