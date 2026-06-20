@@ -22,7 +22,7 @@ import { getAssociatedTokenAddressSync, createBurnCheckedInstruction, TOKEN_2022
 import bs58 from "bs58";
 import { state, scheduleSave, type RewardRecord } from "./store.ts";
 import { now } from "./util.ts";
-import { rewardTier, nextRewardTier, rankForPower, marketItem } from "../../shared/gamedata.ts";
+import { rewardTier, nextRewardTier, rankForPower, RANKS, marketItem } from "../../shared/gamedata.ts";
 
 const MINT = (process.env.TOKEN_MINT || "").trim();
 const RPC = (process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com").trim();
@@ -201,13 +201,32 @@ function vipDailyAccrual(address: string): number {
   return VIP_POOL_SOL * weight;
 }
 
+// Activity bonus: you have to keep playing. Full credit if you've been in-game
+// in the last day, decaying to a floor the longer you idle — so a high-rank
+// player who walks away slides back toward baseline while an active one keeps
+// the full rate. A wallet never seen playing sits at the floor.
+const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000; // full while active in the last 24h
+const IDLE_DECAY_MS = 7 * 24 * 60 * 60 * 1000; // then fades over ~a week
+const IDLE_FLOOR = 0.2; // …down to 20%
+function activityMult(address: string): number {
+  const user = Object.values(state.users).find((u) => u.externalId === address);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  const last = empire?.lastActiveAt ?? 0;
+  if (!last) return IDLE_FLOOR;
+  const idle = now() - last;
+  if (idle <= ACTIVE_WINDOW_MS) return 1;
+  const t = Math.min(1, (idle - ACTIVE_WINDOW_MS) / IDLE_DECAY_MS);
+  return Math.max(IDLE_FLOOR, 1 - t * (1 - IDLE_FLOOR));
+}
+
 // SOL/day a wallet accrues. VIP wallets earn a quest-weighted share of the VIP
-// pool; everyone else earns a balance-weighted share of the public pool.
+// pool; everyone else earns a balance-weighted share of the public pool, scaled
+// by rank (how hard you've played) and activity (whether you still play).
 function dailyAccrualSol(address: string, balance: number, m: number, playMult: number, loyaltyMult: number, relicMult: number): number {
   if (VIP_REWARD_WALLETS.has(address)) return vipDailyAccrual(address);
   const active = activeSupply();
   const share = active > 0 ? balance / active : 0;
-  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult;
+  const raw = share * PUBLIC_POOL_SOL * m * playMult * loyaltyMult * relicMult * activityMult(address);
   return Math.min(raw, PUBLIC_POOL_SOL * WALLET_CAP_PCT);
 }
 
@@ -251,7 +270,9 @@ function playBonus(address: string): { mult: number; rank: string } {
   const empire = user ? state.empires[user.empireId] : undefined;
   if (!empire) return { mult: 1, rank: "Unranked" };
   const r = rankForPower(empire.power);
-  return { mult: r.gatherMult, rank: r.name };
+  // Wide reward spread so climbing ranks actually pays: 1× (Peasant) → 5× (Emperor).
+  const idx = Math.max(0, RANKS.findIndex((x) => x.name === r.name));
+  return { mult: 1 + (idx / (RANKS.length - 1)) * 4, rank: r.name };
 }
 
 // Equipped relics with a SOL effect boost the wallet's accrual rate (a bigger

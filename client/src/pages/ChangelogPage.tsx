@@ -19,6 +19,12 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 20, 2026",
+    items: [
+      { tag: "Improvement", title: "Rewards now pay players, not idle wallets", desc: "Your share of the daily SOL pool now scales with how hard you play. Climbing the renown ranks lifts your accrual up to 5×, and you have to keep showing up — your rate stays full while you're active and tapers off if a wallet sits idle for days. Holding still counts, but grinders now out-earn dormant bags. No single wallet can ever take more than its capped share of the pool." },
+    ],
+  },
+  {
     date: "June 19, 2026",
     items: [
       { tag: "Feature", title: "The Hub is now a walkable village", desc: "The Hub has been rebuilt as a village you explore — wander your hero with WASD across a market square of stalls around the fountain, past dozens of houses, dirt roads out to open grassland and tree-lined fields, with everyone online beside you. Scroll or use the +/− buttons to zoom in and out." },

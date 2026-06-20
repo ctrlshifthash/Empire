@@ -590,6 +590,7 @@ io.on("connection", (socket) => {
     empireId = user.empireId;
     externalId = user.externalId;
     socket.data.empireId = empireId;
+    if (state.empires[empireId]) state.empires[empireId].lastActiveAt = now();
     socket.join(`emp:${empireId}`);
     socket.join("hub");
     onlineEmpires.add(empireId);
@@ -627,6 +628,7 @@ io.on("connection", (socket) => {
       socket.emit("error", "Not authenticated.");
       return;
     }
+    state.empires[empireId].lastActiveAt = now(); // mark the player active (drives reward activity bonus)
     fn(empireId);
   }
 
