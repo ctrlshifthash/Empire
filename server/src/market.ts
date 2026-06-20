@@ -335,8 +335,12 @@ export async function reserveListing(listingId: string, buyer: string): Promise<
   if (!l || l.status !== "active") return { ok: false, error: "That listing is gone." };
   if (l.reservedBy && l.reservedBy !== buyer && (l.reservedUntil ?? 0) > now())
     return { ok: false, error: "Someone is buying this right now — try again in a moment." };
-  // make sure the buyer has room before they pay
   const buyerUser = Object.values(state.users).find((u) => u.externalId === buyer);
+  // can't reserve your own listing — otherwise clicking Buy then cancelling leaves
+  // your own item stuck "reserved" until the lock expires
+  if (buyerUser && l.sellerId === buyerUser.empireId)
+    return { ok: false, error: "You can't buy your own listing." };
+  // make sure the buyer has room before they pay
   if (buyerUser && inventoryCount(buyerUser.empireId) >= RELIC_CAP)
     return { ok: false, error: `Your inventory is full (${RELIC_CAP}) — sell or forge a relic to make room first.` };
   const rumbleUsd = await rumbleUsdPrice();
