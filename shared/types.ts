@@ -183,7 +183,7 @@ export interface Empire {
   profilePublic?: boolean;
   lastSpinAt?: number; // last free spinner spin (beta)
   lastHubGatherAt?: number; // last time they gathered (chopped) in the hub plaza
-  hubGather?: { count: number; since: number }; // rolling 24h gather count (daily cap)
+  hubGather?: { gathered: number; since: number }; // rolling 24h resources gathered in the hub (daily cap)
   raidCooldowns?: Record<string, number>; // per-target last-raid timestamps (anti raid-spam farming)
   // daily-quest tracking (beta): baselines snapshot at day rollover
   daily?: { day: string; baseline: { raids: number; duels: number; xp: number }; claimed: string[] };

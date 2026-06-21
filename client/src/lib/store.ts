@@ -44,6 +44,7 @@ interface GameStore {
   claimDaily: (id: string) => void;
   // mounts & pets (beta)
   mountsState: MountsState | null;
+  hubChopFx: { resource: string; amount: number; today: number; max: number; nonce: number } | null; // last hub chop, for feedback
   getMounts: () => void;
   equipMount: (instanceId: string) => void;
   // a battle to spectate in-world (your own invasions auto-open), or null
@@ -146,6 +147,7 @@ export const useGame = create<GameStore>((set, get) => ({
   getDaily: () => socket?.emit("daily:get"),
   claimDaily: (id) => socket?.emit("daily:claim", { id }),
   mountsState: null,
+  hubChopFx: null,
   getMounts: () => socket?.emit("mounts:get"),
   equipMount: (instanceId) => socket?.emit("mounts:equip", { instanceId }),
   pendingBattle: null,
@@ -230,6 +232,9 @@ export const useGame = create<GameStore>((set, get) => ({
     );
     socket.on("daily:state", (d: DailyState) => set({ dailyState: d }));
     socket.on("mounts:state", (m: MountsState) => set({ mountsState: m }));
+    socket.on("hub:gather:ok", (d: { resource: string; amount: number; today: number; max: number }) =>
+      set((s) => ({ hubChopFx: { ...d, nonce: (s.hubChopFx?.nonce ?? 0) + 1 } })),
+    );
     socket.on("error", (msg: string) => get().pushToast({ kind: "warn", text: msg }));
     // server rejected our token (world reset / expired) — clear it and bounce
     // back to the login screen instead of leaving the UI stuck.

@@ -54,6 +54,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const hubMove = useGame((s) => s.hubMove);
   const hubChat = useGame((s) => s.hubChat);
   const hubGather = useGame((s) => s.hubGather);
+  const chopFx = useGame((s) => s.hubChopFx);
   const messages = useGame((s) => s.hubMessages);
   const connected = useGame((s) => s.connected);
   const myId = useGame((s) => s.snapshot?.empire?.id);
@@ -449,14 +450,19 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         </div>
       )}
 
-      {/* walk up to a tree/node → prompt to chop for a small resource bundle */}
+      {/* walk up to a tree → chop repeatedly; a few resources each, daily-capped */}
       {nearChop && !nearSpin && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex flex-col items-center gap-1.5">
+          {chopFx && (
+            <div key={chopFx.nonce} className="rounded-md border border-emerald-400/30 bg-black/70 px-2.5 py-1 text-xs font-semibold text-emerald-300 backdrop-blur">
+              +{chopFx.amount} {chopFx.resource} · {chopFx.today}/{chopFx.max} today
+            </div>
+          )}
           <button
             onClick={() => hubGather()}
-            className="btn-gold pointer-events-auto animate-pulse px-6 py-2.5 text-base font-bold shadow-gold"
+            className="btn-gold pointer-events-auto px-7 py-2.5 text-base font-bold shadow-gold active:scale-95"
           >
-            🪓 Chop for resources
+            🪓 Chop
           </button>
         </div>
       )}

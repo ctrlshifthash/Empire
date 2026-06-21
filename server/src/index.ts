@@ -986,11 +986,14 @@ io.on("connection", (socket) => {
     }),
   );
 
-  // Hub gathering — chop a tree/node in the plaza for a small resource bundle.
+  // Hub gathering — chop a plaza tree for a few resources (tiny + daily-capped).
+  // No toast/snapshot per chop (they grind 100+/day); a light event drives the
+  // on-screen feedback, resources sync on the next snapshot. Toast only on cap.
   socket.on("hub:gather", () =>
     withEmpire((id) => {
       const r = hubGather(id);
-      handle(r, r.ok ? `🪓 Gathered ${r.amount} ${r.resource}!` : undefined);
+      if (r.ok) socket.emit("hub:gather:ok", { resource: r.resource, amount: r.amount, today: r.today, max: r.max });
+      else if (r.capped && r.error) socket.emit("toast", { kind: "info", text: r.error });
     }),
   );
 
