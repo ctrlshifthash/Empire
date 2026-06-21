@@ -3,23 +3,12 @@ import { io, type Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import type { HubAvatar, HubMessage, HubPlayer } from "@shared/types";
 import { SERVER_URL } from "../lib/config";
-import { worldToScreen, TILE_W, TILE_H } from "../world/iso";
-import { drawCharacter, drawBuilding } from "../world/draw";
-import { drawTile, TILES } from "../world/tiles";
-import type { BuildingView } from "../world/engine";
+import { drawCharacter } from "../world/draw";
+import { loadVillage, villageReady, vimg, GROUND, OBJECTS, vToScreen, drawGround, drawObj, drawHubFountain, drawHubSpinner, V_TILE_W, V_TILE_H } from "../world/village";
 
 // Spectate (beta). A read-only window on the live hub — anyone can watch players
-// mill about the plaza, no account needed, with a prompt to connect and play.
-// Self-contained: its own socket, zero coupling to the authed hub.
-const BUILDINGS: { type: BuildingView["type"]; x: number; y: number }[] = [
-  { type: "town_center", x: 0, y: -6 },
-  { type: "house", x: -6, y: -3 },
-  { type: "barracks", x: 6, y: -4 },
-  { type: "stable", x: 7, y: 1 },
-  { type: "house", x: 0, y: 8 },
-  { type: "lumber_camp", x: -5, y: 5 },
-];
-const PLAZA_R = 3.5;
+// mill about the real village plaza, no account needed, with a prompt to play.
+// Renders the same village scene as the authed hub; its own socket, no coupling.
 
 type Disp = { x: number; y: number; phase: number };
 
@@ -44,6 +33,11 @@ export default function SpectateView() {
     };
   }, []);
 
+  // preload the village tileset + sprites once
+  useEffect(() => {
+    loadVillage();
+  }, []);
+
   useEffect(() => {
     if (locked) return;
     const canvas = canvasRef.current;
@@ -63,17 +57,6 @@ export default function SpectateView() {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-
-    const stone = (cx: number, cy: number, fill: string) => {
-      ctx.fillStyle = fill;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - TILE_H / 2);
-      ctx.lineTo(cx + TILE_W / 2, cy);
-      ctx.lineTo(cx, cy + TILE_H / 2);
-      ctx.lineTo(cx - TILE_W / 2, cy);
-      ctx.closePath();
-      ctx.fill();
-    };
 
     const loop = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000);
@@ -96,37 +79,49 @@ export default function SpectateView() {
       cam.x += (tx - cam.x) * Math.min(1, dt * 2);
       cam.y += (ty - cam.y) * Math.min(1, dt * 2);
 
-      const camS = worldToScreen(cam.x, cam.y);
+      const VC = (GROUND.length - 1) / 2; // village-centre offset → avatar (0,0)
+      const camS = vToScreen(cam.x, cam.y);
       const ox = cw / 2 - camS.sx;
       const oy = ch / 2 - camS.sy + 30;
       const toScreen = (wx: number, wy: number) => {
-        const p = worldToScreen(wx, wy);
+        const p = vToScreen(wx, wy);
         return { x: p.sx + ox, y: p.sy + oy };
       };
 
-      // ground
-      ctx.fillStyle = "#3f7a3a";
+      // ground — the village tilemap (grass field + dirt courtyard)
+      ctx.fillStyle = "#2f5a2a";
       ctx.fillRect(0, 0, cw, ch);
-      const R = 16;
-      for (let wx = -R; wx <= R; wx++) {
-        for (let wy = -R; wy <= R; wy++) {
-          const s = toScreen(wx, wy);
-          if (s.x < -TILE_W || s.x > cw + TILE_W || s.y < -TILE_H * 3 || s.y > ch + TILE_H) continue;
-          if (Math.abs(wx) <= PLAZA_R && Math.abs(wy) <= PLAZA_R) {
-            stone(s.x, s.y, (wx + wy) % 2 === 0 ? "#9a9488" : "#8b857a");
-            continue;
+      if (villageReady()) {
+        for (let gy = 0; gy < GROUND.length; gy++) {
+          const row = GROUND[gy];
+          for (let gx = 0; gx < row.length; gx++) {
+            const s = toScreen(gx - VC, gy - VC);
+            if (s.x < -V_TILE_W || s.x > cw + V_TILE_W || s.y < -V_TILE_H * 3 || s.y > ch + V_TILE_H * 2) continue;
+            const img = vimg(row[gx]);
+            if (img && img.complete) drawGround(ctx, img, s.x, s.y);
           }
-          const gi = Math.abs(wx * 7 + wy * 13) % TILES.grassBase.length;
-          if (!drawTile(ctx, TILES.grassBase[gi], s.x, s.y)) stone(s.x, s.y, (wx + wy) % 2 === 0 ? "#46863f" : "#3f7d39");
         }
       }
 
       type Obj = { d: number; draw: () => void };
       const objs: Obj[] = [];
-      for (const b of BUILDINGS) {
-        const s = toScreen(b.x, b.y);
-        const view: BuildingView = { id: b.type + b.x, type: b.type, level: 2, x: b.x, y: b.y, constructing: false, completesAt: null };
-        objs.push({ d: b.x + b.y, draw: () => drawBuilding(ctx, s.x, s.y, view, t) });
+      // fountain at the plaza centre + the prize wheel just behind it
+      objs.push({ d: 0, draw: () => drawHubFountain(ctx, toScreen(0, 0).x, toScreen(0, 0).y, t) });
+      objs.push({ d: -2.0, draw: () => drawHubSpinner(ctx, toScreen(0, -2.0).x, toScreen(0, -2.0).y, t) });
+      // village sprites (houses, stalls, decor, animated windmill) depth-sorted
+      if (villageReady()) {
+        for (const o of OBJECTS) {
+          const ax = o.gx - VC;
+          const ay = o.gy - VC;
+          const s = toScreen(ax, ay);
+          if (s.x < -V_TILE_W || s.x > cw + V_TILE_W || s.y < -V_TILE_H * 3 || s.y > ch + V_TILE_H) continue;
+          const name = o.anim ? o.anim[Math.floor(t / 110) % o.anim.length] : o.sprite;
+          const img = vimg(name);
+          if (!img || !img.complete) continue;
+          const dy = o.dy ?? 0;
+          const flat = o.flat ?? false;
+          objs.push({ d: flat ? ax + ay - 0.45 : ax + ay, draw: () => drawObj(ctx, img, s.x, s.y, dy, flat) });
+        }
       }
 
       const seen = new Set<string>();
