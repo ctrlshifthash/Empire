@@ -376,19 +376,28 @@ function resetDay(): void {
     scheduleSave(0);
   }
 }
+// Fraction of today's pool UNLOCKED so far. The pool releases linearly across the
+// 24h day (from 00:00 UTC), not as a flat cap — so it can't be drained early. A
+// burst of claims (e.g. the backlog at the daily reset) can only ever take what's
+// unlocked up to that moment; the rest keeps trickling out all day. This is what
+// actually spreads the pool evenly over 24h so latecomers always have a share.
+function poolReleasedFraction(): number {
+  const elapsedToday = now() - Math.floor(now() / DAY_MS) * DAY_MS;
+  return Math.min(1, Math.max(0, elapsedToday / DAY_MS));
+}
 function poolRemainingLamports(): number {
   resetDay();
   // Use bucket totals — the legacy paidLamports was corrupted by pre-split claims
   const paid = (state.rewardPool.vipPaidLamports ?? 0) + (state.rewardPool.publicPaidLamports ?? 0);
-  return Math.max(0, POOL_LAMPORTS() - paid);
+  return Math.max(0, Math.floor(POOL_LAMPORTS() * poolReleasedFraction()) - paid);
 }
 function vipPoolRemainingLamports(): number {
   resetDay();
-  return Math.max(0, VIP_POOL_LAMPS() - (state.rewardPool.vipPaidLamports ?? 0));
+  return Math.max(0, Math.floor(VIP_POOL_LAMPS() * poolReleasedFraction()) - (state.rewardPool.vipPaidLamports ?? 0));
 }
 function publicPoolRemainingLamports(): number {
   resetDay();
-  return Math.max(0, PUB_POOL_LAMPS() - (state.rewardPool.publicPaidLamports ?? 0));
+  return Math.max(0, Math.floor(PUB_POOL_LAMPS() * poolReleasedFraction()) - (state.rewardPool.publicPaidLamports ?? 0));
 }
 
 export interface RewardStatus {
@@ -566,10 +575,16 @@ export async function claim(address: string): Promise<ClaimResult> {
   if (claimSol < 0.000001) return { ok: false, error: "Nothing to claim yet — let it accrue." };
   if (!payoutsLive()) return { ok: false, error: "Payouts aren't live yet (treasury not configured)." };
 
-  // hard daily cap: VIP and public each have their own bucket — neither can eat the other's
+  // daily cap, released gradually over 24h: VIP and public each have their own
+  // bucket — neither can eat the other's, and neither can be drained ahead of schedule
   const isVip = VIP_REWARD_WALLETS.has(address);
   const remaining = isVip ? vipPoolRemainingLamports() : publicPoolRemainingLamports();
-  if (remaining <= 0) return { ok: false, error: "Today's reward pool is used up — come back tomorrow." };
+  if (remaining <= 0) {
+    const fullPaid = (isVip ? state.rewardPool.vipPaidLamports ?? 0 : state.rewardPool.publicPaidLamports ?? 0) >= (isVip ? VIP_POOL_LAMPS() : PUB_POOL_LAMPS());
+    return { ok: false, error: fullPaid
+      ? "Today's reward pool is used up — come back tomorrow."
+      : "The pool unlocks gradually through the day — a little more every few minutes. Check back shortly." };
+  }
   const lamports = Math.min(Math.floor(claimSol * LAMPORTS_PER_SOL), remaining);
 
   const kp = treasuryKeypair();
