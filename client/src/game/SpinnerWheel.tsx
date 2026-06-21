@@ -70,9 +70,8 @@ export default function SpinnerWheel() {
     <div className="mx-auto max-w-md px-4 py-8 text-center">
       <div className="mb-1 flex items-center justify-center gap-2">
         <h2 className="font-display text-2xl font-bold text-gold-gradient">Spinner Wheel</h2>
-        <span className="rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-200">Beta</span>
       </div>
-      <p className="mb-6 text-sm text-parchment-300/65">One free spin every 12 hours. Win resources — or a rare relic.</p>
+      <p className="mb-6 text-sm text-parchment-300/65">One free spin every 12 hours for a resource top-up.</p>
 
       {/* wheel */}
       <div className="relative mx-auto h-72 w-72">

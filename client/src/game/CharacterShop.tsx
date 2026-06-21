@@ -48,11 +48,11 @@ export default function CharacterShop() {
   return (
     <div className="mt-8 space-y-6">
       <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 text-sm text-parchment-200">
-        <span className="font-semibold text-gold-light">🎭 Characters — beta {locked && "· locked"}</span> · Buy a
-        character, wear it as your <strong>hub avatar</strong>, and own it. Each will be a <strong>compressed NFT</strong>{" "}
+        <span className="font-semibold text-gold-light">🎭 Characters{locked && " · locked"}</span> · Buy a
+        character, wear it as your <strong>hub avatar</strong>, and own it. Each is a <strong>compressed NFT</strong>{" "}
         you hold in your wallet and can resell here.{" "}
         {locked
-          ? "Previewing the roster now — purchases unlock once the artwork and on-chain minting go live."
+          ? "Previewing the roster now — sales open shortly."
           : "Buy now to lock in a low serial."}
       </div>
 
