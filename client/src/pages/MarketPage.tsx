@@ -12,6 +12,7 @@ import CoinExchange from "../game/CoinExchange";
 import CharacterShop from "../game/CharacterShop";
 import MountShop from "../game/MountShop";
 import MarketActivity from "../game/MarketActivity";
+import ActivityTxModal from "../game/ActivityTxModal";
 
 const rarityColor = (r: string) => (RARITY_META as Record<string, { color: string }>)[r]?.color ?? "#9aa4ad";
 
@@ -66,13 +67,17 @@ function Market() {
   const [rumbleUsd, setRumbleUsd] = useState<number | null>(null); // live $RUMBLE price (for the ≈ preview)
   const [highlight, setHighlight] = useState<string | null>(null); // listing flashed after an activity-feed click
   const [highlightChar, setHighlightChar] = useState<string | null>(null); // character card to jump to (sold items have no live listing)
+  const [txModal, setTxModal] = useState<MarketActivity | null>(null); // the transaction popup
 
-  // click an activity-feed entry → switch to its category tab and jump to the listing,
-  // or (for a sold/bought character with no live listing) the character's card
-  const openActivity = (a: MarketActivity) => {
+  // click an activity-feed entry → open the transaction popup
+  const openActivity = (a: MarketActivity) => setTxModal(a);
+  // "View" inside the popup → switch tab and jump to the live listing, or the
+  // character's card (a sold/bought item has no live listing to show)
+  const jumpToActivity = (a: MarketActivity) => {
     setTab(a.category === "coin" ? "coins" : a.category === "character" ? "characters" : "relics");
     if (a.listingId) setHighlight(a.listingId);
     if (a.category === "character" && a.refType) setHighlightChar(a.refType);
+    setTxModal(null);
   };
   useEffect(() => {
     if (!highlight) return;
@@ -180,6 +185,7 @@ function Market() {
 
   return (
    <>
+    {txModal && <ActivityTxModal a={txModal} rumbleUsd={rumbleUsd} onClose={() => setTxModal(null)} onView={() => jumpToActivity(txModal)} />}
     <div className="mt-8 flex justify-center">
       <div className="inline-flex rounded-xl border border-parchment-300/15 bg-ink-800/60 p-1">
         {([["relics", "🏺 Relics"], ["coins", "💱 Coins ⇄ $RUMBLE"], ["characters", "🎭 Characters"], ["mounts", "🐎 Mounts & Pets"]] as [typeof tab, string][]).map(([t, label]) => (

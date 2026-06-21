@@ -343,7 +343,7 @@ export function listCharacter(
     createdAt: now(),
   };
   state.listings[listing.id] = listing;
-  pushActivity("character", "listed", `${seller?.name ?? "A ruler"} listed ${def?.name ?? "a character"} #${inst.serial} for $${price.toFixed(2)} in $RUMBLE`, listing.id, inst.typeId);
+  pushActivity("character", "listed", `${seller?.name ?? "A ruler"} listed ${def?.name ?? "a character"} #${inst.serial} for $${price.toFixed(2)} in $RUMBLE`, listing.id, { refType: inst.typeId, serial: inst.serial, priceUsd: price, fromWallet: sellerWallet });
   // a listed character can't stay equipped as your avatar
   if (seller?.equippedCharacter === instanceId) { seller.equippedCharacter = undefined; recomputePower(seller); }
   scheduleSave(0);
@@ -486,7 +486,7 @@ export async function buyListing(listingId: string, buyer: string, signature: st
     ss.earned.USDC += l.price * (1 - MARKET_FEE);
   }
 
-  pushActivity(l.kind === "character" ? "character" : "relic", "bought", `${buyerEmpire.name} bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE`, l.id, l.kind === "character" ? l.typeId : undefined);
+  pushActivity(l.kind === "character" ? "character" : "relic", "bought", `${buyerEmpire.name} bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE`, l.id, { refType: l.kind === "character" ? l.typeId : undefined, serial, priceUsd: l.price, fromWallet: l.sellerWallet, toWallet: buyer, signature });
   buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   if (sellerEmpire) {
