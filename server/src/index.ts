@@ -16,7 +16,7 @@ import { Server as SocketServer } from "socket.io";
 import type { Army } from "../../shared/combat.ts";
 import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
 import { levelForXp } from "../../shared/progression.ts";
-import { characterCatalog, buyCharacterCoins, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
+import { characterCatalog, reserveCharacterBuy, buyCharacterRumble, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint, treasuryPubkey, burnTreasuryRumble } from "./rewards.ts";
@@ -54,6 +54,7 @@ import {
   marketConfig,
   activeListings,
   listItem,
+  listCharacter,
   delistItem,
   equipItem,
   reserveListing,
@@ -318,6 +319,22 @@ app.get("/api/arena/rankings", (_req, res) => {
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
 app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
+app.post("/api/characters/:typeId/reserve", async (req, res) => {
+  const { address } = (req.body ?? {}) as Record<string, unknown>;
+  if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
+  res.json(await reserveCharacterBuy(req.params.typeId, String(address)));
+});
+app.post("/api/characters/:typeId/buy", async (req, res) => {
+  try {
+    const { address, signature } = (req.body ?? {}) as Record<string, unknown>;
+    if (!address || !signature) return res.status(400).json({ ok: false, error: "Missing address or signature." });
+    const r = await buyCharacterRumble(req.params.typeId, String(address), String(signature));
+    if (r.ok && r.members) for (const id of r.members) pushSnapshot(id);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String((e as Error)?.message ?? e) });
+  }
+});
 app.get("/api/mounts/config", (_req, res) => res.json({ ok: true, locked: mountsLocked(), mounts: mountCatalog() }));
 app.get("/api/features", (_req, res) => res.json({ ok: true, locked: featureLocks() }));
 app.get("/api/burns", (_req, res) =>
@@ -998,9 +1015,6 @@ io.on("connection", (socket) => {
   );
 
   // Character cNFTs — buy with in-game coins, equip as your hub-avatar skin.
-  socket.on("character:buy", (p: { typeId?: string }) =>
-    withEmpire((id) => handle(buyCharacterCoins(id, String(p?.typeId ?? "")), "Character unlocked!")),
-  );
   socket.on("character:equip", (p: { instanceId?: string }) =>
     withEmpire((id) => {
       const r = equipCharacter(id, String(p?.instanceId ?? ""));
@@ -1011,6 +1025,23 @@ io.on("connection", (socket) => {
         io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
       }
     }),
+  );
+
+  // Resell a character you own — same $RUMBLE bazaar flow as relics (95% you / 5% burn).
+  socket.on("character:sell", (p: { instanceId?: string; usdPrice?: number }) =>
+    withEmpire((id) => {
+      const r = listCharacter(id, externalId, String(p?.instanceId ?? ""), Number(p?.usdPrice));
+      handle(r, "Character listed for $RUMBLE!");
+      if (r.ok) {
+        // listing unequips it — refresh the hub avatar
+        const av = hubAvatars.get(id);
+        if (av) av.character = equippedCharacterStyle(state.empires[id]);
+        io.to("hubspace").emit("hub:players", [...hubAvatars.values()]);
+      }
+    }),
+  );
+  socket.on("character:delist", (p: { instanceId?: string }) =>
+    withEmpire((id) => handle(delistItem(id, String(p?.instanceId ?? "")), "Listing removed.")),
   );
 
   // Mounts & Pets (beta) — owned drops; equip one beside your hero.

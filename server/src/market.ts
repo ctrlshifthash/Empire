@@ -23,6 +23,7 @@ import {
   rankIndex,
   MOUNTS,
   mountType,
+  characterType,
 } from "../../shared/gamedata.ts";
 import type { Empire, ItemInstance, InventoryItem, Listing, ListingPublic } from "../../shared/types.ts";
 import { state, scheduleSave, pushActivity } from "./store.ts";
@@ -145,6 +146,25 @@ export function activeListings(): ListingPublic[] {
           price: l.price,
           sellerName: l.sellerName,
           effect: m?.trait.label ?? "Companion",
+          kind: "mount",
+          reserved,
+        };
+      }
+      if (l.kind === "character") {
+        const c = characterType(l.typeId);
+        const ci = state.characterInstances[l.instanceId];
+        return {
+          id: l.id,
+          typeId: l.typeId,
+          name: c?.name ?? l.typeId,
+          icon: c?.icon ?? "🎭",
+          rarity: c?.rarity ?? "common",
+          serial: ci?.serial ?? 0,
+          price: l.price,
+          sellerName: l.sellerName,
+          effect: c?.desc ?? "Playable character",
+          image: c?.image,
+          kind: "character",
           reserved,
         };
       }
@@ -160,6 +180,7 @@ export function activeListings(): ListingPublic[] {
         price: l.price, // USD; client shows ≈ $RUMBLE at the live rate
         sellerName: l.sellerName,
         effect: def ? itemEffectSummary(def) : "Collectible",
+        kind: "relic",
         reserved,
       };
     });
@@ -290,6 +311,45 @@ export function listItem(
   return { ok: true, members: [empireId] };
 }
 
+// List one of your characters for resale. Same $RUMBLE flow as relics (95% to
+// you, 5% burned). The character is unequipped while listed; ownership transfers
+// to the buyer on a confirmed payment. Works even before on-chain minting — the
+// in-game owner moves now, the cNFT asset id follows once minting is live.
+export function listCharacter(
+  empireId: string,
+  sellerWallet: string | undefined,
+  instanceId: string,
+  usdPrice: number,
+): MarketResult {
+  if (!sellerWallet || sellerWallet.includes("@") || sellerWallet.startsWith("did:"))
+    return { ok: false, error: "Connect a Solana wallet to sell characters." };
+  const inst = state.characterInstances[instanceId];
+  if (!inst || inst.ownerId !== empireId) return { ok: false, error: "You don't own that character." };
+  if (isListed(instanceId)) return { ok: false, error: "That character is already listed." };
+  const price = Math.round((Number(usdPrice) || 0) * 100) / 100; // USD, cent precision
+  if (!(price > 0)) return { ok: false, error: "Set a price in USD." };
+  const seller = state.empires[empireId];
+  const def = characterType(inst.typeId);
+  const listing: Listing = {
+    id: uid("list_"),
+    instanceId,
+    typeId: inst.typeId,
+    kind: "character",
+    sellerId: empireId,
+    sellerName: seller?.name ?? "Seller",
+    sellerWallet,
+    price,
+    status: "active",
+    createdAt: now(),
+  };
+  state.listings[listing.id] = listing;
+  pushActivity("character", "listed", `${seller?.name ?? "A ruler"} listed ${def?.name ?? "a character"} #${inst.serial} for $${price.toFixed(2)} in $RUMBLE`, listing.id);
+  // a listed character can't stay equipped as your avatar
+  if (seller?.equippedCharacter === instanceId) { seller.equippedCharacter = undefined; recomputePower(seller); }
+  scheduleSave(0);
+  return { ok: true, members: [empireId] };
+}
+
 export function delistItem(empireId: string, instanceId: string): MarketResult {
   const l = Object.values(state.listings).find((x) => x.instanceId === instanceId && x.status === "active");
   if (!l) return { ok: false, error: "Listing not found." };
@@ -340,8 +400,9 @@ export async function reserveListing(listingId: string, buyer: string): Promise<
   // your own item stuck "reserved" until the lock expires
   if (buyerUser && l.sellerId === buyerUser.empireId)
     return { ok: false, error: "You can't buy your own listing." };
-  // make sure the buyer has room before they pay
-  if (buyerUser && inventoryCount(buyerUser.empireId) >= RELIC_CAP)
+  // make sure the buyer has room before they pay (relic inventory cap only —
+  // characters/pets don't use relic slots)
+  if (buyerUser && (l.kind === undefined || l.kind === "relic") && inventoryCount(buyerUser.empireId) >= RELIC_CAP)
     return { ok: false, error: `Your inventory is full (${RELIC_CAP}) — sell or forge a relic to make room first.` };
   const rumbleUsd = await rumbleUsdPrice();
   if (!rumbleUsd) return { ok: false, error: "$RUMBLE price unavailable — try again in a moment." };
@@ -393,6 +454,16 @@ export async function buyListing(listingId: string, buyer: string, signature: st
       const nid = uid("list_");
       state.listings[nid] = { id: nid, instanceId: next.id, typeId: l.typeId, kind: "mount", sellerId: "house", sellerName: l.sellerName, sellerWallet: l.sellerWallet, price: l.price, status: "active", createdAt: now() };
     }
+  } else if (l.kind === "character") {
+    const ci = state.characterInstances[l.instanceId];
+    if (ci) {
+      ci.ownerId = buyerEmpire.id;
+      serial = ci.serial;
+    }
+    // clear it from the seller's avatar slot (it's already unequipped at list time,
+    // but be safe in case it was equipped some other way)
+    if (sellerEmpire && sellerEmpire.equippedCharacter === l.instanceId) { sellerEmpire.equippedCharacter = undefined; recomputePower(sellerEmpire); }
+    dispName = characterType(l.typeId)?.name ?? "a character";
   } else {
     const inst = state.itemInstances[l.instanceId];
     if (inst) {
@@ -415,7 +486,7 @@ export async function buyListing(listingId: string, buyer: string, signature: st
     ss.earned.USDC += l.price * (1 - MARKET_FEE);
   }
 
-  pushActivity("relic", "bought", `${buyerEmpire.name} bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE`, l.id);
+  pushActivity(l.kind === "character" ? "character" : "relic", "bought", `${buyerEmpire.name} bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE`, l.id);
   buyerEmpire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought ${dispName} #${serial} for $${l.price.toFixed(2)} in $RUMBLE.` });
   if (buyerEmpire.log.length > 60) buyerEmpire.log.length = 60;
   if (sellerEmpire) {

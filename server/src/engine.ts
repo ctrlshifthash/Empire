@@ -55,7 +55,7 @@ import { bossPublic } from "./boss.ts";
 import { openDuelsPublic, tournamentPublic, myTombstones } from "./arena.ts";
 import { inventoryOf, mintItem, randomDropType } from "./market.ts";
 import { maybeDropMount } from "./mounts.ts";
-import { ownedCharacters } from "./characters.ts";
+import { ownedCharacters, equippedCharacterPower } from "./characters.ts";
 import { LOCAL_WORLD, type SkillId, type ToolId } from "../../shared/types.ts";
 import {
   MAX_TIER,
@@ -345,6 +345,7 @@ export function recomputePower(e: Empire): void {
     p += g;
   }
   p += equippedEffect(e).powerBonus; // equipped relics
+  p += equippedCharacterPower(e); // equipped character (→ renown rank → SOL share)
   e.power = Math.round(p);
 }
 

@@ -134,6 +134,37 @@ function Market() {
   const canCraft = coins >= CRAFT_COST.coins;
   const activeCategory: "relic" | "coin" | "character" = tab === "coins" ? "coin" : tab === "characters" ? "character" : "relic";
 
+  // split listings per tab so characters don't leak into the relic bazaar
+  const relicListings = listings?.filter((l) => l.kind === "relic") ?? null;
+  const charListings = listings?.filter((l) => l.kind === "character") ?? [];
+
+  const renderListingCard = (l: ListingPublic) => (
+    <div key={l.id} id={`listing-${l.id}`} className={`panel flex flex-col p-4 transition-shadow ${highlight === l.id ? "ring-2 ring-gold" : ""}`} style={{ borderColor: `${rarityColor(l.rarity)}40` }}>
+      <div className="flex items-center gap-2">
+        {l.image ? (
+          <img src={l.image} alt="" className="h-10 w-10 rounded object-cover" style={{ border: `1px solid ${rarityColor(l.rarity)}66` }} />
+        ) : (
+          <span className="text-2xl">{l.icon}</span>
+        )}
+        <div className="min-w-0">
+          <div className="truncate font-semibold text-parchment-100">{l.name} <span className="text-parchment-300/50">#{l.serial}</span></div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(l.rarity) }}>{l.rarity}</div>
+        </div>
+      </div>
+      <div className="mt-1.5 text-xs text-emerald-300/80">{l.effect}</div>
+      <div className="mt-1 text-xs text-parchment-300/55">Seller: {l.sellerName}</div>
+      <div className="mt-3 flex items-center justify-between">
+        <div>
+          <div className="font-display text-lg font-bold text-gold-light">${l.price}</div>
+          {rumbleUsd ? <div className="text-[10px] text-parchment-300/50">≈ {Math.round(l.price / rumbleUsd).toLocaleString()} $RUMBLE</div> : <div className="text-[10px] text-parchment-300/40">paid in $RUMBLE</div>}
+        </div>
+        <button className="btn-gold btn-sm" disabled={busy !== null || l.reserved} onClick={() => buy(l)}>
+          {busy === l.id ? "…" : l.reserved ? "Reserved" : "Buy"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
    <>
     <div className="mt-8 flex justify-center">
@@ -169,7 +200,26 @@ function Market() {
     {tab === "coins" ? (
       <CoinExchange />
     ) : tab === "characters" ? (
-      <CharacterShop />
+      <div className="space-y-8">
+        <CharacterShop />
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">🔁 Player resales</h2>
+            {address ? (
+              <span className="chip font-mono text-xs">👛 {address.slice(0, 4)}…{address.slice(-4)}</span>
+            ) : (
+              <button className="btn-gold btn-sm" onClick={() => setVisible(true)}>Connect wallet</button>
+            )}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {charListings.length === 0 ? (
+              <div className="panel col-span-full p-8 text-center text-sm text-parchment-300/60">No player resales yet — owners can list one from “Your characters” below.</div>
+            ) : (
+              charListings.map(renderListingCard)
+            )}
+          </div>
+        </div>
+      </div>
     ) : tab === "mounts" ? (
       <MountShop />
     ) : (
@@ -184,30 +234,9 @@ function Market() {
           )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {listings === null && <div className="panel p-8 text-center text-sm text-parchment-300/60">Loading…</div>}
-          {listings?.length === 0 && <div className="panel p-8 text-center text-sm text-parchment-300/60">Nothing listed yet. List one from your inventory.</div>}
-          {listings?.map((l) => (
-            <div key={l.id} id={`listing-${l.id}`} className={`panel flex flex-col p-4 transition-shadow ${highlight === l.id ? "ring-2 ring-gold" : ""}`} style={{ borderColor: `${rarityColor(l.rarity)}40` }}>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{l.icon}</span>
-                <div className="min-w-0">
-                  <div className="truncate font-semibold text-parchment-100">{l.name} <span className="text-parchment-300/50">#{l.serial}</span></div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(l.rarity) }}>{l.rarity}</div>
-                </div>
-              </div>
-              <div className="mt-1.5 text-xs text-emerald-300/80">{l.effect}</div>
-              <div className="mt-1 text-xs text-parchment-300/55">Seller: {l.sellerName}</div>
-              <div className="mt-3 flex items-center justify-between">
-                <div>
-                  <div className="font-display text-lg font-bold text-gold-light">${l.price}</div>
-                  {rumbleUsd ? <div className="text-[10px] text-parchment-300/50">≈ {Math.round(l.price / rumbleUsd).toLocaleString()} $RUMBLE</div> : <div className="text-[10px] text-parchment-300/40">paid in $RUMBLE</div>}
-                </div>
-                <button className="btn-gold btn-sm" disabled={busy !== null || l.reserved} onClick={() => buy(l)}>
-                  {busy === l.id ? "…" : l.reserved ? "Reserved" : "Buy"}
-                </button>
-              </div>
-            </div>
-          ))}
+          {relicListings === null && <div className="panel p-8 text-center text-sm text-parchment-300/60">Loading…</div>}
+          {relicListings?.length === 0 && <div className="panel p-8 text-center text-sm text-parchment-300/60">Nothing listed yet. List one from your inventory.</div>}
+          {relicListings?.map(renderListingCard)}
         </div>
     </div>
 

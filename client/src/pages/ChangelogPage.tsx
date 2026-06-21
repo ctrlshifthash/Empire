@@ -21,6 +21,9 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 21, 2026",
     items: [
+      { tag: "Feature", title: "Collectible characters are live", desc: "Buy a hand-made character with $RUMBLE and wear it as your hub avatar — equipping one gives a power boost that lifts your renown rank, and a higher rank earns a bigger share of the daily SOL pool. Rarer characters hit harder and are strictly limited, so the best ones stay scarce." },
+      { tag: "Feature", title: "Play as your character in the hub", desc: "Equip a character and you walk the Hub as them, with full directional animation — and everyone else online sees you that way too." },
+      { tag: "Feature", title: "Resell your characters", desc: "Every character you own can be listed for resale on the Marketplace's Characters tab at your own price, settled in $RUMBLE wallet-to-wallet — the same way relics trade." },
       { tag: "Feature", title: "Gather resources in the hub", desc: "The Hub is now somewhere to work, not just hang out — walk up to a tree and chop it for resources, over and over, alongside everyone else online. A small daily haul to grind between raids, capped so it stays a nice top-up rather than a shortcut." },
     ],
   },

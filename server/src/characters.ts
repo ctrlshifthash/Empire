@@ -6,8 +6,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { CHARACTERS, characterType } from "../../shared/gamedata.ts";
 import type { CharacterInstance, OwnedCharacter } from "../../shared/types.ts";
-import { state, scheduleSave } from "./store.ts";
+import { state, scheduleSave, pushActivity } from "./store.ts";
+import { rumbleUsdPrice } from "./price.ts";
+import { amountsFromUsd, rumbleDecimals, verifyRumblePayment } from "./exchange.ts";
+import { treasuryPubkey, tokenMint } from "./rewards.ts";
+import { recomputePower } from "./engine.ts";
 import { now, uid } from "./util.ts";
+
+const RESERVE_MS = 3 * 60 * 1000; // a buyer's price quote is held for 3 minutes
+// Backend-only economics (not shown anywhere in the UI/docs): every character
+// sale sends 75% of the $RUMBLE to the treasury and burns 25%.
+const CHARACTER_BURN_PCT = 25;
 
 export interface CharResult {
   ok: boolean;
@@ -44,6 +53,7 @@ export function mintCharacter(empireId: string, typeId: string, assetId: string 
 export function ownedCharacters(empireId: string): OwnedCharacter[] {
   const e = state.empires[empireId];
   const eq = e?.equippedCharacter;
+  const listed = (id: string) => Object.values(state.listings).some((l) => l.instanceId === id && l.status === "active");
   return Object.values(state.characterInstances)
     .filter((c) => c.ownerId === empireId)
     .sort((a, b) => a.serial - b.serial)
@@ -60,30 +70,77 @@ export function ownedCharacters(empireId: string): OwnedCharacter[] {
         rarity: def?.rarity ?? "common",
         serial: c.serial,
         equipped: eq === c.id,
+        listed: listed(c.id),
         onChain: !!c.assetId,
       };
     });
 }
 
-// Buy a character with in-game coins (instant).
-export function buyCharacterCoins(empireId: string, typeId: string): CharResult {
+// ── Buy a character with $RUMBLE (USD-priced, paid to the treasury, verified
+// on-chain) ──────────────────────────────────────────────────────────────────
+// Mirrors the relic bazaar flow: the buyer pays the treasury in $RUMBLE at the
+// live rate and burns a share, in one tx they sign. We lock the $RUMBLE amount
+// at reserve so the price can't move mid-buy, verify on-chain, then mint. No custody.
+export async function reserveCharacterBuy(typeId: string, buyer: string): Promise<{
+  ok: boolean;
+  error?: string;
+  payment?: { mint: string; seller: string; sellerBase: string; burnBase: string; decimals: number; rumbleAmount: number };
+}> {
   if (CHARACTERS_LOCKED) return { ok: false, error: "Character sales are paused right now — check back soon." };
-  const e = state.empires[empireId];
-  if (!e) return { ok: false, error: "No empire." };
   const def = characterType(typeId);
   if (!def) return { ok: false, error: "Unknown character." };
+  const treasury = treasuryPubkey();
+  if (!treasury) return { ok: false, error: "Character sales aren't configured yet." };
+  const minted = state.characterMintCounts[typeId] ?? 0;
+  // count other buyers' live reservations so the last few can't be oversold
+  const heldByOthers = Object.entries(state.characterReservations)
+    .filter(([b, r]) => b !== buyer && r.typeId === typeId && r.until > now()).length;
+  if (minted + heldByOthers >= def.maxSupply) return { ok: false, error: "Sold out — all minted or reserved. Try again shortly." };
+  const rumbleUsd = await rumbleUsdPrice();
+  if (!rumbleUsd) return { ok: false, error: "$RUMBLE price unavailable — try again in a moment." };
+  const dec = await rumbleDecimals();
+  const { sellerBase, burnBase, rumbleAmount } = amountsFromUsd(def.priceUsd, rumbleUsd, dec, CHARACTER_BURN_PCT);
+  state.characterReservations[buyer] = { typeId, treasuryBase: sellerBase.toString(), burnBase: burnBase.toString(), until: now() + RESERVE_MS };
+  scheduleSave();
+  return {
+    ok: true,
+    payment: { mint: tokenMint(), seller: treasury, sellerBase: sellerBase.toString(), burnBase: burnBase.toString(), decimals: dec, rumbleAmount },
+  };
+}
+
+export async function buyCharacterRumble(typeId: string, buyer: string, signature: string): Promise<CharResult & { empireId?: string }> {
+  if (state.characterBuySignatures[signature]) return { ok: false, error: "This payment was already used." };
+  const buyerUser = Object.values(state.users).find((u) => u.externalId === buyer);
+  const empire = buyerUser ? state.empires[buyerUser.empireId] : undefined;
+  if (!empire) return { ok: false, error: "Open the game signed in with this wallet to receive the character." };
+  const def = characterType(typeId);
+  if (!def) return { ok: false, error: "Unknown character." };
+  const r = state.characterReservations[buyer];
+  if (!r || r.typeId !== typeId || r.until < now()) return { ok: false, error: "Your price quote expired — reopen and buy again." };
+  const treasury = treasuryPubkey();
+  if (!treasury) return { ok: false, error: "Character sales aren't configured." };
   if ((state.characterMintCounts[typeId] ?? 0) >= def.maxSupply) return { ok: false, error: "Sold out — all minted." };
-  if ((e.coins ?? 0) < def.priceCoins) return { ok: false, error: `Costs ${def.priceCoins.toLocaleString()} coins.` };
-  e.coins -= def.priceCoins;
-  const inst = mintCharacter(empireId, typeId);
-  if (!inst) {
-    e.coins += def.priceCoins;
-    return { ok: false, error: "Mint failed — try again." };
-  }
-  e.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Unlocked the ${def.name} character #${inst.serial}.` });
-  if (e.log.length > 60) e.log.length = 60;
+
+  const paid = await verifyRumblePayment(signature, buyer, treasury, BigInt(r.treasuryBase), BigInt(r.burnBase));
+  if (!paid) return { ok: false, error: "Payment not confirmed — if you were charged, wait a few seconds and retry." };
+
+  const inst = mintCharacter(empire.id, typeId);
+  if (!inst) return { ok: false, error: "Sold out — all minted." };
+  state.characterBuySignatures[signature] = { typeId, buyer, at: now() };
+  delete state.characterReservations[buyer];
+  empire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought the ${def.name} character #${inst.serial} for $${def.priceUsd} in $RUMBLE.` });
+  if (empire.log.length > 60) empire.log.length = 60;
+  pushActivity("character", "bought", `${empire.name} bought ${def.name} #${inst.serial} for $${def.priceUsd.toFixed(2)} in $RUMBLE`);
   scheduleSave(0);
-  return { ok: true, members: [empireId] };
+  return { ok: true, empireId: empire.id, members: [empire.id] };
+}
+
+// Power granted by the equipped character (0 if none) — folded into recomputePower.
+export function equippedCharacterPower(e: { equippedCharacter?: string }): number {
+  if (!e.equippedCharacter) return 0;
+  const inst = state.characterInstances[e.equippedCharacter];
+  const def = inst ? characterType(inst.typeId) : undefined;
+  return def?.power ?? 0;
 }
 
 // Equip / unequip a character as the hub-avatar skin (toggle).
@@ -92,6 +149,7 @@ export function equipCharacter(empireId: string, instanceId: string): CharResult
   const inst = state.characterInstances[instanceId];
   if (!e || !inst || inst.ownerId !== empireId) return { ok: false, error: "You don't own that character." };
   e.equippedCharacter = e.equippedCharacter === instanceId ? undefined : instanceId;
+  recomputePower(e); // the character's power boost lifts rank → SOL share
   scheduleSave(0);
   return { ok: true, members: [empireId] };
 }
@@ -99,9 +157,9 @@ export function equipCharacter(empireId: string, instanceId: string): CharResult
 // The equipped character's look for the hub avatar (or undefined).
 export function equippedCharacterStyle(
   e: { equippedCharacter?: string },
-): { icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean } | undefined {
+): { id: string; icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean } | undefined {
   if (!e.equippedCharacter) return undefined;
   const inst = state.characterInstances[e.equippedCharacter];
   const def = inst ? characterType(inst.typeId) : undefined;
-  return def ? { icon: def.icon, color: def.color, hat: def.hat, cape: def.cape } : undefined;
+  return def ? { id: def.id, icon: def.icon, color: def.color, hat: def.hat, cape: def.cape } : undefined;
 }

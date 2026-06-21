@@ -935,29 +935,31 @@ export interface CharacterType {
   hat: CharHat;
   cape: boolean;
   rarity: ItemRarity;
-  priceCoins: number; // buy with in-game coins
-  priceRumble: number; // or buy with $RUMBLE (burned)
+  priceUsd: number; // buy price in USD — paid in $RUMBLE at the live rate (to the treasury)
+  power: number; // power granted while equipped → lifts your renown rank → bigger SOL share
   maxSupply: number; // how many cNFTs of this character can ever mint
   image?: string; // optional PNG art (overrides the procedural avatar)
   desc: string;
 }
 
+// Power scales with rarity: equipping a character lifts your renown rank, which
+// raises your share of the daily SOL pool (and hits harder in raids).
 export const CHARACTERS: CharacterType[] = [
   // featured / real-art characters — listed first
-  { id: "bloodsworn", name: "Toly", icon: "🩸", color: "#7a1f1f", hat: "cap", cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/lincoln/card.png", desc: "Marked by sorrow, cloaked in black — he weeps for the realm." },
-  { id: "alon", name: "Alon", icon: "🧢", color: "#d4a017", hat: "cap", cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/alon/card.png", desc: "Don't tread on him. Shades on, never off." },
-  { id: "frank", name: "Frank De Gods", icon: "🎨", color: "#3b5b8c", hat: null, cape: false, rarity: "legendary", priceCoins: 600000, priceRumble: 150000, maxSupply: 25, image: "/characters/frank/card.png", desc: "Built different. Mints harder." },
+  { id: "bloodsworn", name: "Toly", icon: "🩸", color: "#7a1f1f", hat: "cap", cape: false, rarity: "legendary", priceUsd: 120, power: 1800, maxSupply: 25, image: "/characters/lincoln/card.png", desc: "Marked by sorrow, cloaked in black — he weeps for the realm." },
+  { id: "alon", name: "Alon", icon: "🧢", color: "#d4a017", hat: "cap", cape: false, rarity: "legendary", priceUsd: 120, power: 1800, maxSupply: 25, image: "/characters/alon/card.png", desc: "Don't tread on him. Shades on, never off." },
+  { id: "frank", name: "Frank De Gods", icon: "🎨", color: "#3b5b8c", hat: null, cape: false, rarity: "legendary", priceUsd: 120, power: 1800, maxSupply: 25, image: "/characters/frank/card.png", desc: "Built different. Mints harder." },
   // ── community character cNFTs (hand-made art; varied rarity, price & supply) ──
-  { id: "gake", name: "Gake", icon: "🟩", color: "#4caf50", hat: null, cape: false, rarity: "common", priceCoins: 15000, priceRumble: 4000, maxSupply: 300, image: "/characters/gake/card.png", desc: "A familiar face from the timeline." },
-  { id: "pingu", name: "Pingu Charts", icon: "🐧", color: "#5dade2", hat: null, cape: false, rarity: "common", priceCoins: 20000, priceRumble: 5000, maxSupply: 250, image: "/characters/pingu/card.png", desc: "Charts up, vibes up." },
-  { id: "sling", name: "Sling", icon: "🪢", color: "#e67e22", hat: null, cape: false, rarity: "common", priceCoins: 25000, priceRumble: 6000, maxSupply: 200, image: "/characters/sling/card.png", desc: "Quick hands, quicker exits." },
-  { id: "fibonacki", name: "Fibonacki", icon: "🌀", color: "#9b59b6", hat: null, cape: false, rarity: "rare", priceCoins: 60000, priceRumble: 14000, maxSupply: 120, image: "/characters/fibonacki/card.png", desc: "Everything retraces to him." },
-  { id: "json1444", name: "json1444", icon: "🧩", color: "#34495e", hat: null, cape: false, rarity: "rare", priceCoins: 70000, priceRumble: 16000, maxSupply: 100, image: "/characters/json1444/card.png", desc: "Reads the chain like an open book." },
-  { id: "remus", name: "Remus", icon: "🐺", color: "#7f8c8d", hat: null, cape: false, rarity: "rare", priceCoins: 85000, priceRumble: 19000, maxSupply: 80, image: "/characters/remus/card.png", desc: "Runs with the pack, leads it too." },
-  { id: "mert", name: "Mert", icon: "⚡", color: "#f39c12", hat: null, cape: false, rarity: "epic", priceCoins: 180000, priceRumble: 40000, maxSupply: 40, image: "/characters/mert/card.png", desc: "Wired into the network." },
-  { id: "rains", name: "Rains Revenge", icon: "🌧️", color: "#2c3e50", hat: null, cape: false, rarity: "epic", priceCoins: 220000, priceRumble: 50000, maxSupply: 30, image: "/characters/rains/card.png", desc: "When it pours, he collects." },
-  { id: "ansem", name: "Ansem", icon: "☀️", color: "#f1c40f", hat: null, cape: false, rarity: "legendary", priceCoins: 750000, priceRumble: 170000, maxSupply: 15, image: "/characters/ansem/card.png", desc: "All smiles, all signal." },
-  { id: "cobie", name: "Cobie", icon: "🎙️", color: "#c0392b", hat: null, cape: false, rarity: "legendary", priceCoins: 900000, priceRumble: 190000, maxSupply: 10, image: "/characters/cobie/card.png", desc: "Says little, moves markets." },
+  { id: "gake", name: "Gake", icon: "🟩", color: "#4caf50", hat: null, cape: false, rarity: "common", priceUsd: 5, power: 80, maxSupply: 300, image: "/characters/gake/card.png", desc: "A familiar face from the timeline." },
+  { id: "pingu", name: "Pingu Charts", icon: "🐧", color: "#5dade2", hat: null, cape: false, rarity: "common", priceUsd: 7, power: 80, maxSupply: 250, image: "/characters/pingu/card.png", desc: "Charts up, vibes up." },
+  { id: "sling", name: "Sling", icon: "🪢", color: "#e67e22", hat: null, cape: false, rarity: "common", priceUsd: 10, power: 80, maxSupply: 200, image: "/characters/sling/card.png", desc: "Quick hands, quicker exits." },
+  { id: "fibonacki", name: "Fibonacki", icon: "🌀", color: "#9b59b6", hat: null, cape: false, rarity: "rare", priceUsd: 20, power: 250, maxSupply: 120, image: "/characters/fibonacki/card.png", desc: "Everything retraces to him." },
+  { id: "json1444", name: "json1444", icon: "🧩", color: "#34495e", hat: null, cape: false, rarity: "rare", priceUsd: 25, power: 250, maxSupply: 100, image: "/characters/json1444/card.png", desc: "Reads the chain like an open book." },
+  { id: "remus", name: "Remus", icon: "🐺", color: "#7f8c8d", hat: null, cape: false, rarity: "rare", priceUsd: 35, power: 250, maxSupply: 80, image: "/characters/remus/card.png", desc: "Runs with the pack, leads it too." },
+  { id: "mert", name: "Mert", icon: "⚡", color: "#f39c12", hat: null, cape: false, rarity: "epic", priceUsd: 60, power: 700, maxSupply: 40, image: "/characters/mert/card.png", desc: "Wired into the network." },
+  { id: "rains", name: "Rains Revenge", icon: "🌧️", color: "#2c3e50", hat: null, cape: false, rarity: "epic", priceUsd: 80, power: 700, maxSupply: 30, image: "/characters/rains/card.png", desc: "When it pours, he collects." },
+  { id: "ansem", name: "Ansem", icon: "☀️", color: "#f1c40f", hat: null, cape: false, rarity: "legendary", priceUsd: 150, power: 1800, maxSupply: 15, image: "/characters/ansem/card.png", desc: "All smiles, all signal." },
+  { id: "cobie", name: "Cobie", icon: "🎙️", color: "#c0392b", hat: null, cape: false, rarity: "legendary", priceUsd: 200, power: 1800, maxSupply: 10, image: "/characters/cobie/card.png", desc: "Says little, moves markets." },
 ];
 
 export const characterType = (id: string): CharacterType | undefined => CHARACTERS.find((c) => c.id === id);

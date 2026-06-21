@@ -5,6 +5,7 @@ import { drawCharacter, drawBuilding } from "../world/draw";
 import { drawTile, TILES } from "../world/tiles";
 import type { BuildingView } from "../world/engine";
 import { loadVillage, villageReady, vimg, GROUND, OBJECTS, vToScreen, drawGround, drawObj, drawHubFountain, drawHubSpinner, V_SCALE, V_TILE_W, V_TILE_H, V_BOUND } from "../world/village";
+import { loadCharSprite, drawCharSprite, facingFromMove, type Facing } from "./charSprite";
 import { SERVER_URL } from "../lib/config";
 import { rankForPower } from "@shared/gamedata";
 import { fmt } from "../lib/format";
@@ -44,8 +45,8 @@ const CHOP_NODES: { x: number; y: number }[] = [
   { x: 4, y: 2 }, { x: -4, y: 2 }, { x: 4, y: -2 }, { x: -4, y: -2 },
 ];
 
-type Local = { x: number; y: number; facing: number; moving: boolean; phase: number };
-type RemoteDisp = { x: number; y: number; facing: number; moving: boolean; phase: number };
+type Local = { x: number; y: number; facing: number; dir: Facing; moving: boolean; phase: number };
+type RemoteDisp = { x: number; y: number; facing: number; dir: Facing; moving: boolean; phase: number };
 
 export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,12 +91,13 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   }, [selectedId]);
   const setInHub = useGame((s) => s.setInHub);
 
-  const me = useRef<Local>({ x: 0, y: 2, facing: -1, moving: false, phase: 0 });
+  const me = useRef<Local>({ x: 0, y: 2, facing: -1, dir: "front", moving: false, phase: 0 });
   const keys = useRef<Set<string>>(new Set());
 
-  // preload the village tileset once
+  // preload the village tileset + the player character sprite once
   useEffect(() => {
     loadVillage();
+    loadCharSprite();
   }, []);
 
   // live zoom for the village (scroll wheel over the canvas, or the +/− buttons)
@@ -239,7 +241,9 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         m.x = Math.max(-V_BOUND, Math.min(V_BOUND, m.x + (dx / len) * SPEED * dt));
         m.y = Math.max(-V_BOUND, Math.min(V_BOUND, m.y + (dy / len) * SPEED * dt));
         const sdx = dx - dy;
+        const sdy = dx + dy;
         if (sdx !== 0) m.facing = sdx > 0 ? 1 : -1;
+        m.dir = facingFromMove(sdx, sdy, m.dir);
         m.phase += dt * 9;
       } else {
         m.phase += dt * 2;
@@ -367,31 +371,41 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         d: m.x + m.y + 0.001,
         draw: () => {
           const s = toScreen(m.x, m.y);
-          drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a", hat: myChar?.hat ?? undefined, cape: myChar?.cape });
+          // new sprite-sheet avatar; falls back to the voxel hero until it loads
+          const sprite = drawCharSprite(ctx, s.x, s.y, m.dir, m.moving, m.phase, myChar?.id);
+          if (!sprite)
+            drawCharacter(ctx, s.x, s.y, { color: myChar?.color ?? myBanner, facing: m.facing, scale: 1.15, moving: m.moving, phase: m.phase, ring: "#e8c75a", hat: myChar?.hat ?? undefined, cape: myChar?.cape });
           if (meAvatar?.mount) mountGlyph(s.x + 21, s.y + 1, meAvatar.mount);
-          label(s.x, s.y - 40, myName, myLvl);
-          if (myChar) badge(s.x, s.y - 76, myChar.icon);
+          const headY = sprite ? s.y - 74 : s.y - 40;
+          label(s.x, headY, myName, myLvl);
+          if (myChar) badge(s.x, headY - 36, myChar.icon);
         },
       });
       for (const a of remote) {
         if (a.id === myId) continue;
         seen.add(a.id);
         let d = disp.get(a.id);
-        if (!d) { d = { x: a.x, y: a.y, facing: a.facing, moving: a.moving, phase: 0 }; disp.set(a.id, d); }
+        if (!d) { d = { x: a.x, y: a.y, facing: a.facing, dir: "front", moving: a.moving, phase: 0 }; disp.set(a.id, d); }
         const lf = Math.min(1, dt * 12);
-        d.x += (a.x - d.x) * lf;
-        d.y += (a.y - d.y) * lf;
+        const pdx = a.x - d.x;
+        const pdy = a.y - d.y;
+        d.x += pdx * lf;
+        d.y += pdy * lf;
         d.facing = a.facing;
+        if (a.moving) d.dir = facingFromMove(pdx - pdy, pdx + pdy, d.dir);
         d.phase += dt * (a.moving ? 9 : 2);
         const dd = d;
         objs.push({
           d: dd.x + dd.y,
           draw: () => {
             const s = toScreen(dd.x, dd.y);
-            drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase, hat: a.character?.hat ?? undefined, cape: a.character?.cape });
+            const sprite = drawCharSprite(ctx, s.x, s.y, dd.dir, a.moving, dd.phase, a.character?.id);
+            if (!sprite)
+              drawCharacter(ctx, s.x, s.y, { color: a.character?.color ?? a.banner, facing: a.facing, scale: 1.15, moving: a.moving, phase: dd.phase, hat: a.character?.hat ?? undefined, cape: a.character?.cape });
             if (a.mount) mountGlyph(s.x + 21, s.y + 1, a.mount);
-            label(s.x, s.y - 40, a.name, a.level);
-            if (a.character) badge(s.x, s.y - 76, a.character.icon);
+            const rHeadY = sprite ? s.y - 74 : s.y - 40;
+            label(s.x, rHeadY, a.name, a.level);
+            if (a.character) badge(s.x, rHeadY - 36, a.character.icon);
           },
         });
       }

@@ -70,11 +70,12 @@ export function delistCoins(empireId: string, listingId: string): ExResult {
 }
 
 // Convert a USD price to on-chain $RUMBLE base units at the live token price,
-// split 95% seller / 5% burned.
-export function amountsFromUsd(usdPrice: number, rumbleUsd: number, dec: number): { sellerBase: bigint; burnBase: bigint; rumbleAmount: number } {
+// split (100 - burnPct)% to the recipient / burnPct% burned. Defaults to the 5%
+// market burn; callers (e.g. character sales) can pass a different split.
+export function amountsFromUsd(usdPrice: number, rumbleUsd: number, dec: number, burnPct: number = EXCHANGE_BURN_PCT): { sellerBase: bigint; burnBase: bigint; rumbleAmount: number } {
   const rumbleAmount = usdPrice / rumbleUsd; // $RUMBLE tokens (fractional)
   const totalBase = BigInt(Math.round(rumbleAmount * 10 ** dec));
-  const burnBase = (totalBase * BigInt(EXCHANGE_BURN_PCT)) / 100n;
+  const burnBase = (totalBase * BigInt(Math.round(burnPct))) / 100n;
   return { sellerBase: totalBase - burnBase, burnBase, rumbleAmount };
 }
 

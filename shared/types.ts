@@ -270,7 +270,7 @@ export interface HubAvatar {
   facing: number; // 1 = facing right, -1 = left
   moving: boolean;
   // equipped character skin, if any (look drives the placeholder sprite)
-  character?: { icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean };
+  character?: { id: string; icon: string; color: string; hat: "crown" | "helmet" | "hood" | "cap" | null; cape: boolean };
   mount?: string; // equipped mount/pet icon, shown beside the avatar (beta)
 }
 
@@ -603,6 +603,7 @@ export interface OwnedCharacter {
   rarity: string;
   serial: number;
   equipped: boolean;
+  listed: boolean; // currently up for resale on the marketplace
   onChain: boolean; // true once it's a real cNFT
 }
 
@@ -638,7 +639,7 @@ export interface Listing {
   sellerWallet: string; // payout address
   price: number; // asking price in USD (settled in $RUMBLE at the live rate)
   status: "active" | "sold";
-  kind?: "relic" | "mount"; // default relic; "mount" = a pet/companion house listing
+  kind?: "relic" | "mount" | "character"; // default relic; "mount" = pet/companion house listing; "character" = a player reselling a character cNFT
   reservedBy?: string; // buyer wallet during a pending purchase
   reservedUntil?: number;
   reservedSellerBase?: string; // $RUMBLE base units locked at reserve (95% seller)
@@ -656,6 +657,8 @@ export interface ListingPublic {
   rumbleAmount?: number | null; // ≈ $RUMBLE at the live rate (preview), null if unavailable
   sellerName: string;
   effect: string; // what the relic does when equipped
+  image?: string; // card art for character listings (relics use the icon)
+  kind: "relic" | "mount" | "character"; // which marketplace tab this belongs to
   reserved: boolean;
 }
 export interface InventoryItem {
