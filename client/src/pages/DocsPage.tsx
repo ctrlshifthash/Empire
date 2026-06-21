@@ -264,13 +264,13 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
     ),
   },
   {
-    id: "plaza-gather",
-    title: "Gathering in the plaza",
+    id: "hub-gather",
+    title: "Gathering in the Hub",
     icon: "🪓",
     body: (
       <>
         <p>
-          The town hub isn't just for chatting — walk up to a tree in the plaza and <strong>chop it for resources</strong>,
+          The Hub isn't just for chatting — walk up to a tree and <strong>chop it for resources</strong>,
           again and again, while everyone else mills about around you.
         </p>
         <ul className="ml-5 list-disc space-y-2">

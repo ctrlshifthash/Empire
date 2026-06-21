@@ -21,13 +21,13 @@ const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string 
   {
     date: "June 21, 2026",
     items: [
-      { tag: "Feature", title: "Gather resources in the hub", desc: "The town plaza is now somewhere to work, not just hang out — walk up to a tree and chop it for resources, over and over, alongside everyone else online. A small daily haul to grind between raids, capped so it stays a nice top-up rather than a shortcut." },
+      { tag: "Feature", title: "Gather resources in the hub", desc: "The Hub is now somewhere to work, not just hang out — walk up to a tree and chop it for resources, over and over, alongside everyone else online. A small daily haul to grind between raids, capped so it stays a nice top-up rather than a shortcut." },
     ],
   },
   {
     date: "June 20, 2026",
     items: [
-      { tag: "Feature", title: "Spinner Wheel is live", desc: "The Spinner is out of beta — and it's now the centrepiece of the hub plaza: walk up and spin it right there for a free resource top-up every 12 hours. Tuned to modest, sustainable rewards so it's a daily helping hand, never a shortcut or a farm." },
+      { tag: "Feature", title: "Spinner Wheel is live", desc: "The Spinner is out of beta — and it's now the centrepiece of the Hub: walk up and spin it right there for a free resource top-up every 12 hours. Tuned to modest, sustainable rewards so it's a daily helping hand, never a shortcut or a farm." },
       { tag: "Feature", title: "Spectate the live world", desc: "Now live — watch the hub fill up and players move about in real time straight from the landing page, no wallet needed, then connect to play." },
       { tag: "Feature", title: "Tombstone duels", desc: "The Arena's Tombstone mode is live — win a staked duel and the loser's coins drop into a tombstone; race to recover most of it within five minutes, or the victor loots the lot." },
       { tag: "Feature", title: "Mounts & Pets in the Marketplace", desc: "A new Mounts & Pets tab previewing a roster of collectible companions — each gives a real equipped perk (faster gathering or building, and the rarest ones boost your daily SOL share), with strictly limited supply. Buying goes live soon; for now you can browse the roster and exactly what each one does." },
