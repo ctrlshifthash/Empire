@@ -34,9 +34,9 @@ const TREASURY_SECRET = (process.env.TREASURY_SECRET_KEY || "").trim();
 const WALLET_CAP_PCT = Number(process.env.REWARD_WALLET_CAP_PCT || "0.15");
 
 // VIP and public pools are tracked separately. VIP is fixed at 7.5 SOL;
-// public is 5.5 SOL. Total treasury outlay = 13 SOL/day.
+// public is 3.5 SOL. Total treasury outlay = 11 SOL/day.
 const VIP_POOL_SOL    = 7.5;
-const PUBLIC_POOL_SOL = Number(process.env.PUBLIC_POOL_SOL || "5.5");
+const PUBLIC_POOL_SOL = Number(process.env.PUBLIC_POOL_SOL || "3.5");
 const VIP_REWARD_WALLETS = new Set([
   "EZppbZe5RaXryEd47NdPRX1ytjCd7bpqnZMDQQXMBB2s",
   "57DXn1ZGgfPiT6HqENyokgT9qTyUvpzy4sFraMhAi16z",
