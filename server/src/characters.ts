@@ -163,3 +163,42 @@ export function equippedCharacterStyle(
   const def = inst ? characterType(inst.typeId) : undefined;
   return def ? { id: def.id, icon: def.icon, color: def.color, hat: def.hat, cape: def.cape } : undefined;
 }
+
+// ── Free character grants (whitelist) ────────────────────────────────────────
+// Wallet -> character typeId. A whitelisted wallet can claim that character once,
+// for free, from the shop. Seed one-offs here; add more without a deploy via the
+// CHARACTER_FREEBIES env ("wallet:typeId,wallet:typeId"). Claims are tracked in
+// state so each grant is strictly one-time.
+const FREE_GRANTS: Record<string, string> = {
+  GsKTK3tmf82Pi1Rmdz61RWuEEjU4dG3G5bm5mesLUfBe: "mert",
+};
+for (const pair of (process.env.CHARACTER_FREEBIES || "").split(",")) {
+  const [w, t] = pair.split(":").map((s) => s.trim());
+  if (w && t) FREE_GRANTS[w] = t;
+}
+
+// The free character this wallet can still claim (typeId), or null.
+export function characterFreebieFor(wallet: string): string | null {
+  const typeId = FREE_GRANTS[wallet];
+  if (!typeId || state.characterFreebieClaims[wallet]) return null;
+  return typeId;
+}
+
+// Claim the whitelisted free character — mints it to the wallet's empire, once.
+export function claimCharacterFreebie(wallet: string): CharResult & { name?: string } {
+  const typeId = characterFreebieFor(wallet);
+  if (!typeId) return { ok: false, error: "No free character available for this wallet." };
+  const user = Object.values(state.users).find((u) => u.externalId === wallet);
+  const empire = user ? state.empires[user.empireId] : undefined;
+  if (!empire) return { ok: false, error: "Open the game signed in with this wallet to claim your free character." };
+  const def = characterType(typeId);
+  if (!def) return { ok: false, error: "Unknown character." };
+  if ((state.characterMintCounts[typeId] ?? 0) >= def.maxSupply) return { ok: false, error: "Sold out — none left to grant." };
+  const inst = mintCharacter(empire.id, typeId);
+  if (!inst) return { ok: false, error: "Mint failed — try again." };
+  state.characterFreebieClaims[wallet] = typeId;
+  empire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `🎁 Claimed a free ${def.name} character #${inst.serial}!` });
+  if (empire.log.length > 60) empire.log.length = 60;
+  scheduleSave(0);
+  return { ok: true, name: def.name, members: [empire.id] };
+}

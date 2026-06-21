@@ -82,6 +82,7 @@ export interface GameState {
   // $RUMBLE catalog-buy: price quote locked at reserve (per buyer wallet) + spent signatures
   characterReservations: Record<string, { typeId: string; treasuryBase: string; burnBase: string; until: number }>;
   characterBuySignatures: Record<string, { typeId: string; buyer: string; at: number }>;
+  characterFreebieClaims: Record<string, string>; // wallet -> typeId of a claimed free grant (one-time)
   // mount/pet cNFTs (beta): owned instances + serial counts per type
   mountInstances: Record<string, MountInstance>;
   mountMintCounts: Record<string, number>;
@@ -119,6 +120,7 @@ export const state: GameState = {
   characterMintCounts: {},
   characterReservations: {},
   characterBuySignatures: {},
+  characterFreebieClaims: {},
   mountInstances: {},
   mountMintCounts: {},
   marketActivity: [],
@@ -156,6 +158,7 @@ export function loadState(): boolean {
       state.characterMintCounts ??= {};
       state.characterReservations ??= {};
       state.characterBuySignatures ??= {};
+      state.characterFreebieClaims ??= {};
       state.mountInstances ??= {};
       state.mountMintCounts ??= {};
       state.marketActivity ??= [];

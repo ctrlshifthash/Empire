@@ -16,7 +16,7 @@ import { Server as SocketServer } from "socket.io";
 import type { Army } from "../../shared/combat.ts";
 import type { HubMessage, HubPlayer, HubAvatar } from "../../shared/types.ts";
 import { levelForXp } from "../../shared/progression.ts";
-import { characterCatalog, reserveCharacterBuy, buyCharacterRumble, equipCharacter, equippedCharacterStyle, charactersLocked } from "./characters.ts";
+import { characterCatalog, reserveCharacterBuy, buyCharacterRumble, equipCharacter, equippedCharacterStyle, charactersLocked, characterFreebieFor, claimCharacterFreebie } from "./characters.ts";
 import { now, uid } from "./util.ts";
 import { loadState, save, scheduleSave, state } from "./store.ts";
 import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier, checkPlayEligibility, refreshActiveBalances, tokenMint, treasuryPubkey, burnTreasuryRumble } from "./rewards.ts";
@@ -318,7 +318,17 @@ app.get("/api/arena/rankings", (_req, res) => {
 
 // ── Marketplace (buying = on-chain payment; verified, never custodial) ───────
 app.get("/api/market/config", (_req, res) => res.json(marketConfig()));
-app.get("/api/characters/config", (_req, res) => res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog() }));
+app.get("/api/characters/config", (req, res) => {
+  const address = typeof req.query.address === "string" ? req.query.address : "";
+  res.json({ ok: true, locked: charactersLocked(), characters: characterCatalog(), freebie: address ? characterFreebieFor(address) : null });
+});
+app.post("/api/characters/freebie/claim", (req, res) => {
+  const { address } = (req.body ?? {}) as Record<string, unknown>;
+  if (!address) return res.status(400).json({ ok: false, error: "Missing address." });
+  const r = claimCharacterFreebie(String(address));
+  if (r.ok && r.members) for (const id of r.members) pushSnapshot(id);
+  res.json(r);
+});
 app.post("/api/characters/:typeId/reserve", async (req, res) => {
   const { address } = (req.body ?? {}) as Record<string, unknown>;
   if (!address) return res.status(400).json({ ok: false, error: "Missing address." });

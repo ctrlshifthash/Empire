@@ -4,7 +4,7 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useGame } from "../lib/store";
 import { RARITY_META } from "@shared/gamedata";
 import { SERVER_URL } from "../lib/config";
-import { reserveCharacter, postBuyCharacter } from "../lib/characters";
+import { reserveCharacter, postBuyCharacter, claimFreebie } from "../lib/characters";
 import { buildPaymentTx } from "../lib/market";
 import { fetchExchangeConfig } from "../lib/exchange";
 import { confirmSignature } from "../lib/payments";
@@ -45,21 +45,45 @@ export default function CharacterShop() {
   const [locked, setLocked] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [rumbleUsd, setRumbleUsd] = useState<number | null>(null);
+  const [freebie, setFreebie] = useState<string | null>(null); // typeId of a free character this wallet can claim
 
+  const addr = connected && publicKey ? publicKey.toBase58() : null;
   const refresh = () =>
-    fetch(`${SERVER_URL}/api/characters/config`)
+    fetch(`${SERVER_URL}/api/characters/config${addr ? `?address=${addr}` : ""}`)
       .then((r) => r.json())
       .then((d) => {
         if (!d?.ok) return;
         setCatalog(d.characters);
         setLocked(!!d.locked);
+        setFreebie(d.freebie ?? null);
       })
       .catch(() => {});
 
   useEffect(() => {
     refresh();
     fetchExchangeConfig().then((c) => setRumbleUsd(c.rumbleUsd)).catch(() => {});
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addr]);
+
+  async function claimFree() {
+    if (!connected || !publicKey) {
+      pushToast({ kind: "warn", text: "Connect the whitelisted wallet to claim." });
+      setVisible(true);
+      return;
+    }
+    setBusy("freebie");
+    try {
+      const r = await claimFreebie(publicKey.toBase58());
+      if (r.ok) {
+        pushToast({ kind: "success", text: `Free ${r.name ?? "character"} claimed — it's in Your characters!` });
+        refresh();
+      } else {
+        pushToast({ kind: "warn", text: r.error ?? "Couldn't claim." });
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function buy(c: CatalogItem) {
     if (!connected || !publicKey) {
@@ -110,6 +134,18 @@ export default function CharacterShop() {
         <strong>resell</strong> it anytime. Owned in-game now; the on-chain cNFT mints to your wallet later.{" "}
         {locked ? "Previewing the roster — sales open shortly." : "Lower serials are rarer — buy early."}
       </div>
+
+      {/* free grant for a whitelisted wallet */}
+      {freebie && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-4">
+          <div className="text-sm text-parchment-100">
+            🎁 You've been gifted a free <strong>{catalog?.find((c) => c.id === freebie)?.name ?? "character"}</strong> — claim it on the house.
+          </div>
+          <button className="btn-gold btn-sm shrink-0" disabled={busy === "freebie"} onClick={claimFree}>
+            {busy === "freebie" ? "…" : "Claim free"}
+          </button>
+        </div>
+      )}
 
       {/* catalog */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

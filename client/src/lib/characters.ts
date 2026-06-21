@@ -27,3 +27,16 @@ export async function postBuyCharacter(typeId: string, address: string, signatur
     return { ok: false, error: "Network error." };
   }
 }
+
+// Claim a whitelisted free character for this wallet (one-time).
+export async function claimFreebie(address: string): Promise<{ ok: boolean; error?: string; name?: string }> {
+  try {
+    return await fetch(`${SERVER_URL}/api/characters/freebie/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    }).then((x) => x.json());
+  } catch {
+    return { ok: false, error: "Network error." };
+  }
+}
