@@ -118,6 +118,9 @@ interface GameStore {
 
 let socket: Socket | null = null;
 let toastSeq = 1;
+// highest skill level seen this session — so level-up toasts only fire on a genuine
+// increase, never on a snapshot replaying XP you already have (the spam bug).
+let skillHigh: Record<string, number> | null = null;
 
 const LS_TOKEN = "ee_token";
 const LS_USER = "ee_user";
@@ -195,13 +198,24 @@ export const useGame = create<GameStore>((set, get) => ({
     });
     socket.on("disconnect", () => set({ connected: false }));
     socket.on("snapshot", (snap: GameSnapshot) => {
-      // surface skill level-ups as toasts
       const prev = get().snapshot;
-      if (prev?.empire?.hero && snap?.empire?.hero) {
-        for (const s of SKILL_ORDER) {
-          const a = levelForXp(prev.empire.hero.skills[s] ?? 0);
-          const b = levelForXp(snap.empire.hero.skills[s] ?? 0);
-          if (b > a) get().pushToast({ kind: "success", text: `${SKILLS[s].icon} ${SKILLS[s].name} level ${b}!` });
+      // surface skill level-ups — only genuine increases above the highest level
+      // seen this session, so a snapshot replaying existing XP (or a brief reset)
+      // can't re-announce levels you already have.
+      if (snap?.empire?.hero) {
+        const skills = snap.empire.hero.skills;
+        if (skillHigh === null) {
+          // first snapshot: baseline silently at current levels — don't announce them
+          skillHigh = {};
+          for (const s of SKILL_ORDER) skillHigh[s] = levelForXp(skills[s] ?? 0);
+        } else {
+          for (const s of SKILL_ORDER) {
+            const lvl = levelForXp(skills[s] ?? 0);
+            if (lvl > (skillHigh[s] ?? 0)) {
+              get().pushToast({ kind: "success", text: `${SKILLS[s].icon} ${SKILLS[s].name} level ${lvl}!` });
+              skillHigh[s] = lvl;
+            }
+          }
         }
       }
       // notify on a freshly resolved battle (watch it back in the Chronicle)
