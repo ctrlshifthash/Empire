@@ -8,8 +8,8 @@ import type { ResourceKind } from "../../shared/types.ts";
 import { state, scheduleSave } from "./store.ts";
 import { now, uid } from "./util.ts";
 
-export const HUB_GATHER_CD_MS = 15 * 60 * 1000; // one gather every 15 minutes
-export const HUB_GATHER_DAILY_CAP = 12; // at most this many per rolling 24h
+export const HUB_GATHER_CD_MS = 30 * 60 * 1000; // one gather every 30 minutes
+export const HUB_GATHER_DAILY_CAP = 4; // hard daily limit (rolling 24h) so it can't compound
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KINDS: ResourceKind[] = ["wood", "food", "stone", "gold"];
 
@@ -33,9 +33,9 @@ export function hubGather(empireId: string): HubGatherResult {
   if (g.count >= HUB_GATHER_DAILY_CAP)
     return { ok: false, error: "You've gathered plenty in the plaza today — back tomorrow." };
 
-  // small random reward (120–250 of one resource)
+  // tiny random reward (80–140 of one resource)
   const resource = KINDS[Math.floor(Math.random() * KINDS.length)];
-  const amount = 120 + Math.floor(Math.random() * 131);
+  const amount = 80 + Math.floor(Math.random() * 61);
   e.resources[resource] = (e.resources[resource] ?? 0) + amount;
 
   e.lastHubGatherAt = now();
