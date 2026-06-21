@@ -1,4 +1,4 @@
-import { characterType, RARITY_META } from "@shared/gamedata";
+import { characterType, marketItem, RARITY_META } from "@shared/gamedata";
 import type { MarketActivity } from "@shared/types";
 
 const rarityColor = (r?: string) => (RARITY_META as Record<string, { color: string }>)[r ?? ""]?.color ?? "#9aa4ad";
@@ -32,6 +32,9 @@ export default function ActivityTxModal({ a, rumbleUsd, onClose, onView }: {
   onView?: () => void;
 }) {
   const char = a.refType ? characterType(a.refType) : undefined;
+  const relic = !char && a.refType ? marketItem(a.refType) : undefined; // relics show their icon
+  const name = char?.name ?? relic?.name;
+  const rarity = char?.rarity ?? relic?.rarity;
   const rumble = a.priceUsd != null && rumbleUsd ? Math.round(a.priceUsd / rumbleUsd) : null;
   const isListed = a.kind === "listed";
 
@@ -40,33 +43,40 @@ export default function ActivityTxModal({ a, rumbleUsd, onClose, onView }: {
       <div
         className="panel relative w-full max-w-sm p-6"
         onClick={(e) => e.stopPropagation()}
-        style={{ borderColor: `${rarityColor(char?.rarity)}66` }}
+        style={{ borderColor: `${rarityColor(rarity)}66` }}
       >
         <button onClick={onClose} className="absolute right-3 top-3 text-lg text-parchment-300/55 hover:text-parchment-100">✕</button>
 
-        {/* artwork */}
+        {/* artwork — character card, else the relic's icon */}
         {char?.image ? (
-          <img src={char.image} alt={char.name} className="mx-auto h-44 w-44 rounded-xl object-cover" style={{ border: `2px solid ${rarityColor(char.rarity)}` }} />
+          <img src={char.image} alt={name} className="mx-auto h-44 w-44 rounded-xl object-cover" style={{ border: `2px solid ${rarityColor(rarity)}` }} />
         ) : (
-          <div className="mx-auto grid h-44 w-44 place-items-center rounded-xl bg-black/30 text-5xl" style={{ border: `2px solid ${rarityColor(char?.rarity)}` }}>📜</div>
+          <div className="mx-auto grid h-44 w-44 place-items-center rounded-xl bg-black/30 text-6xl" style={{ border: `2px solid ${rarityColor(rarity)}` }}>
+            {relic?.icon ?? "📜"}
+          </div>
         )}
 
         {/* name + rarity + serial */}
         <div className="mt-3 text-center">
           <div className="font-display text-xl font-bold text-parchment-100">
-            {char?.name ?? "Marketplace item"}
+            {name ?? "Marketplace item"}
             {a.serial != null && <span className="text-parchment-300/50"> #{a.serial}</span>}
           </div>
-          {char && <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(char.rarity) }}>{char.rarity}</div>}
-          {!char && <div className="mt-0.5 truncate px-2 text-xs text-parchment-300/55">{a.text}</div>}
+          {rarity && <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: rarityColor(rarity) }}>{rarity}</div>}
+          {!name && <div className="mt-0.5 truncate px-2 text-xs text-parchment-300/55">{a.text}</div>}
         </div>
 
-        {/* badge + amount */}
-        <div className="mt-4 flex items-center justify-center gap-2">
+        {/* badge + amount + on-chain verification */}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${isListed ? "bg-sky-400/15 text-sky-300" : "bg-emerald-400/15 text-emerald-300"}`}>
             {kindLabel[a.kind]}
           </span>
           {a.priceUsd != null && <span className="font-display text-xl font-bold text-gold-light">${a.priceUsd.toFixed(2)}</span>}
+          {a.signature && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300" title="Confirmed on-chain">
+              ✓ on-chain
+            </span>
+          )}
         </div>
         {rumble != null && <div className="mt-0.5 text-center text-[11px] text-parchment-300/50">≈ {rumble.toLocaleString()} $RUMBLE</div>}
 
@@ -84,7 +94,7 @@ export default function ActivityTxModal({ a, rumbleUsd, onClose, onView }: {
         )}
         {onView && (
           <button onClick={onView} className="btn-ghost btn-sm mt-2 w-full">
-            {isListed ? "View listing" : "View character"}
+            {isListed ? "View listing" : char ? "View character" : "View in market"}
           </button>
         )}
         <div className="mt-3 text-center text-[11px] text-parchment-300/40">{ago(a.at)}</div>
