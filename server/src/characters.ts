@@ -130,7 +130,7 @@ export async function buyCharacterRumble(typeId: string, buyer: string, signatur
   delete state.characterReservations[buyer];
   empire.log.unshift({ id: uid("log_"), at: now(), kind: "system", text: `Bought the ${def.name} character #${inst.serial} for $${def.priceUsd} in $RUMBLE.` });
   if (empire.log.length > 60) empire.log.length = 60;
-  pushActivity("character", "bought", `${empire.name} bought ${def.name} #${inst.serial} for $${def.priceUsd.toFixed(2)} in $RUMBLE`);
+  pushActivity("character", "bought", `${empire.name} bought ${def.name} #${inst.serial} for $${def.priceUsd.toFixed(2)} in $RUMBLE`, undefined, typeId);
   scheduleSave(0);
   return { ok: true, empireId: empire.id, members: [empire.id] };
 }

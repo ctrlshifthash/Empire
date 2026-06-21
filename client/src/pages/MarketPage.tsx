@@ -65,11 +65,14 @@ function Market() {
   const [tab, setTab] = useState<"relics" | "characters" | "mounts" | "coins">("relics");
   const [rumbleUsd, setRumbleUsd] = useState<number | null>(null); // live $RUMBLE price (for the ≈ preview)
   const [highlight, setHighlight] = useState<string | null>(null); // listing flashed after an activity-feed click
+  const [highlightChar, setHighlightChar] = useState<string | null>(null); // character card to jump to (sold items have no live listing)
 
-  // click an activity-feed entry → switch to its category tab and jump to / flash the listing
+  // click an activity-feed entry → switch to its category tab and jump to the listing,
+  // or (for a sold/bought character with no live listing) the character's card
   const openActivity = (a: MarketActivity) => {
     setTab(a.category === "coin" ? "coins" : a.category === "character" ? "characters" : "relics");
     if (a.listingId) setHighlight(a.listingId);
+    if (a.category === "character" && a.refType) setHighlightChar(a.refType);
   };
   useEffect(() => {
     if (!highlight) return;
@@ -77,6 +80,16 @@ function Market() {
     const t = setTimeout(() => setHighlight(null), 2600);
     return () => clearTimeout(t);
   }, [highlight, tab, listings]);
+  useEffect(() => {
+    if (!highlightChar) return;
+    const t = setTimeout(() => {
+      // prefer a live listing if one's on screen; otherwise jump to the catalog card
+      const liveListing = highlight && document.getElementById(`listing-${highlight}`);
+      if (!liveListing) document.getElementById(`char-${highlightChar}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightChar(null);
+    }, 140);
+    return () => clearTimeout(t);
+  }, [highlightChar, tab]);
 
   const refresh = () => fetchListings().then(setListings);
   useEffect(() => {

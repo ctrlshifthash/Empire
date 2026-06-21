@@ -760,7 +760,7 @@ export function renderWorld(
         const ARMOUR_TINT = ["#d8a52a", "#c9a84a", "#b8b0a0", "#a8b2b8", "#9aa6c0", "#8fb0c8", "#a6c4dc", "#cdddec"];
         const look = world.heroLook;
         const heroState =
-          world.hero.state === "fight" ? "attack" : world.hero.state === "move" ? "move" : "idle";
+          world.hero.state === "fight" || world.hero.state === "harvest" ? "attack" : world.hero.state === "move" ? "move" : "idle"; // harvest swings the tool like an attack so you see the hero chopping/mining
         const hddx = world.hero.tx - world.hero.x;
         const hddy = world.hero.ty - world.hero.y;
         const hdir =
@@ -789,7 +789,7 @@ export function renderWorld(
             hat: hc ? hc.hat ?? undefined : look.helmet > 0 ? "helmet" : "crown",
             cape: hc ? hc.cape : true,
             moving: world.hero.state === "move",
-            attacking: world.hero.state === "fight",
+            attacking: world.hero.state === "fight" || world.hero.state === "harvest",
             ring: "rgba(244,221,143,0.7)",
             phase: now * 0.012,
           });

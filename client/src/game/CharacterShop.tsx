@@ -117,7 +117,7 @@ export default function CharacterShop() {
         {catalog?.map((c) => {
           const soldOut = c.remaining <= 0;
           return (
-            <div key={c.id} className="panel flex flex-col p-4" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
+            <div key={c.id} id={`char-${c.id}`} className="panel flex flex-col p-4" style={{ borderColor: `${rarityColor(c.rarity)}40` }}>
               <div className="flex items-center gap-3">
                 <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: `${c.color}22`, border: `1px solid ${c.color}` }}>
                   <CharacterAvatar color={c.color} hat={c.hat} cape={c.cape} image={c.image} size={52} />
