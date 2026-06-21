@@ -38,6 +38,12 @@ const DECOR: { x: number; y: number; g: string }[] = [
   [-9, 3, "🌿"], [9, -7, "🪨"], [-3, 9, "🌿"], [8, 5, "🌲"], [-8, -6, "🪨"], [4, -9, "🌿"],
 ].map(([x, y, g]) => ({ x: x as number, y: y as number, g: g as string }));
 
+// choppable resource nodes in the plaza — walk up + chop for a small reward
+// (cooldown + daily cap enforced server-side, so it can't be farmed)
+const CHOP_NODES: { x: number; y: number }[] = [
+  { x: 4, y: 2 }, { x: -4, y: 2 }, { x: 4, y: -2 }, { x: -4, y: -2 },
+];
+
 type Local = { x: number; y: number; facing: number; moving: boolean; phase: number };
 type RemoteDisp = { x: number; y: number; facing: number; moving: boolean; phase: number };
 
@@ -47,6 +53,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const hubLeave = useGame((s) => s.hubLeave);
   const hubMove = useGame((s) => s.hubMove);
   const hubChat = useGame((s) => s.hubChat);
+  const hubGather = useGame((s) => s.hubGather);
   const messages = useGame((s) => s.hubMessages);
   const connected = useGame((s) => s.connected);
   const myId = useGame((s) => s.snapshot?.empire?.id);
@@ -57,6 +64,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
   const [chat, setChat] = useState("");
   const [nearSpin, setNearSpin] = useState(false); // standing next to the plaza wheel
   const [showSpin, setShowSpin] = useState(false); // the wheel overlay is open
+  const [nearChop, setNearChop] = useState(false); // standing next to a choppable node
 
   // player card: click a roster name to see their stats
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -152,6 +160,7 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
     let last = performance.now();
     let sendAcc = 0;
     let lastNear = false; // proximity to the wheel — only setState when it flips
+    let lastNearChop = false; // proximity to a choppable node
 
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -248,6 +257,12 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
         lastNear = nearWheel;
         setNearSpin(nearWheel);
       }
+      // walked up to a choppable node?
+      const nearNode = CHOP_NODES.some((n) => Math.hypot(m.x - n.x, m.y - n.y) < 1.4);
+      if (nearNode !== lastNearChop) {
+        lastNearChop = nearNode;
+        setNearChop(nearNode);
+      }
 
       // ── camera centred on me (village iso projection) ──
       const VC = (GROUND.length - 1) / 2; // village-centre offset → avatar (0,0)
@@ -291,6 +306,26 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
       // fountain back at the plaza centre; the prize wheel sits just behind it
       objs.push({ d: 0, draw: () => drawHubFountain(ctx, toScreen(0, 0).x, toScreen(0, 0).y, t) });
       objs.push({ d: -2.0, draw: () => drawHubSpinner(ctx, toScreen(0, -2.0).x, toScreen(0, -2.0).y, t) });
+      // choppable resource nodes — a tree sprite + a soft pulsing ring so they read as interactive
+      for (const n of CHOP_NODES) {
+        const s = toScreen(n.x, n.y);
+        const img = vimg("tree_3");
+        objs.push({
+          d: n.x + n.y,
+          draw: () => {
+            const pulse = 0.5 + 0.5 * Math.sin(t / 380);
+            ctx.strokeStyle = `rgba(124, 196, 90, ${0.35 + pulse * 0.3})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(s.x, s.y, 16 + pulse * 4, 7 + pulse * 2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            if (img && img.complete) drawObj(ctx, img, s.x, s.y);
+            ctx.font = "15px serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🪓", s.x, s.y - (img && img.complete ? img.height * V_SCALE + 4 : 44));
+          },
+        });
+      }
 
       // village sprites (houses, stalls, decor, animated windmill) depth-sorted
       if (villageReady()) {
@@ -410,6 +445,18 @@ export default function HubWorld({ onOpenTab }: { onOpenTab: (tab: string) => vo
             className="btn-gold pointer-events-auto animate-pulse px-6 py-2.5 text-base font-bold shadow-gold"
           >
             🎡 Spin the Wheel
+          </button>
+        </div>
+      )}
+
+      {/* walk up to a tree/node → prompt to chop for a small resource bundle */}
+      {nearChop && !nearSpin && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center">
+          <button
+            onClick={() => hubGather()}
+            className="btn-gold pointer-events-auto animate-pulse px-6 py-2.5 text-base font-bold shadow-gold"
+          >
+            🪓 Chop for resources
           </button>
         </div>
       )}

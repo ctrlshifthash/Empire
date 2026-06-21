@@ -101,6 +101,7 @@ interface GameStore {
   hubEnter: () => void;
   hubLeave: () => void;
   hubMove: (x: number, y: number, facing: number, moving: boolean) => void;
+  hubGather: () => void;
 
   createAlliance: (name: string, tag: string) => void;
   joinAlliance: (allianceId: string) => void;
@@ -290,6 +291,7 @@ export const useGame = create<GameStore>((set, get) => ({
   hubEnter: () => socket?.emit("hub:enter"),
   hubLeave: () => socket?.emit("hub:leave"),
   hubMove: (x, y, facing, moving) => socket?.emit("hub:move", { x, y, facing, moving }),
+  hubGather: () => socket?.emit("hub:gather"),
 
   createAlliance: (name, tag) => socket?.emit("alliance:create", { name, tag }),
   joinAlliance: (allianceId) => socket?.emit("alliance:join", { allianceId }),

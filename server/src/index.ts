@@ -23,6 +23,7 @@ import { claim, payoutsLive, rewardStatus, rewardsConfigured, refreshHolderTier,
 import { rumbleUsdPrice } from "./price.ts";
 import { featureLocks, isLocked } from "./features.ts";
 import { freeSpin } from "./spinner.ts";
+import { hubGather } from "./hubGather.ts";
 import { dailyState, claimDaily } from "./daily.ts";
 import { ownedMounts, equipMount, equippedMountIcon, mountsLocked, mountCatalog } from "./mounts.ts";
 import { shopConfig, buyShopItem, settlePendingShopPurchases } from "./shop.ts";
@@ -982,6 +983,14 @@ io.on("connection", (socket) => {
       const r = freeSpin(id);
       socket.emit("spinner:result", r);
       handle(r);
+    }),
+  );
+
+  // Hub gathering — chop a tree/node in the plaza for a small resource bundle.
+  socket.on("hub:gather", () =>
+    withEmpire((id) => {
+      const r = hubGather(id);
+      handle(r, r.ok ? `🪓 Gathered ${r.amount} ${r.resource}!` : undefined);
     }),
   );
 
