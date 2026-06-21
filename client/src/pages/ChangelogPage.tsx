@@ -19,6 +19,12 @@ const TAG_STYLE: Record<Tag, string> = {
 // Newest first. Add a new dated block at the top as updates ship.
 const CHANGELOG: { date: string; items: { tag: Tag; title: string; desc: string }[] }[] = [
   {
+    date: "June 21, 2026",
+    items: [
+      { tag: "Feature", title: "Gather resources in the hub", desc: "The town plaza is now somewhere to work, not just hang out — walk up to a tree and chop it for resources, over and over, alongside everyone else online. A small daily haul to grind between raids, capped so it stays a nice top-up rather than a shortcut." },
+    ],
+  },
+  {
     date: "June 20, 2026",
     items: [
       { tag: "Feature", title: "Spinner Wheel is live", desc: "The Spinner is out of beta — and it's now the centrepiece of the hub plaza: walk up and spin it right there for a free resource top-up every 12 hours. Tuned to modest, sustainable rewards so it's a daily helping hand, never a shortcut or a farm." },

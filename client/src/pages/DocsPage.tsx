@@ -264,6 +264,23 @@ const SECTIONS: { id: string; title: string; icon: string; body: React.ReactNode
     ),
   },
   {
+    id: "plaza-gather",
+    title: "Gathering in the plaza",
+    icon: "🪓",
+    body: (
+      <>
+        <p>
+          The town hub isn't just for chatting — walk up to a tree in the plaza and <strong>chop it for resources</strong>,
+          again and again, while everyone else mills about around you.
+        </p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li><strong>A grind, not a handout</strong> — each chop gives just a few resources, so you put in ~100+ chops to fill a <strong>small daily cap</strong>. A nice top-up to chip away at between raids, never a farm.</li>
+          <li><strong>Fair &amp; server-decided</strong> — the cooldown and daily cap are enforced on the server, so it can't be sped up or gamed.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "alliances",
     title: "Alliances",
     icon: "🤝",
